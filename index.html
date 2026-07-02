@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="생년월일시로 사주 네 기둥과 오행 분포를 확인하는 브라우저 기반 만세력 PoC"
+    />
+    <meta name="theme-color" content="#152a38" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <title>사주 한 장 | 간단 만세력</title>
+  </head>
+  <body>
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero__mark" aria-hidden="true">四柱</div>
+        <p class="eyebrow">나를 읽는 작은 기록</p>
+        <h1 id="page-title">사주 한 장</h1>
+        <p class="hero__copy">
+          태어난 순간의 네 기둥과 오행 흐름을<br />
+          한 화면에서 가볍게 확인해 보세요.
+        </p>
+      </section>
+
+      <section class="calculator" aria-label="사주 계산기">
+        <form id="birth-form" class="birth-form">
+          <fieldset>
+            <legend>태어난 정보를 알려주세요</legend>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>달력</span>
+                <select id="calendar-type" name="calendarType">
+                  <option value="solar">양력</option>
+                  <option value="lunar">음력</option>
+                </select>
+              </label>
+
+              <label class="field field--wide">
+                <span>생년월일</span>
+                <input
+                  id="birth-date"
+                  name="birthDate"
+                  type="date"
+                  min="1800-01-01"
+                  max="2100-12-31"
+                  required
+                />
+              </label>
+
+              <label class="field">
+                <span>태어난 시각</span>
+                <select id="birth-hour" name="birthHour" required></select>
+              </label>
+
+              <label class="field">
+                <span>분</span>
+                <select id="birth-minute" name="birthMinute">
+                  <option value="0">00분</option>
+                  <option value="10">10분</option>
+                  <option value="20">20분</option>
+                  <option value="30">30분</option>
+                  <option value="40">40분</option>
+                  <option value="50">50분</option>
+                </select>
+              </label>
+            </div>
+
+            <label id="leap-month-field" class="check-field" hidden>
+              <input id="is-leap-month" name="isLeapMonth" type="checkbox" />
+              <span>윤달로 입력</span>
+            </label>
+
+            <p class="form-note">
+              입력값은 기기에 저장되거나 서버로 전송되지 않습니다.
+            </p>
+
+            <button type="submit">
+              <span>나의 사주 펼쳐보기</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <p id="form-error" class="error" role="alert" hidden></p>
+          </fieldset>
+        </form>
+      </section>
+
+      <section id="result" class="result" aria-live="polite" hidden>
+        <div class="result__heading">
+          <p class="eyebrow">나의 네 기둥</p>
+          <h2>태어난 순간의 사주</h2>
+          <p id="result-date" class="result__date"></p>
+        </div>
+
+        <div id="pillars" class="pillars"></div>
+
+        <div class="result-grid">
+          <article class="result-card">
+            <div class="card-heading">
+              <div>
+                <p class="eyebrow">오행의 균형</p>
+                <h3>다섯 기운</h3>
+              </div>
+              <span class="seal" aria-hidden="true">五行</span>
+            </div>
+            <div id="elements" class="elements"></div>
+          </article>
+
+          <article class="result-card reading-card">
+            <p class="eyebrow">오늘의 해석</p>
+            <h3 id="reading-title"></h3>
+            <p id="reading-copy"></p>
+          </article>
+        </div>
+
+        <p class="disclaimer">
+          이 결과는 전통 명리 계산을 간단히 표현한 문화·오락용 정보입니다.
+          중요한 결정을 위한 근거로 사용하지 마세요.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>사주 한 장</span>
+      <span>브라우저에서만 계산되는 작은 만세력</span>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
