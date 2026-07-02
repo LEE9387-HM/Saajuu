@@ -56,14 +56,19 @@
 
               <label class="field">
                 <span>분</span>
-                <select id="birth-minute" name="birthMinute">
-                  <option value="0">00분</option>
-                  <option value="10">10분</option>
-                  <option value="20">20분</option>
-                  <option value="30">30분</option>
-                  <option value="40">40분</option>
-                  <option value="50">50분</option>
-                </select>
+                <input
+                  id="birth-minute"
+                  name="birthMinute"
+                  type="number"
+                  min="0"
+                  max="59"
+                  step="1"
+                  value="0"
+                  inputmode="numeric"
+                  required
+                  aria-describedby="minute-help"
+                />
+                <small id="minute-help">0~59분</small>
               </label>
             </div>
 
@@ -112,6 +117,31 @@
             <p id="reading-copy"></p>
           </article>
         </div>
+
+        <div class="detail-action">
+          <button
+            id="detail-toggle"
+            class="detail-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="detail-reading"
+          >
+            <span>근거와 함께 상세 풀이 읽기</span>
+            <span aria-hidden="true">＋</span>
+          </button>
+          <p>일간·오행·십신 계산값을 풀이 근거로 함께 보여드립니다.</p>
+        </div>
+
+        <section id="detail-reading" class="detail-reading" hidden>
+          <div class="detail-reading__intro">
+            <p class="eyebrow">해석의 근거까지</p>
+            <h3>나를 이해하는 네 가지 단서</h3>
+            <p>
+              단정적인 예언보다 반복되는 성향을 관찰하는 질문으로 읽어보세요.
+            </p>
+          </div>
+          <div id="detail-sections" class="detail-sections"></div>
+        </section>
 
         <p class="disclaimer">
           이 결과는 전통 명리 계산을 간단히 표현한 문화·오락용 정보입니다.

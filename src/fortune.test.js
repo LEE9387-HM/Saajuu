@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDetailedReading,
   calculateChart,
   countElements,
   formatInputSummary,
@@ -70,6 +71,32 @@ describe("calculateChart", () => {
       }),
     ).toThrow();
   });
+
+  it("accepts every minute from 0 through 59", () => {
+    for (let minute = 0; minute < 60; minute += 1) {
+      expect(() =>
+        calculateChart({
+          calendarType: "solar",
+          birthDate: "1992-10-24",
+          hour: 5,
+          minute,
+          isLeapMonth: false,
+        }),
+      ).not.toThrow();
+    }
+  });
+
+  it("rejects minute 60", () => {
+    expect(() =>
+      calculateChart({
+        calendarType: "solar",
+        birthDate: "1992-10-24",
+        hour: 5,
+        minute: 60,
+        isLeapMonth: false,
+      }),
+    ).toThrow("분은 0부터 59 사이의 정수로 입력해 주세요.");
+  });
 });
 
 describe("element helpers", () => {
@@ -103,5 +130,23 @@ describe("formatInputSummary", () => {
         isLeapMonth: true,
       }),
     ).toBe("음력 윤달 1990.04.21 · 05:00");
+  });
+});
+
+describe("buildDetailedReading", () => {
+  it("creates four evidence-backed reading sections", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const sections = buildDetailedReading(chart);
+
+    expect(sections).toHaveLength(4);
+    expect(sections[0].title).toContain("계유 일주");
+    expect(sections[1].title).toBe("쇠 기운은 살리고 불 기운은 의식하기");
+    expect(sections.every((section) => section.evidence.length > 0)).toBe(true);
   });
 });

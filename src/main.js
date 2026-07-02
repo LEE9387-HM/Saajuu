@@ -1,5 +1,6 @@
 import "./styles.css";
 import {
+  buildDetailedReading,
   calculateChart,
   ELEMENTS,
   formatInputSummary,
@@ -12,6 +13,8 @@ const hourSelect = document.querySelector("#birth-hour");
 const leapMonthField = document.querySelector("#leap-month-field");
 const errorMessage = document.querySelector("#form-error");
 const resultSection = document.querySelector("#result");
+const detailToggle = document.querySelector("#detail-toggle");
+const detailReading = document.querySelector("#detail-reading");
 
 for (let hour = 0; hour < 24; hour += 1) {
   const option = document.createElement("option");
@@ -26,6 +29,16 @@ calendarType.addEventListener("change", () => {
   if (leapMonthField.hidden) {
     document.querySelector("#is-leap-month").checked = false;
   }
+});
+
+detailToggle.addEventListener("click", () => {
+  const willOpen = detailReading.hidden;
+  detailReading.hidden = !willOpen;
+  detailToggle.setAttribute("aria-expanded", String(willOpen));
+  detailToggle.lastElementChild.textContent = willOpen ? "−" : "＋";
+  detailToggle.firstElementChild.textContent = willOpen
+    ? "상세 풀이 접기"
+    : "근거와 함께 상세 풀이 읽기";
 });
 
 form.addEventListener("submit", (event) => {
@@ -94,4 +107,32 @@ function renderResult(chart, input) {
 
   document.querySelector("#reading-title").textContent = reading.title;
   document.querySelector("#reading-copy").textContent = reading.copy;
+
+  detailReading.hidden = true;
+  detailToggle.setAttribute("aria-expanded", "false");
+  detailToggle.firstElementChild.textContent = "근거와 함께 상세 풀이 읽기";
+  detailToggle.lastElementChild.textContent = "＋";
+
+  document.querySelector("#detail-sections").innerHTML = buildDetailedReading(chart)
+    .map(
+      (section) => `
+        <article class="detail-section">
+          <div class="detail-section__number">${section.number}</div>
+          <div class="detail-section__body">
+            <p class="eyebrow">${section.eyebrow}</p>
+            <h4>${section.title}</h4>
+            <p>${section.copy}</p>
+            <div class="detail-section__point">
+              <span>읽는 포인트</span>
+              <strong>${section.point}</strong>
+            </div>
+            <div class="evidence">
+              <span>풀이 근거</span>
+              ${section.evidence.map((item) => `<em>${item}</em>`).join("")}
+            </div>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
 }
