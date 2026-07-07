@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  analyzeName,
   buildDetailedReading,
+  buildNameReading,
+  buildPersonalizedBriefing,
+  buildTopicReading,
   calculateChart,
   countElements,
   formatInputSummary,
   interpretElements,
   parseBirthDate,
+  TOPIC_OPTIONS,
+  TONE_OPTIONS,
 } from "./fortune.js";
 
 describe("parseBirthDate", () => {
@@ -148,5 +154,91 @@ describe("buildDetailedReading", () => {
     expect(sections[0].title).toContain("계유 일주");
     expect(sections[1].title).toBe("쇠 기운은 살리고 불 기운은 의식하기");
     expect(sections.every((section) => section.evidence.length > 0)).toBe(true);
+  });
+});
+
+describe("buildTopicReading", () => {
+  it("defines the service topics shown in the form", () => {
+    expect(TOPIC_OPTIONS.map((topic) => topic.value)).toEqual([
+      "relationship",
+      "marriage",
+      "business",
+      "career",
+      "family",
+      "yearly",
+    ]);
+  });
+
+  it("creates a topic-specific reading with counseling prompts", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const reading = buildTopicReading(chart, "business");
+
+    expect(reading.eyebrow).toBe("사업운");
+    expect(reading.title).toContain("흐름");
+    expect(reading.checklist).toHaveLength(3);
+    expect(reading.questions).toHaveLength(3);
+    expect(reading.evidence).toContain("일간 계");
+  });
+});
+
+describe("name reading", () => {
+  it("analyzes a Hangul name as a supplemental five-element profile", () => {
+    const name = analyzeName(" 김사주 ");
+
+    expect(name.cleanName).toBe("김사주");
+    expect(name.syllableCount).toBe(3);
+    expect(Object.values(name.counts).reduce((sum, value) => sum + value, 0)).toBeGreaterThan(0);
+    expect(name.evidence[0]).toContain("김");
+  });
+
+  it("ignores names that cannot be read as Hangul syllables", () => {
+    expect(analyzeName("Alex")).toBeNull();
+  });
+
+  it("builds a composite name and saju reading", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const reading = buildNameReading(chart, "김사주");
+
+    expect(reading.title).toContain("김사주");
+    expect(reading.copy).toContain("한글 이름");
+    expect(reading.elements).toHaveLength(5);
+    expect(reading.evidence).toContain("이름 김사주");
+  });
+});
+
+describe("buildPersonalizedBriefing", () => {
+  it("creates a tone-aware counseling note from topic, name, and concern", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const briefing = buildPersonalizedBriefing(chart, {
+      topic: "marriage",
+      tone: "direct",
+      name: "김사주",
+      concern: "결혼을 확신해도 될지 고민돼요",
+    });
+
+    expect(TONE_OPTIONS.map((tone) => tone.value)).toEqual(["balanced", "direct", "warm"]);
+    expect(briefing.title).toContain("김사주");
+    expect(briefing.copy).toContain("결혼을 확신해도 될지 고민돼요");
+    expect(briefing.notes).toHaveLength(3);
+    expect(briefing.session.questions).toHaveLength(3);
+    expect(briefing.evidence).toContain("주제 결혼운");
   });
 });

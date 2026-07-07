@@ -1,15 +1,22 @@
 import "./styles.css";
 import {
+  buildNameReading,
   buildDetailedReading,
+  buildPersonalizedBriefing,
+  buildTopicReading,
   calculateChart,
   ELEMENTS,
   formatInputSummary,
   interpretElements,
+  TOPIC_OPTIONS,
+  TONE_OPTIONS,
 } from "./fortune.js";
 
 const form = document.querySelector("#birth-form");
 const calendarType = document.querySelector("#calendar-type");
 const hourSelect = document.querySelector("#birth-hour");
+const topicSelect = document.querySelector("#reading-topic");
+const toneSelect = document.querySelector("#reading-tone");
 const leapMonthField = document.querySelector("#leap-month-field");
 const errorMessage = document.querySelector("#form-error");
 const resultSection = document.querySelector("#result");
@@ -22,6 +29,20 @@ for (let hour = 0; hour < 24; hour += 1) {
   option.textContent = `${String(hour).padStart(2, "0")}시`;
   if (hour === 12) option.selected = true;
   hourSelect.append(option);
+}
+
+for (const topic of TOPIC_OPTIONS) {
+  const option = document.createElement("option");
+  option.value = topic.value;
+  option.textContent = `${topic.label} — ${topic.prompt}`;
+  topicSelect.append(option);
+}
+
+for (const tone of TONE_OPTIONS) {
+  const option = document.createElement("option");
+  option.value = tone.value;
+  option.textContent = `${tone.label} — ${tone.prompt}`;
+  toneSelect.append(option);
 }
 
 calendarType.addEventListener("change", () => {
@@ -52,6 +73,10 @@ form.addEventListener("submit", (event) => {
     hour: Number(data.get("birthHour")),
     minute: Number(data.get("birthMinute")),
     isLeapMonth: data.get("isLeapMonth") === "on",
+    topic: data.get("readingTopic") ?? "relationship",
+    tone: data.get("readingTone") ?? "balanced",
+    name: data.get("personName") ?? "",
+    concern: data.get("currentConcern") ?? "",
   };
 
   try {
@@ -67,6 +92,26 @@ form.addEventListener("submit", (event) => {
     errorMessage.hidden = false;
   }
 });
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderList(items) {
+  return items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
+function renderEvidence(label, items) {
+  return `
+    <span>${escapeHtml(label)}</span>
+    ${items.map((item) => `<em>${escapeHtml(item)}</em>`).join("")}
+  `;
+}
 
 function renderResult(chart, input) {
   document.querySelector("#result-date").textContent = formatInputSummary(input);
@@ -108,6 +153,62 @@ function renderResult(chart, input) {
   document.querySelector("#reading-title").textContent = reading.title;
   document.querySelector("#reading-copy").textContent = reading.copy;
 
+  const topicReading = buildTopicReading(chart, input.topic);
+  document.querySelector("#topic-eyebrow").textContent = topicReading.eyebrow;
+  document.querySelector("#topic-title").textContent = topicReading.title;
+  document.querySelector("#topic-copy").textContent = topicReading.copy;
+  document.querySelector("#topic-point").textContent = topicReading.point;
+  document.querySelector("#topic-checklist").innerHTML = renderList(topicReading.checklist);
+  document.querySelector("#topic-questions").innerHTML = renderList(topicReading.questions);
+  document.querySelector("#topic-evidence").innerHTML = renderEvidence("주제 풀이 근거", topicReading.evidence);
+
+  const briefing = buildPersonalizedBriefing(chart, input);
+  document.querySelector("#briefing-eyebrow").textContent = briefing.eyebrow;
+  document.querySelector("#briefing-title").textContent = briefing.title;
+  document.querySelector("#briefing-copy").textContent = briefing.copy;
+  document.querySelector("#briefing-notes").innerHTML = briefing.notes
+    .map(
+      (note) => `
+        <article class="briefing-note">
+          <span>${escapeHtml(note.label)}</span>
+          <p>${escapeHtml(note.text)}</p>
+        </article>
+      `,
+    )
+    .join("");
+  document.querySelector("#session-opening").textContent = briefing.session.opening;
+  document.querySelector("#session-avoid").textContent = briefing.session.avoid;
+  document.querySelector("#session-questions").innerHTML = renderList(briefing.session.questions);
+  document.querySelector("#briefing-evidence").innerHTML = renderEvidence("맞춤 근거", briefing.evidence);
+
+  const nameReading = buildNameReading(chart, input.name);
+  const nameReadingSection = document.querySelector("#name-reading");
+  nameReadingSection.hidden = !nameReading;
+  if (nameReading) {
+    document.querySelector("#name-eyebrow").textContent = nameReading.eyebrow;
+    document.querySelector("#name-title").textContent = nameReading.title;
+    document.querySelector("#name-copy").textContent = nameReading.copy;
+    document.querySelector("#name-point").textContent = nameReading.point;
+    document.querySelector("#name-elements").innerHTML = nameReading.elements
+      .map(
+        (element) => `
+          <div class="name-element-row">
+            <div>
+              <strong>${escapeHtml(element.element)}</strong>
+              <span>${escapeHtml(element.label)}</span>
+            </div>
+            <div class="element-track" aria-label="${escapeHtml(element.element)} ${element.count}개">
+              <span class="element-fill" style="width: ${element.percentage}%"></span>
+            </div>
+            <em>${element.count}</em>
+          </div>
+        `,
+      )
+      .join("");
+    document.querySelector("#name-checklist").innerHTML = renderList(nameReading.checklist);
+    document.querySelector("#name-evidence").innerHTML = renderEvidence("이름 풀이 근거", nameReading.evidence);
+  }
+
   detailReading.hidden = true;
   detailToggle.setAttribute("aria-expanded", "false");
   detailToggle.firstElementChild.textContent = "근거와 함께 상세 풀이 읽기";
@@ -128,7 +229,7 @@ function renderResult(chart, input) {
             </div>
             <div class="evidence">
               <span>풀이 근거</span>
-              ${section.evidence.map((item) => `<em>${item}</em>`).join("")}
+              ${section.evidence.map((item) => `<em>${escapeHtml(item)}</em>`).join("")}
             </div>
           </div>
         </article>
