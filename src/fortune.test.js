@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeName,
+  buildGuidance,
   buildDetailedReading,
   buildNameReading,
   buildPersonalizedBriefing,
@@ -215,6 +216,41 @@ describe("name reading", () => {
     expect(reading.copy).toContain("한글 이름");
     expect(reading.elements).toHaveLength(5);
     expect(reading.evidence).toContain("이름 김사주");
+  });
+});
+
+describe("buildGuidance", () => {
+  const chart = calculateChart({
+    calendarType: "solar",
+    birthDate: "1992-10-24",
+    hour: 5,
+    minute: 30,
+    isLeapMonth: false,
+  });
+
+  it("builds a yearly prescription anchored to the current year pillar", () => {
+    const guidance = buildGuidance(chart, new Date(2026, 6, 8));
+
+    expect(guidance.title).toContain("2026년 병오년");
+    expect(guidance.evidence).toContain("세운 병오");
+    expect(guidance.copy).toContain("일간 계 기준");
+  });
+
+  it("prescribes embrace items from the weakest element and cautions from the strongest", () => {
+    const guidance = buildGuidance(chart, new Date(2026, 6, 8));
+
+    // 이 사주는 화(불)가 가장 약하고 금(쇠)이 가장 강하다
+    expect(guidance.embrace).toHaveLength(3);
+    expect(guidance.avoid).toHaveLength(3);
+    expect(guidance.embrace[0]).toContain("표현하는 활동");
+    expect(guidance.embrace[2]).toContain("붉은 계열");
+    expect(guidance.avoid[0]).toContain("기준이 날카로워지는");
+  });
+
+  it("marks a year that doubles the strongest element as one to slow down in", () => {
+    // 2025 을사년: 사(화)는 이 사주의 보완 오행이라 채워지는 해로 읽힌다
+    const guidance2025 = buildGuidance(chart, new Date(2025, 6, 8));
+    expect(guidance2025.copy).toContain("채워지는 흐름");
   });
 });
 

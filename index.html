@@ -115,8 +115,8 @@
             </label>
 
             <p class="form-note">
-              현재 버전은 브라우저 안에서만 계산합니다. 입력값은 서버로 전송되지 않으며,
-              무료 API와 LLM 상담은 추후 서버에서 안전하게 연결합니다.
+              현재 버전은 브라우저 안에서만 계산합니다. 입력값은 서버로 전송하거나
+              저장하지 않습니다.
             </p>
 
             <button type="submit">
@@ -133,8 +133,8 @@
           <p class="eyebrow">서비스 방향</p>
           <h2 id="service-title">사주는 답을 맞히기보다 고민을 정리하는 언어입니다</h2>
           <p>
-            지금 페이지는 정적 계산과 규칙 기반 풀이만 제공합니다. 향후 유료 상담형
-            서비스에서는 서버에서 결제, 리포트 생성, LLM 상담, 상담 요약을 처리합니다.
+            지금 페이지는 무료 사주 계산과 풀이까지 제공합니다. 더 깊은 이야기가 필요하다면
+            아래에서 준비 중인 유료 상담을 먼저 만나보세요.
           </p>
         </div>
 
@@ -189,6 +189,25 @@
             <p id="reading-copy"></p>
           </article>
         </div>
+
+        <section class="guidance" aria-labelledby="guidance-title">
+          <div class="guidance__intro">
+            <p id="guidance-eyebrow" class="eyebrow"></p>
+            <h3 id="guidance-title"></h3>
+            <p id="guidance-copy"></p>
+            <div id="guidance-evidence" class="evidence"></div>
+          </div>
+          <div class="guidance__columns">
+            <div class="guidance__col guidance__col--embrace">
+              <h4>가까이할 것</h4>
+              <ul id="guidance-embrace"></ul>
+            </div>
+            <div class="guidance__col guidance__col--avoid">
+              <h4>조심할 것</h4>
+              <ul id="guidance-avoid"></ul>
+            </div>
+          </div>
+        </section>
 
         <section class="topic-reading" aria-labelledby="topic-title">
           <div class="topic-reading__main">
@@ -260,38 +279,31 @@
         <section class="consultation-preview" aria-labelledby="consultation-title">
           <div>
             <p class="eyebrow">다음 단계</p>
-            <h3 id="consultation-title">무료 API와 LLM은 서버 뒤에 붙여야 합니다</h3>
+            <h3 id="consultation-title">실제 대화처럼 이어지는 30분 상담을 준비하고 있어요</h3>
             <p>
-              정적 페이지에 무료 API 키를 넣으면 키와 개인정보가 노출됩니다. 결제 후 10분·30분 상담,
-              대화 맥락 저장, 상담 요약 리포트, 정확한 한자 획수 성명학은 API 키 보호와 개인정보 관리를 위해
-              Supabase Edge Functions 같은 백엔드에서 처리해야 합니다.
+              지금 화면은 무료 계산과 풀이까지입니다. 곧 만날 유료 상담에서는 궁합, 결혼, 사업, 신년 고민을
+              사람에게 이야기하듯 꺼내면 사주 근거와 함께 하나씩 정리해 드립니다.
             </p>
+            <button id="premium-interest" type="button" class="premium-cta">
+              <span id="premium-interest-label">상담 오픈되면 알려주세요</span>
+            </button>
+            <p id="premium-interest-note" class="premium-cta__note" role="status"></p>
           </div>
           <ol>
-            <li>브라우저에서 사주·이름 초안 계산</li>
-            <li>서버에서 결제와 API 키 보호</li>
-            <li>LLM이 30분 상담 세션 진행</li>
-            <li>상담 요약 리포트와 재방문 기록 전달</li>
+            <li>지금 궁금한 고민을 한 문장으로 정리하기</li>
+            <li>사주 근거를 함께 짚어가며 대화하기</li>
+            <li>대화 끝에 선택지와 이번 주 행동 받기</li>
+            <li>상담 요약을 다시 꺼내 보기</li>
           </ol>
         </section>
 
-        <section class="integration-roadmap" aria-label="고도화 아키텍처">
-          <article>
-            <span>Now</span>
-            <h4>로컬 계산</h4>
-            <p>만세력, 오행, 주제별 규칙 풀이, 한글 이름 보조 해석은 브라우저에서 즉시 처리합니다.</p>
-          </article>
-          <article>
-            <span>Next</span>
-            <h4>서버 연결</h4>
-            <p>무료 API, 한자 획수 DB, MCP 데이터, 결제 검증은 백엔드 함수에서만 호출합니다.</p>
-          </article>
-          <article>
-            <span>Paid</span>
-            <h4>LLM 상담</h4>
-            <p>상담 톤, 대화 이력, 사용자 고민을 LLM 세션으로 넘겨 실제 상담처럼 이어갑니다.</p>
-          </article>
-        </section>
+        <div class="card-share">
+          <button id="save-card" type="button" class="card-share__button">
+            <span>나의 사주 카드 저장하기</span>
+            <span aria-hidden="true">↓</span>
+          </button>
+          <p>네 기둥과 올해의 처방을 한 장의 카드 이미지로 저장해 공유할 수 있어요.</p>
+        </div>
 
         <div class="detail-action">
           <button

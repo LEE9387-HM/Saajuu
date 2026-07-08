@@ -2,6 +2,7 @@ import {
   calculateFourPillars,
   getEarthlyBranchElement,
   getHeavenlyStemElement,
+  getTenGod,
 } from "manseryeok";
 
 export const ELEMENTS = ["목", "화", "토", "금", "수"];
@@ -226,6 +227,121 @@ const TONE_META = {
     action: "이번 주에는 큰 결정을 내리기보다 마음이 안정되는 대화 한 번을 먼저 만들어 보세요.",
   },
 };
+
+const ELEMENT_PRESCRIPTION = {
+  목: {
+    color: "초록·청록",
+    boost: [
+      "새로 배우는 수업이나 모임처럼 '시작'의 기운이 있는 자리에 나가기",
+      "아침 산책, 책상 위 작은 화분처럼 자라나는 것을 곁에 두는 습관",
+    ],
+    excess: "벌여 놓는 일이 늘어나는 흐름 — 새 일을 더하기 전에 진행 중인 하나를 먼저 매듭지어 보세요",
+  },
+  화: {
+    color: "붉은 계열",
+    boost: [
+      "발표, 글쓰기, 대화처럼 속마음을 밖으로 표현하는 활동 늘리기",
+      "해가 있는 시간대의 가벼운 운동으로 몸의 온도를 올리기",
+    ],
+    excess: "말과 속도가 앞서는 흐름 — 중요한 결정과 답장은 하루 묵혔다가 보내 보세요",
+  },
+  토: {
+    color: "노랑·베이지",
+    boost: [
+      "같은 시간에 자고 일어나는 일정한 생활 리듬 지키기",
+      "믿을 수 있는 사람과의 느긋한 식사 자리 만들기",
+    ],
+    excess: "혼자 떠안고 버티는 흐름 — 이번 주에는 맡은 일 하나를 나누거나 정중히 거절해 보세요",
+  },
+  금: {
+    color: "흰색·은색",
+    boost: [
+      "미뤄둔 일에 마감 시간을 정해 끝내기, 서랍과 파일 정리하기",
+      "쓰지 않는 물건을 하나씩 덜어내는 습관 들이기",
+    ],
+    excess: "기준이 날카로워지는 흐름 — 결론을 말하기 전에 상대의 사정을 한 번 물어보세요",
+  },
+  수: {
+    color: "검정·남색",
+    boost: [
+      "하루 10분 기록이나 독서처럼 생각을 가라앉히는 시간 확보하기",
+      "물가 산책과 충분한 잠으로 회복 시간을 먼저 챙기기",
+    ],
+    excess: "생각이 길어져 시작이 늦어지는 흐름 — 가장 작은 한 걸음부터 실행해 보세요",
+  },
+};
+
+const YEAR_TEN_GOD_HINT = {
+  비견: "내 페이스를 지키는 힘이 살아나는 해라, 남과 비교하기보다 자기 기준을 세우는 일이 잘 풀립니다",
+  겁재: "경쟁과 지출이 함께 커지기 쉬운 해라, 돈이 얽힌 약속과 동업 조건은 문서로 남기는 편이 안전합니다",
+  식신: "꾸준한 결과물이 쌓이기 좋은 해라, 작게라도 계속 만들어 내보내는 쪽이 유리합니다",
+  상관: "새로운 표현과 변화 욕구가 커지는 해라, 일을 벌이기 전에 말로 생기는 오해부터 조심할 필요가 있습니다",
+  편재: "기회와 사람이 넓게 들어오는 해라, 대신 돈의 들고남도 커지니 현금 흐름을 기록해 두는 편이 좋습니다",
+  정재: "성실하게 관리한 만큼 돌아오는 해라, 계획된 저축과 약속 이행이 힘을 발휘합니다",
+  편관: "책임과 압박이 커질 수 있는 해라, 일정에 회복 시간을 먼저 넣어두는 편이 좋습니다",
+  정관: "역할과 신뢰가 또렷해지는 해라, 공식적인 자리나 승인이 필요한 일을 진행하기에 유리합니다",
+  편인: "낯선 공부와 직관이 살아나는 해라, 시작만 많아지지 않게 하나를 정해 깊게 파는 편이 좋습니다",
+  정인: "배움과 문서, 자격의 기운이 들어오는 해라, 미뤄둔 공부나 증명을 정리하기 좋습니다",
+};
+
+export function buildGuidance(chart, now = new Date()) {
+  const { balance, dayMeta, dayPillar } = getReadingContext(chart);
+  const yearPillar = calculateFourPillars({
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+    hour: 12,
+    minute: 0,
+    isLunar: false,
+    isLeapMonth: false,
+  }).year;
+
+  const yearLabel = `${yearPillar.heavenlyStem}${yearPillar.earthlyBranch}년`;
+  const yearStemElement = getHeavenlyStemElement(yearPillar.heavenlyStem);
+  const yearBranchElement = getEarthlyBranchElement(yearPillar.earthlyBranch);
+  const yearTenGod = getTenGod(dayPillar.stem, yearPillar.heavenlyStem);
+  const yearElementMeta = ELEMENT_META[yearStemElement];
+
+  const yearRelation =
+    yearStemElement === balance.weakest.element || yearBranchElement === balance.weakest.element
+      ? `사주에서 부족했던 ${balance.weakest.label} 기운이 채워지는 흐름이라, 미뤄왔던 일을 다시 꺼내기 좋은 때입니다.`
+      : yearStemElement === balance.strongest.element || yearBranchElement === balance.strongest.element
+        ? `원국에서 이미 강한 ${balance.strongest.label} 기운이 한층 더 강해지는 흐름이라, 잘 풀릴수록 과속을 조심해야 하는 해입니다.`
+        : `평소와 다른 결의 ${yearElementMeta.label} 기운이 더해지는 흐름이라, 익숙한 방식이 통하지 않는 순간을 변화의 신호로 읽으면 좋습니다.`;
+
+  const strongMeta = ELEMENT_PRESCRIPTION[balance.strongest.element];
+  const weakMeta = ELEMENT_PRESCRIPTION[balance.weakest.element];
+
+  const yearCaution =
+    yearStemElement === balance.strongest.element || yearBranchElement === balance.strongest.element
+      ? `올해는 강한 ${balance.strongest.label} 기운 위에 같은 기운이 겹치는 해입니다. 흐름이 좋게 느껴질수록 큰 지출과 계약은 한 템포 늦춰 보세요`
+      : `올해 들어오는 ${yearElementMeta.label} 기운이 낯설게 느껴질 수 있습니다. 평소 방식이 통하지 않는 순간에는 밀어붙이기보다 방법을 바꿔 보세요`;
+
+  return {
+    eyebrow: "올해의 흐름과 처방",
+    title: `${now.getFullYear()}년 ${yearLabel}, ${yearElementMeta.label}의 기운이 들어오는 해`,
+    copy:
+      `올해의 간지 ${yearLabel}은 ${yearElementMeta.label}의 흐름을 몰고 옵니다. ` +
+      `${yearRelation} 일간 ${dayPillar.stem} 기준으로 올해는 ${yearTenGod}의 해로 읽히는데, ${YEAR_TEN_GOD_HINT[yearTenGod]}.`,
+    embrace: [
+      weakMeta.boost[0],
+      weakMeta.boost[1],
+      `${balance.weakest.label} 기운을 돕는 ${weakMeta.color} 색 소품을 자주 쓰는 자리에 두기`,
+    ],
+    avoid: [
+      strongMeta.excess,
+      `${dayMeta.watch} 스스로 점검해 보기`,
+      yearCaution,
+    ],
+    evidence: [
+      `세운 ${yearPillar.heavenlyStem}${yearPillar.earthlyBranch}`,
+      `세운 오행 ${yearStemElement}·${yearBranchElement}`,
+      `세운 십신 ${yearTenGod}`,
+      `강한 오행 ${balance.strongest.element} ${balance.strongest.count}`,
+      `보완 오행 ${balance.weakest.element} ${balance.weakest.count}`,
+    ],
+  };
+}
 
 const HANGUL_START = 0xac00;
 const HANGUL_END = 0xd7a3;

@@ -1,5 +1,6 @@
 import "./styles.css";
 import {
+  buildGuidance,
   buildNameReading,
   buildDetailedReading,
   buildPersonalizedBriefing,
@@ -22,6 +23,27 @@ const errorMessage = document.querySelector("#form-error");
 const resultSection = document.querySelector("#result");
 const detailToggle = document.querySelector("#detail-toggle");
 const detailReading = document.querySelector("#detail-reading");
+const premiumInterestButton = document.querySelector("#premium-interest");
+const premiumInterestLabel = document.querySelector("#premium-interest-label");
+const premiumInterestNote = document.querySelector("#premium-interest-note");
+
+const PREMIUM_INTEREST_KEY = "saajuu:premium-interest";
+
+premiumInterestButton?.addEventListener("click", () => {
+  if (localStorage.getItem(PREMIUM_INTEREST_KEY) === "1") {
+    premiumInterestNote.textContent = "이미 신청하셨어요. 오픈되면 가장 먼저 알려드릴게요.";
+    return;
+  }
+  localStorage.setItem(PREMIUM_INTEREST_KEY, "1");
+  premiumInterestButton.disabled = true;
+  premiumInterestLabel.textContent = "신청 완료";
+  premiumInterestNote.textContent = "신청해 주셔서 감사해요. 상담이 열리면 가장 먼저 알려드릴게요.";
+});
+
+if (premiumInterestButton && localStorage.getItem(PREMIUM_INTEREST_KEY) === "1") {
+  premiumInterestButton.disabled = true;
+  premiumInterestLabel.textContent = "신청 완료";
+}
 
 for (let hour = 0; hour < 24; hour += 1) {
   const option = document.createElement("option");
@@ -62,6 +84,137 @@ detailToggle.addEventListener("click", () => {
     : "근거와 함께 상세 풀이 읽기";
 });
 
+const saveCardButton = document.querySelector("#save-card");
+let lastResult = null;
+
+saveCardButton?.addEventListener("click", () => {
+  if (!lastResult) return;
+  const canvas = drawSajuCard(lastResult);
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], "saajuu-card.png", { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "사주 한 장" });
+        return;
+      } catch {
+        return;
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "saajuu-card.png";
+    link.click();
+    URL.revokeObjectURL(url);
+  }, "image/png");
+});
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = String(text).split(" ");
+  let line = "";
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, y);
+      line = word;
+      y += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, y);
+  return y + lineHeight;
+}
+
+function drawSajuCard({ chart, input }) {
+  const guidance = buildGuidance(chart);
+  const reading = interpretElements(chart.elements);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const ctx = canvas.getContext("2d");
+
+  const ink = "#152a38";
+  const jade = "#4d8072";
+  const gold = "#c5964f";
+  const muted = "#718087";
+  const serif = '"Gowun Batang", "Noto Serif KR", serif';
+
+  ctx.fillStyle = "#fbf6ec";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = gold;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(28, 28, canvas.width - 56, canvas.height - 56);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = gold;
+  ctx.font = `700 30px ${serif}`;
+  ctx.fillText("四柱", canvas.width / 2, 110);
+
+  ctx.fillStyle = ink;
+  ctx.font = `700 68px ${serif}`;
+  ctx.fillText("사주 한 장", canvas.width / 2, 190);
+
+  ctx.fillStyle = muted;
+  ctx.font = `400 32px ${serif}`;
+  ctx.fillText(formatInputSummary(input), canvas.width / 2, 248);
+
+  const columnWidth = 230;
+  const startX = canvas.width / 2 - columnWidth * 1.5;
+  chart.pillars.forEach((pillar, index) => {
+    const x = startX + columnWidth * index;
+    ctx.fillStyle = muted;
+    ctx.font = `400 28px ${serif}`;
+    ctx.fillText(pillar.label, x, 340);
+    ctx.fillStyle = ink;
+    ctx.font = `700 120px ${serif}`;
+    ctx.fillText(pillar.stem, x, 480);
+    ctx.fillText(pillar.branch, x, 620);
+  });
+
+  ctx.strokeStyle = "rgba(197, 150, 79, 0.45)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(120, 690);
+  ctx.lineTo(canvas.width - 120, 690);
+  ctx.stroke();
+
+  ctx.fillStyle = ink;
+  ctx.font = `700 44px ${serif}`;
+  ctx.fillText(reading.title, canvas.width / 2, 770);
+
+  ctx.fillStyle = muted;
+  ctx.font = `400 30px ${serif}`;
+  ctx.fillText(guidance.title, canvas.width / 2, 826);
+
+  ctx.textAlign = "left";
+  const textX = 130;
+  const maxWidth = canvas.width - textX * 2;
+
+  ctx.fillStyle = jade;
+  ctx.font = `700 34px ${serif}`;
+  ctx.fillText("가까이할 것", textX, 930);
+  ctx.fillStyle = ink;
+  ctx.font = `400 32px ${serif}`;
+  let cursorY = wrapText(ctx, guidance.embrace[0], textX, 986, maxWidth, 46);
+
+  ctx.fillStyle = "#b0563f";
+  ctx.font = `700 34px ${serif}`;
+  ctx.fillText("조심할 것", textX, cursorY + 60);
+  ctx.fillStyle = ink;
+  ctx.font = `400 32px ${serif}`;
+  wrapText(ctx, guidance.avoid[0], textX, cursorY + 116, maxWidth, 46);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = muted;
+  ctx.font = `400 26px ${serif}`;
+  ctx.fillText("사주 한 장 · 브라우저에서만 계산되는 작은 만세력", canvas.width / 2, 1290);
+
+  return canvas;
+}
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   errorMessage.hidden = true;
@@ -82,6 +235,7 @@ form.addEventListener("submit", (event) => {
   try {
     const chart = calculateChart(input);
     renderResult(chart, input);
+    lastResult = { chart, input };
     resultSection.hidden = false;
     resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
@@ -152,6 +306,14 @@ function renderResult(chart, input) {
 
   document.querySelector("#reading-title").textContent = reading.title;
   document.querySelector("#reading-copy").textContent = reading.copy;
+
+  const guidance = buildGuidance(chart);
+  document.querySelector("#guidance-eyebrow").textContent = guidance.eyebrow;
+  document.querySelector("#guidance-title").textContent = guidance.title;
+  document.querySelector("#guidance-copy").textContent = guidance.copy;
+  document.querySelector("#guidance-embrace").innerHTML = renderList(guidance.embrace);
+  document.querySelector("#guidance-avoid").innerHTML = renderList(guidance.avoid);
+  document.querySelector("#guidance-evidence").innerHTML = renderEvidence("처방 근거", guidance.evidence);
 
   const topicReading = buildTopicReading(chart, input.topic);
   document.querySelector("#topic-eyebrow").textContent = topicReading.eyebrow;
