@@ -1,6 +1,6 @@
 # Saajuu 과제 현황 README
 
-마지막 정리일: 2026-07-08 KST (v0.3.0.0 작업 반영)  
+마지막 정리일: 2026-07-10 KST (v0.4.0.0 작업 반영)  
 현재 목적: 사주 기반 정적 PoC를 수익화 가능한 개인 맞춤 상담 서비스로 고도화
 
 ## 바로 볼 것
@@ -119,6 +119,18 @@ flowchart TD
 - `docs/monetization-plan.md`: 수익화 마스터 플랜과 단계별 고도화 계획
 
 ## 최근 구현 내용
+
+2026-07-10 v0.4.0.0 작업 요약 (CEO→엔지니어링→디자인 3중 리뷰 후 구현):
+
+- 오늘의 운세 엔진 `src/daily.js`: 일진 십신 10종 × 지지 관계 5분류(12×12 우선순위 테이블: 충>형>육합>반합, 자형 포함) = 60갑자 주기 개인화. 행운 오행(강한 오행 겹침→설기, 그 외→부족 오행), 전통 수리 숫자(목3·8 화2·7 토5·10 금4·9 수1·6), 오행 색
+- 프로필 저장 `src/storage.js`: localStorage v1 스키마, 손상/프라이빗 모드 격리, 재방문 시 오늘의 운세를 폼보다 위에 즉시 렌더(복원 전체 try/catch — 실패 시 프로필 삭제 폴백)
+- 계측 `src/track.js`: GOATCOUNTER_CODE 상수 미설정 시 전체 no-op. 이벤트: premium-interest(영구 비활성화 제거), card-save, daily-view. **배포 전 goatcounter.com 계정 생성 후 코드 입력 필요**
+- 카피 명확화: TOPIC_META 6종에 verdict(한 줄 결론) 추가, 부정문 시작 copy 재작성
+- 일일 운세 카드 UI: 승인 목업 B(포스터형) 기준 — verdict 헤드라인, 3분할 통계줄(색은 스와치+이름 병기), 조심할 것 인용 블록, 내일 티저, aria-live
+- 자정 롤오버: visibilitychange+focus에서 로컬 날짜 키 비교 후 재렌더 (UTC toISOString 금지)
+- DESIGN.md 신설, TODOS.md 신설(PWA·띠별 SEO·다중 프로필 보류 맥락)
+- 테스트 36개 통과(지지 관계 144쌍 대칭 전수, 우선순위 케이스, 행운 오행 양 분기, storage 5종 포함), 빌드 성공
+- 기획 문서: `~/.gstack/projects/LEE9387-HM-Saajuu/ceo-plans/2026-07-08-daily-fortune-hanja.md` (v0.4.1 딥링크, v0.5 한자 성명학 게이트 포함)
 
 2026-07-08 v0.3.0.0 작업 요약:
 

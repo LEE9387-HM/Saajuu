@@ -126,6 +126,7 @@ const TEN_GOD_META = {
 const TOPIC_META = {
   relationship: {
     eyebrow: "궁합·연애",
+    verdict: "밀당을 읽으려 하지 말고, 내가 반복하는 패턴을 먼저 잡으세요",
     title: ({ balance }) => `끌림보다 ${balance.strongest.label} 기운의 표현 방식을 살펴보세요`,
     copy: ({ dayMeta, dominantTenGod }) =>
       `관계에서는 ${dayMeta.core.replace("살펴볼 수 있습니다.", "드러나기 쉽습니다.")} ` +
@@ -140,9 +141,10 @@ const TOPIC_META = {
   },
   marriage: {
     eyebrow: "결혼운",
+    verdict: "설렘 말고 생활 리듬을 맞춰보면 답이 보입니다",
     title: ({ dayPillar }) => `${dayPillar.stem}${dayPillar.branch} 일주는 생활의 리듬을 먼저 봐야 해요`,
     copy: ({ balance }) =>
-      `결혼운은 결혼 여부를 맞히는 문제가 아니라 오래 같이 살 때 균형이 맞는지를 보는 질문입니다. ` +
+      `결혼운의 핵심은 오래 같이 살 때 균형이 맞는지입니다. ` +
       `${balance.strongest.label} 기운이 강하게 쓰일수록 장점은 분명해지지만, 생활 습관과 책임 분담에서는 같은 방식이 부담으로 읽힐 수 있습니다.`,
     point: "감정의 확신보다 돈, 가족, 생활 리듬을 대화로 확인하기",
     checklist: ["돈과 생활비 기준", "양가와 거리감", "집안일과 책임 분담"],
@@ -154,9 +156,10 @@ const TOPIC_META = {
   },
   business: {
     eyebrow: "사업운",
+    verdict: "돈은 아이디어가 아니라 30일 검증에서 나옵니다",
     title: ({ dominantTenGod }) => `${dominantTenGod} 흐름으로 돈을 버는 방식을 점검해 보세요`,
     copy: ({ dayMeta, balance }) =>
-      `사업운은 성공을 보장하는 답이 아니라 내가 어떤 방식으로 기회를 만들고 리스크를 키우는지 보는 지도에 가깝습니다. ` +
+      `사업운은 내가 어떤 방식으로 기회를 만들고 어디서 리스크를 키우는지 보여주는 지도입니다. ` +
       `${dayMeta.strength}은 강점으로 쓰이지만, ${balance.weakest.label} 기운이 약하게 보이는 부분은 운영 습관이나 파트너로 보완해야 합니다.`,
     point: "아이디어보다 고객, 현금흐름, 같이 일할 사람의 역할을 먼저 검증하기",
     checklist: ["30일 안에 팔 수 있는 최소 상품", "혼자 할 일과 맡길 일", "동업자와 돈을 나누는 기준"],
@@ -168,6 +171,7 @@ const TOPIC_META = {
   },
   career: {
     eyebrow: "직업·이직운",
+    verdict: "직함보다 일하는 방식이 맞아야 오래갑니다",
     title: ({ balance }) => `${balance.strongest.label} 기운이 잘 쓰이는 역할을 찾아보세요`,
     copy: ({ dayMeta }) =>
       `직업운은 직업 이름 하나를 고르는 것보다, 어떤 환경에서 내 힘이 오래 유지되는지를 보는 쪽이 실용적입니다. ` +
@@ -182,10 +186,11 @@ const TOPIC_META = {
   },
   family: {
     eyebrow: "가족·자녀운",
+    verdict: "예측하려 하지 말고 가족 안의 내 역할부터 정리하세요",
     title: ({ dayMeta }) => `가족 안에서는 ${dayMeta.strength}이 역할로 나타날 수 있어요`,
     copy: ({ balance }) =>
-      `가족운과 자녀운은 임신이나 출산을 예측하는 풀이가 아닙니다. ` +
-      `가까운 사람을 돌볼 때 어떤 방식으로 책임을 느끼고, ${balance.weakest.label} 기운처럼 부족한 부분을 어떻게 생활로 보완할지 살펴보는 자기 이해에 가깝습니다.`,
+      `가족운은 가까운 사람을 돌볼 때 내가 어떤 방식으로 책임을 느끼는지 보는 자기 이해입니다. ` +
+      `${balance.weakest.label} 기운처럼 부족한 부분을 생활에서 어떻게 보완할지가 핵심이며, 임신·출산 같은 결과 예측은 다루지 않습니다.`,
     point: "결과를 맞히기보다 가족 안에서 반복되는 소통 방식과 책임감을 보기",
     checklist: ["돌봄을 혼자 떠안는 순간", "가족에게 기대하는 말", "휴식과 경계선"],
     questions: [
@@ -196,9 +201,10 @@ const TOPIC_META = {
   },
   yearly: {
     eyebrow: "신년·월간운",
+    verdict: "올해는 크게 걸지 말고 30일 단위로 확인하세요",
     title: ({ balance }) => `${balance.strongest.label} 기운은 살리고 ${balance.weakest.label} 기운은 보완하는 흐름`,
     copy: ({ dominantTenGod }) =>
-      `시기운은 좋은 달과 나쁜 달을 단정하기보다, 이번 흐름에서 어떤 태도를 쓰면 덜 흔들리는지 정리하는 도구로 보는 편이 좋습니다. ` +
+      `시기운은 이번 흐름에서 어떤 태도를 쓰면 덜 흔들리는지 정리하는 도구입니다. ` +
       `${dominantTenGod} 흐름이 익숙하게 나타나므로, 올해의 계획도 이 방식이 과해지는 순간을 미리 체크하는 데서 시작합니다.`,
     point: "올해의 목표를 크게 세우기보다 30일 단위로 확인할 행동을 정하기",
     checklist: ["이번 달에 줄일 것", "이번 달에 반복할 것", "다시 미루지 않을 결정"],
@@ -228,7 +234,7 @@ const TONE_META = {
   },
 };
 
-const ELEMENT_PRESCRIPTION = {
+export const ELEMENT_PRESCRIPTION = {
   목: {
     color: "초록·청록",
     boost: [
@@ -614,7 +620,7 @@ export function interpretElements(counts) {
   };
 }
 
-function getReadingContext(chart) {
+export function getReadingContext(chart) {
   const dayPillar = chart.pillars.find((pillar) => pillar.key === "day");
   const dayMeta = STEM_META[dayPillar.stem];
   const balance = interpretElements(chart.elements);
@@ -823,6 +829,7 @@ export function buildTopicReading(chart, topic = "relationship") {
 
   return {
     eyebrow: meta.eyebrow,
+    verdict: meta.verdict,
     title: meta.title(context),
     copy: meta.copy(context),
     point: meta.point,

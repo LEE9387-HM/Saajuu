@@ -12,6 +12,11 @@ import {
   TOPIC_OPTIONS,
   TONE_OPTIONS,
 } from "./fortune.js";
+import { buildDailyFortune, localDateKey } from "./daily.js";
+import { clearProfile, loadProfile, saveProfile } from "./storage.js";
+import { initAnalytics, track } from "./track.js";
+
+const SWATCH_COLORS = { 목: "#3f7d5c", 화: "#c05a44", 토: "#c5964f", 금: "#9aa3ab", 수: "#22333f" };
 
 const form = document.querySelector("#birth-form");
 const calendarType = document.querySelector("#calendar-type");
@@ -27,23 +32,12 @@ const premiumInterestButton = document.querySelector("#premium-interest");
 const premiumInterestLabel = document.querySelector("#premium-interest-label");
 const premiumInterestNote = document.querySelector("#premium-interest-note");
 
-const PREMIUM_INTEREST_KEY = "saajuu:premium-interest";
-
 premiumInterestButton?.addEventListener("click", () => {
-  if (localStorage.getItem(PREMIUM_INTEREST_KEY) === "1") {
-    premiumInterestNote.textContent = "이미 신청하셨어요. 오픈되면 가장 먼저 알려드릴게요.";
-    return;
-  }
-  localStorage.setItem(PREMIUM_INTEREST_KEY, "1");
-  premiumInterestButton.disabled = true;
+  // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
+  track("premium-interest");
   premiumInterestLabel.textContent = "신청 완료";
   premiumInterestNote.textContent = "신청해 주셔서 감사해요. 상담이 열리면 가장 먼저 알려드릴게요.";
 });
-
-if (premiumInterestButton && localStorage.getItem(PREMIUM_INTEREST_KEY) === "1") {
-  premiumInterestButton.disabled = true;
-  premiumInterestLabel.textContent = "신청 완료";
-}
 
 for (let hour = 0; hour < 24; hour += 1) {
   const option = document.createElement("option");
@@ -84,11 +78,91 @@ detailToggle.addEventListener("click", () => {
     : "근거와 함께 상세 풀이 읽기";
 });
 
+const dailySection = document.querySelector("#daily");
 const saveCardButton = document.querySelector("#save-card");
 let lastResult = null;
 
+function renderDaily(chart, now = new Date()) {
+  const daily = buildDailyFortune(chart, now);
+  document.querySelector("#daily-date").textContent = `${daily.dateLabel} · ${daily.ganji}일`;
+  document.querySelector("#daily-verdict").textContent = daily.verdict;
+  document.querySelector("#daily-sub").textContent = daily.sub;
+  document.querySelector("#daily-number").textContent = String(daily.luckyNumber);
+  document.querySelector("#daily-number-sub").textContent = `보조 ${daily.luckySecondary}`;
+  document.querySelector("#daily-color").textContent = daily.luckyColor;
+  document.querySelector("#daily-swatch").style.background = SWATCH_COLORS[daily.luckyElement];
+  document.querySelector("#daily-ganji").textContent = daily.ganji;
+  document.querySelector("#daily-caution").textContent = daily.caution;
+  document.querySelector("#daily-tomorrow").textContent = daily.tomorrow.verdict;
+  document.querySelector("#daily-evidence").innerHTML = renderEvidence("오늘의 근거", daily.evidence);
+  dailySection.hidden = false;
+  track("daily-view");
+  return daily;
+}
+
+function refreshDailyIfStale() {
+  if (!lastResult?.daily || dailySection.hidden) return;
+  if (lastResult.daily.dateKey !== localDateKey(new Date())) {
+    lastResult.daily = renderDaily(lastResult.chart);
+  }
+}
+
+// 밤새 열어둔 탭 대응 — visibilitychange만으로는 안 잡히는 브라우저가 있어 focus를 병행한다.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshDailyIfStale();
+});
+window.addEventListener("focus", refreshDailyIfStale);
+
+document.querySelector("#clear-profile")?.addEventListener("click", () => {
+  clearProfile();
+  dailySection.hidden = true;
+  resultSection.hidden = true;
+  lastResult = null;
+  errorMessage.textContent = "저장된 정보를 삭제했어요. 다시 보려면 아래에서 새로 입력해 주세요.";
+  errorMessage.hidden = false;
+});
+
+document.querySelector("#edit-profile")?.addEventListener("click", () => {
+  document.querySelector(".calculator").scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelector("#birth-date").focus();
+});
+
+function applyProfileToForm(profile) {
+  calendarType.value = profile.calendarType;
+  calendarType.dispatchEvent(new Event("change"));
+  document.querySelector("#birth-date").value = profile.birthDate;
+  hourSelect.value = String(profile.hour);
+  document.querySelector("#birth-minute").value = String(profile.minute);
+  document.querySelector("#is-leap-month").checked = Boolean(profile.isLeapMonth);
+  if (profile.topic) topicSelect.value = profile.topic;
+  if (profile.tone) toneSelect.value = profile.tone;
+  document.querySelector("#person-name").value = profile.name ?? "";
+  document.querySelector("#current-concern").value = profile.concern ?? "";
+}
+
+// 재방문: 저장 프로필이 있으면 오늘의 운세를 폼보다 먼저 보여준다.
+// 복원~렌더 전체를 격리해, 손상 데이터로 페이지가 죽지 않게 한다.
+(function restoreProfile() {
+  const profile = loadProfile();
+  if (!profile) return;
+  try {
+    const chart = calculateChart(profile);
+    applyProfileToForm(profile);
+    renderResult(chart, profile);
+    const daily = renderDaily(chart);
+    lastResult = { chart, input: profile, daily };
+    resultSection.hidden = false;
+  } catch {
+    clearProfile();
+    dailySection.hidden = true;
+  }
+})();
+
+initAnalytics();
+
 saveCardButton?.addEventListener("click", () => {
   if (!lastResult) return;
+  track("card-save");
   const canvas = drawSajuCard(lastResult);
   canvas.toBlob(async (blob) => {
     if (!blob) return;
@@ -127,8 +201,9 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   return y + lineHeight;
 }
 
-function drawSajuCard({ chart, input }) {
-  const guidance = buildGuidance(chart);
+function drawSajuCard({ chart, input, guidance: storedGuidance }) {
+  // 화면과 카드의 내용이 어긋나지 않도록 렌더 시점 값을 재사용한다
+  const guidance = storedGuidance ?? buildGuidance(chart);
   const reading = interpretElements(chart.elements);
 
   const canvas = document.createElement("canvas");
@@ -234,8 +309,10 @@ form.addEventListener("submit", (event) => {
 
   try {
     const chart = calculateChart(input);
-    renderResult(chart, input);
-    lastResult = { chart, input };
+    const guidance = renderResult(chart, input);
+    const daily = renderDaily(chart);
+    saveProfile(input);
+    lastResult = { chart, input, guidance, daily };
     resultSection.hidden = false;
     resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
@@ -317,6 +394,7 @@ function renderResult(chart, input) {
 
   const topicReading = buildTopicReading(chart, input.topic);
   document.querySelector("#topic-eyebrow").textContent = topicReading.eyebrow;
+  document.querySelector("#topic-verdict").textContent = topicReading.verdict;
   document.querySelector("#topic-title").textContent = topicReading.title;
   document.querySelector("#topic-copy").textContent = topicReading.copy;
   document.querySelector("#topic-point").textContent = topicReading.point;
@@ -398,4 +476,6 @@ function renderResult(chart, input) {
       `,
     )
     .join("");
+
+  return guidance;
 }
