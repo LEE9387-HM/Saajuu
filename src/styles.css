@@ -751,6 +751,113 @@ button:hover {
   font-size: 0.9rem;
 }
 
+.hanja-reading {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--line);
+}
+
+.hanja-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: auto;
+  padding: 12px 20px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: #fffdf8;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.hanja-hint {
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.hanja-selects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.hanja-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hanja-select > span {
+  color: #58686f;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.hanja-select em {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 400;
+}
+
+.hanja-grids {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.hanja-grid {
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+}
+
+.hanja-grid > span {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.hanja-grid strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.hanja-grid--good strong {
+  color: var(--jade);
+}
+
+.hanja-grid--bad strong {
+  color: #b0563f;
+}
+
+.hanja-grid--even strong {
+  color: var(--gold);
+}
+
+.hanja-grid p {
+  margin: 0 0 4px;
+  color: #53646b;
+  font-size: 0.8rem;
+}
+
+.hanja-grid small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.hanja-note {
+  color: var(--muted);
+  font-size: 0.74rem;
+  margin-bottom: 12px;
+}
+
 .card-share {
   display: flex;
   flex-direction: column;

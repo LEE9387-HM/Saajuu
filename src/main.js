@@ -1,5 +1,6 @@
 import "./styles.css";
 import {
+  analyzeName,
   buildGuidance,
   buildNameReading,
   buildDetailedReading,
@@ -239,6 +240,133 @@ shareLinkButton?.addEventListener("click", async () => {
   } catch {
     shareNote.textContent = `이 링크를 복사해 공유하세요: ${url}`;
   }
+});
+
+// ── 한자 성명학 (사격) — 한자 데이터는 버튼을 눌렀을 때만 lazy-load한다 ──
+const hanjaOpenButton = document.querySelector("#hanja-open");
+const hanjaPanel = document.querySelector("#hanja-panel");
+const hanjaSelects = document.querySelector("#hanja-selects");
+const hanjaResult = document.querySelector("#hanja-result");
+const hanjaDoubleSurnameField = document.querySelector("#hanja-double-surname-field");
+const hanjaDoubleSurname = document.querySelector("#hanja-double-surname");
+let hanjaData = null;
+
+async function loadHanjaData() {
+  if (hanjaData) return hanjaData;
+  const module = await import("./data/name-hanja.json");
+  hanjaData = module.default;
+  return hanjaData;
+}
+
+function currentCleanName() {
+  return analyzeName(lastResult?.input?.name)?.cleanName ?? "";
+}
+
+function renderHanjaSelects(cleanName) {
+  hanjaSelects.innerHTML = "";
+  hanjaResult.hidden = true;
+  const surnameLength = hanjaDoubleSurname.checked && cleanName.length >= 3 ? 2 : 1;
+
+  [...cleanName].forEach((syllable, index) => {
+    const candidates = hanjaData[syllable] ?? [];
+    const wrapper = document.createElement("label");
+    wrapper.className = "hanja-select";
+    const role = index < surnameLength ? "성" : "이름";
+    wrapper.innerHTML = `<span>${escapeHtml(syllable)} <em>(${role})</em></span>`;
+
+    const select = document.createElement("select");
+    select.dataset.isSurname = String(index < surnameLength);
+    select.dataset.reading = syllable;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = candidates.length
+      ? `한자 선택 (${candidates.length}자)`
+      : "인명용 한자 없음";
+    select.append(placeholder);
+    candidates.forEach((candidate, candidateIndex) => {
+      const option = document.createElement("option");
+      option.value = String(candidateIndex);
+      option.textContent = `${candidate.c} ${candidate.m || syllable} · ${candidate.s}획`;
+      select.append(option);
+    });
+    select.disabled = candidates.length === 0;
+    select.addEventListener("change", renderHanjaResultIfComplete);
+    wrapper.append(select);
+    hanjaSelects.append(wrapper);
+  });
+}
+
+async function renderHanjaResultIfComplete() {
+  const selects = [...hanjaSelects.querySelectorAll("select")];
+  if (!selects.length || selects.some((select) => !select.disabled && select.value === "")) return;
+
+  const { buildHanjaNameReading } = await import("./name-hanja.js");
+  const selection = selects
+    .filter((select) => !select.disabled)
+    .map((select) => {
+      const candidate = hanjaData[select.dataset.reading][Number(select.value)];
+      return {
+        char: candidate.c,
+        strokes: candidate.s,
+        reading: select.dataset.reading,
+        isSurname: select.dataset.isSurname === "true",
+      };
+    });
+
+  const reading = buildHanjaNameReading(selection);
+  if (!reading) return;
+
+  document.querySelector("#hanja-verdict").textContent =
+    `${reading.hanjaName} — ${reading.verdict}`;
+  document.querySelector("#hanja-grids").innerHTML = reading.grids
+    .map(
+      (grid) => `
+        <div class="hanja-grid hanja-grid--${grid.grade === "길" ? "good" : grid.grade === "평" ? "even" : "bad"}">
+          <span>${escapeHtml(grid.label)}</span>
+          <strong>${grid.number}수 · ${escapeHtml(grid.grade)}</strong>
+          <p>${escapeHtml(grid.keyword)}</p>
+          <small>${escapeHtml(grid.meaning)}</small>
+        </div>
+      `,
+    )
+    .join("");
+  document.querySelector("#hanja-note").textContent =
+    (reading.isSingleGiven ? "외자 이름은 이격이 형격과 같게 계산됩니다. " : "") +
+    "81수리 길흉 분류는 유파에 따라 차이가 있어 참고용으로 봐 주세요.";
+  document.querySelector("#hanja-evidence").innerHTML = renderEvidence(
+    "원획 근거",
+    reading.evidence,
+  );
+  hanjaResult.hidden = false;
+  track("hanja-reading");
+}
+
+hanjaOpenButton?.addEventListener("click", async () => {
+  const cleanName = currentCleanName();
+  if (!cleanName || cleanName.length < 2) {
+    hanjaPanel.hidden = false;
+    hanjaSelects.innerHTML = "<p class='hanja-hint'>성과 이름을 포함한 한글 이름을 먼저 입력해 주세요.</p>";
+    return;
+  }
+  track("hanja-open");
+  hanjaOpenButton.disabled = true;
+  try {
+    await loadHanjaData();
+    hanjaDoubleSurnameField.hidden = cleanName.length < 3;
+    hanjaPanel.hidden = false;
+    renderHanjaSelects(cleanName);
+  } catch {
+    hanjaPanel.hidden = false;
+    hanjaSelects.innerHTML =
+      "<p class='hanja-hint'>한자 사전을 불러오지 못했어요. 네트워크 확인 후 다시 시도해 주세요.</p>";
+  } finally {
+    hanjaOpenButton.disabled = false;
+  }
+});
+
+hanjaDoubleSurname?.addEventListener("change", () => {
+  const cleanName = currentCleanName();
+  if (cleanName && hanjaData) renderHanjaSelects(cleanName);
 });
 
 bootstrap(window.location.hash);
@@ -561,6 +689,14 @@ function renderResult(chart, input) {
       `,
     )
     .join("");
+
+  // 이름이 바뀌었을 수 있으니 한자 정밀 풀이 패널은 접는다
+  const hanjaPanelEl = document.querySelector("#hanja-panel");
+  if (hanjaPanelEl) {
+    hanjaPanelEl.hidden = true;
+    document.querySelector("#hanja-result").hidden = true;
+    document.querySelector("#hanja-selects").innerHTML = "";
+  }
 
   return guidance;
 }

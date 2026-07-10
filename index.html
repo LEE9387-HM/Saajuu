@@ -316,6 +316,30 @@
               <ul id="name-checklist"></ul>
             </div>
           </div>
+
+          <div class="hanja-reading">
+            <button type="button" id="hanja-open" class="hanja-open">
+              <span>한자 이름으로 정밀 사격(四格) 풀이</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <div id="hanja-panel" hidden>
+              <p class="hanja-hint">
+                각 글자의 한자를 고르면 대법원 인명용 한자의 원획(강희자전 기준)으로
+                원형이정 사격을 계산해요.
+              </p>
+              <label id="hanja-double-surname-field" class="check-field" hidden>
+                <input id="hanja-double-surname" type="checkbox" />
+                <span>복성(두 글자 성)이에요</span>
+              </label>
+              <div id="hanja-selects" class="hanja-selects"></div>
+              <div id="hanja-result" hidden>
+                <p id="hanja-verdict" class="verdict"></p>
+                <div id="hanja-grids" class="hanja-grids"></div>
+                <p id="hanja-note" class="hanja-note"></p>
+                <div id="hanja-evidence" class="evidence"></div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="consultation-preview" aria-labelledby="consultation-title">
