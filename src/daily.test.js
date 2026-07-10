@@ -73,6 +73,12 @@ describe("buildDailyFortune", () => {
     expect(daily.caution.length).toBeGreaterThan(5);
     expect(daily.dateKey).toBe("2026-07-09");
     expect(daily.evidence).toContain("일진 갑신");
+    expect(daily.totalScore).toBeGreaterThanOrEqual(35);
+    expect(daily.totalScore).toBeLessThanOrEqual(96);
+    expect(daily.areaScores.map((area) => area.label)).toEqual(["일", "관계", "금전", "생활"]);
+    expect(daily.timeSlots.map((slot) => slot.label)).toEqual(["아침", "점심", "오후", "저녁", "밤"]);
+    expect(daily.action).toContain("말");
+    expect(daily.consultQuestion.length).toBeGreaterThan(10);
   });
 
   it("uses the weakest element as lucky element when today differs from the strongest", () => {
@@ -82,6 +88,9 @@ describe("buildDailyFortune", () => {
     expect(daily.luckyNumber).toBe(2);
     expect(daily.luckySecondary).toBe(7);
     expect(daily.luckyColor).toContain("붉은");
+    expect(daily.luckyDirection).toBe("남쪽");
+    expect(daily.luckyFood).toContain("따뜻한");
+    expect(daily.luckyItem).toBeTruthy();
   });
 
   it("vents the strongest element on days that double it", () => {

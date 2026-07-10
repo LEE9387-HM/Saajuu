@@ -52,6 +52,10 @@
           <p id="daily-date" class="daily__date"></p>
           <h3 id="daily-verdict" class="daily__verdict"></h3>
           <p id="daily-sub" class="daily__sub"></p>
+          <div class="daily-score">
+            <span>오늘의 흐름</span>
+            <strong><em id="daily-total-score"></em>점</strong>
+          </div>
           <div class="daily__stats">
             <div class="daily__stat">
               <span>행운 숫자</span>
@@ -70,7 +74,28 @@
               <strong id="daily-ganji"></strong>
             </div>
           </div>
+          <div id="daily-area-scores" class="daily-bars" aria-label="분야별 운세 점수"></div>
+          <div id="daily-time-slots" class="daily-timeline" aria-label="시간대별 흐름"></div>
+          <div class="daily-luck">
+            <div>
+              <span>방향</span>
+              <strong id="daily-direction"></strong>
+            </div>
+            <div>
+              <span>음식</span>
+              <strong id="daily-food"></strong>
+            </div>
+            <div>
+              <span>아이템</span>
+              <strong id="daily-item"></strong>
+            </div>
+          </div>
           <p class="daily__caution"><b>조심할 것</b> <span id="daily-caution"></span></p>
+          <p class="daily__action"><b>오늘의 행동</b> <span id="daily-action"></span></p>
+          <div class="daily-consult">
+            <span>상담으로 이어질 질문</span>
+            <strong id="daily-consult-question"></strong>
+          </div>
           <p class="daily__tomorrow">
             <span>내일</span>
             <em id="daily-tomorrow"></em> — 내일 다시 확인해 보세요

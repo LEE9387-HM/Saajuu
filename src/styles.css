@@ -728,6 +728,36 @@ button:hover {
   margin-bottom: 16px;
 }
 
+.daily-score {
+  display: grid;
+  place-items: center;
+  width: 124px;
+  height: 124px;
+  margin: 0 auto 20px;
+  border: 1px solid rgb(197 150 79 / 48%);
+  border-radius: 50%;
+  background: #fffaf0;
+}
+
+.daily-score span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.daily-score strong {
+  color: var(--ink);
+  font-family: "Gowun Batang", serif;
+  font-size: 1.25rem;
+}
+
+.daily-score em {
+  color: var(--jade);
+  font-size: 2.2rem;
+  font-style: normal;
+}
+
 .daily__stat {
   border-right: 1px solid var(--line);
   padding: 0 6px;
@@ -775,7 +805,99 @@ button:hover {
   border: 1px solid var(--line);
 }
 
-.daily__caution {
+.daily-bars {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.daily-bar {
+  display: grid;
+  grid-template-columns: 42px 1fr 32px;
+  align-items: center;
+  gap: 10px;
+  color: #53646b;
+  font-size: 0.78rem;
+}
+
+.daily-bar > span {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.daily-bar strong {
+  color: var(--jade);
+  font-size: 0.78rem;
+}
+
+.daily-bar__track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ebe5d9;
+}
+
+.daily-bar__track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--jade);
+}
+
+.daily-timeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.daily-slot {
+  min-height: 58px;
+  padding: 9px 4px;
+  border: 1px solid rgb(221 214 199 / 82%);
+  background: #fbf8f0;
+}
+
+.daily-slot span,
+.daily-luck span,
+.daily-consult span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.daily-slot strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.daily-luck {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.daily-luck div {
+  min-height: 74px;
+  padding: 12px 8px;
+  border: 1px solid rgb(197 150 79 / 36%);
+  background: #fffaf0;
+}
+
+.daily-luck strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.daily__caution,
+.daily__action {
   font-size: 0.84rem;
   line-height: 1.7;
   color: #53646b;
@@ -786,11 +908,36 @@ button:hover {
   margin-bottom: 16px;
 }
 
-.daily__caution b {
+.daily__action {
+  border-left-color: var(--jade);
+  background: #eef3ed;
+}
+
+.daily__caution b,
+.daily__action b {
   color: #b0563f;
   font-size: 0.72rem;
   letter-spacing: 0.2em;
   margin-right: 6px;
+}
+
+.daily__action b {
+  color: var(--jade);
+}
+
+.daily-consult {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid rgb(77 128 114 / 34%);
+  background: #fffdf8;
+  text-align: left;
+}
+
+.daily-consult strong {
+  display: block;
+  color: var(--ink);
+  font-family: "Gowun Batang", serif;
+  line-height: 1.7;
 }
 
 .daily__tomorrow {

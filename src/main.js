@@ -91,12 +91,41 @@ function renderDaily(chart, now = new Date()) {
   document.querySelector("#daily-date").textContent = `${daily.dateLabel} · ${daily.ganji}일`;
   document.querySelector("#daily-verdict").textContent = daily.verdict;
   document.querySelector("#daily-sub").textContent = daily.sub;
+  document.querySelector("#daily-total-score").textContent = String(daily.totalScore);
   document.querySelector("#daily-number").textContent = String(daily.luckyNumber);
   document.querySelector("#daily-number-sub").textContent = `보조 ${daily.luckySecondary}`;
   document.querySelector("#daily-color").textContent = daily.luckyColor;
   document.querySelector("#daily-swatch").style.background = SWATCH_COLORS[daily.luckyElement];
   document.querySelector("#daily-ganji").textContent = daily.ganji;
+  document.querySelector("#daily-area-scores").innerHTML = daily.areaScores
+    .map(
+      (area) => `
+        <div class="daily-bar">
+          <span>${escapeHtml(area.label)}</span>
+          <div class="daily-bar__track" aria-label="${escapeHtml(area.label)} ${area.score}점">
+            <i style="width: ${area.score}%"></i>
+          </div>
+          <strong>${area.score}</strong>
+        </div>
+      `,
+    )
+    .join("");
+  document.querySelector("#daily-time-slots").innerHTML = daily.timeSlots
+    .map(
+      (slot) => `
+        <div class="daily-slot">
+          <span>${escapeHtml(slot.label)}</span>
+          <strong>${slot.score}</strong>
+        </div>
+      `,
+    )
+    .join("");
+  document.querySelector("#daily-direction").textContent = daily.luckyDirection;
+  document.querySelector("#daily-food").textContent = daily.luckyFood;
+  document.querySelector("#daily-item").textContent = daily.luckyItem;
   document.querySelector("#daily-caution").textContent = daily.caution;
+  document.querySelector("#daily-action").textContent = daily.action;
+  document.querySelector("#daily-consult-question").textContent = daily.consultQuestion;
   document.querySelector("#daily-tomorrow").textContent = daily.tomorrow.verdict;
   document.querySelector("#daily-evidence").innerHTML = renderEvidence("오늘의 근거", daily.evidence);
   dailySection.hidden = false;
