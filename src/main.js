@@ -1,6 +1,7 @@
 import "./styles.css";
 import {
   analyzeName,
+  buildCompatibilityReading,
   buildGuidance,
   buildNameReading,
   buildDetailedReading,
@@ -34,6 +35,13 @@ const premiumInterestButton = document.querySelector("#premium-interest");
 const premiumInterestLabel = document.querySelector("#premium-interest-label");
 const premiumInterestNote = document.querySelector("#premium-interest-note");
 const navLinks = [...document.querySelectorAll(".app-nav__link")];
+const compatibilityForm = document.querySelector("#compatibility-form");
+const partnerCalendar = document.querySelector("#partner-calendar");
+const partnerHourSelect = document.querySelector("#partner-hour");
+const partnerLeapField = document.querySelector("#partner-leap-field");
+const partnerLeapMonth = document.querySelector("#partner-leap-month");
+const compatibilityError = document.querySelector("#compatibility-error");
+const compatibilityResult = document.querySelector("#compatibility-result");
 
 premiumInterestButton?.addEventListener("click", () => {
   // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
@@ -48,6 +56,7 @@ for (let hour = 0; hour < 24; hour += 1) {
   option.textContent = `${String(hour).padStart(2, "0")}시`;
   if (hour === 12) option.selected = true;
   hourSelect.append(option);
+  partnerHourSelect?.append(option.cloneNode(true));
 }
 
 for (const topic of TOPIC_OPTIONS) {
@@ -68,6 +77,13 @@ calendarType.addEventListener("change", () => {
   leapMonthField.hidden = calendarType.value !== "lunar";
   if (leapMonthField.hidden) {
     document.querySelector("#is-leap-month").checked = false;
+  }
+});
+
+partnerCalendar?.addEventListener("change", () => {
+  partnerLeapField.hidden = partnerCalendar.value !== "lunar";
+  if (partnerLeapField.hidden && partnerLeapMonth) {
+    partnerLeapMonth.checked = false;
   }
 });
 
@@ -469,6 +485,52 @@ saveCardButton?.addEventListener("click", () => {
   }, "image/png");
 });
 
+compatibilityForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (compatibilityError) compatibilityError.hidden = true;
+
+  if (!lastResult?.chart) {
+    if (compatibilityError) {
+      compatibilityError.textContent = "먼저 내 사주를 입력한 뒤 상대와의 흐름을 볼 수 있어요.";
+      compatibilityError.hidden = false;
+    }
+    document.querySelector("#saju")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  const data = new FormData(compatibilityForm);
+  const partnerInput = {
+    calendarType: data.get("partnerCalendar"),
+    birthDate: data.get("partnerDate"),
+    hour: Number(data.get("partnerHour")),
+    minute: Number(data.get("partnerMinute")),
+    isLeapMonth: data.get("partnerLeapMonth") === "on",
+    topic: "relationship",
+    tone: "balanced",
+    name: "",
+    concern: "",
+  };
+
+  try {
+    const partnerChart = calculateChart(partnerInput);
+    const reading = buildCompatibilityReading(
+      lastResult.chart,
+      partnerChart,
+      data.get("partnerRelation"),
+    );
+    renderCompatibility(reading);
+    track("compatibility-view");
+  } catch (error) {
+    if (compatibilityError) {
+      compatibilityError.textContent =
+        error instanceof Error
+          ? error.message
+          : "상대 정보를 계산하는 중 문제가 생겼어요. 입력값을 다시 확인해 주세요.";
+      compatibilityError.hidden = false;
+    }
+  }
+});
+
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   const words = String(text).split(" ");
   let line = "";
@@ -627,6 +689,22 @@ function renderEvidence(label, items) {
     <span>${escapeHtml(label)}</span>
     ${items.map((item) => `<em>${escapeHtml(item)}</em>`).join("")}
   `;
+}
+
+function renderCompatibility(reading) {
+  document.querySelector("#compatibility-label").textContent = reading.relationshipLabel;
+  document.querySelector("#compatibility-score").textContent = String(reading.score);
+  document.querySelector("#compatibility-verdict").textContent = reading.verdict;
+  document.querySelector("#compatibility-copy").textContent = reading.copy;
+  document.querySelector("#compatibility-strengths").innerHTML = renderList(reading.strengths);
+  document.querySelector("#compatibility-frictions").innerHTML = renderList(reading.frictions);
+  document.querySelector("#compatibility-talk").innerHTML = renderList(reading.talkGuide);
+  document.querySelector("#compatibility-question").textContent = reading.consultQuestion;
+  document.querySelector("#compatibility-evidence").innerHTML = renderEvidence("궁합 근거", reading.evidence);
+  if (compatibilityResult) {
+    compatibilityResult.hidden = false;
+    compatibilityResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
 
 function renderResult(chart, input) {

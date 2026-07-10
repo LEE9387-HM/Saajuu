@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeName,
+  buildCompatibilityReading,
   buildGuidance,
   buildDetailedReading,
   buildNameReading,
@@ -185,6 +186,35 @@ describe("buildTopicReading", () => {
     expect(reading.checklist).toHaveLength(3);
     expect(reading.questions).toHaveLength(3);
     expect(reading.evidence).toContain("일간 계");
+  });
+});
+
+describe("buildCompatibilityReading", () => {
+  it("creates an evidence-backed relationship reading from two charts", () => {
+    const primaryChart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const partnerChart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    const reading = buildCompatibilityReading(primaryChart, partnerChart, "lover");
+
+    expect(reading.relationshipLabel).toBe("연인");
+    expect(reading.score).toBeGreaterThanOrEqual(42);
+    expect(reading.score).toBeLessThanOrEqual(94);
+    expect(reading.strengths).toHaveLength(3);
+    expect(reading.frictions).toHaveLength(3);
+    expect(reading.talkGuide).toHaveLength(3);
+    expect(reading.evidence.some((item) => item.includes("관계 리듬"))).toBe(true);
   });
 });
 

@@ -234,6 +234,45 @@ const TONE_META = {
   },
 };
 
+const RELATIONSHIP_LABEL = {
+  crush: "썸",
+  lover: "연인",
+  spouse: "부부",
+  reunion: "재회",
+  family: "가족",
+  work: "직장",
+};
+
+const ELEMENT_RELATION = {
+  same: {
+    label: "비슷한 리듬",
+    copy: "두 사람 모두 비슷한 방식으로 힘을 쓰기 쉬워 처음에는 편하지만, 같은 약점도 함께 커질 수 있습니다.",
+    advice: "같은 결론을 내리기 전에 서로가 놓치는 부분을 하나씩 맡아보세요.",
+  },
+  generates: {
+    label: "밀어주는 리듬",
+    copy: "한쪽의 강한 기운이 다른 쪽의 흐름을 자연스럽게 도와주는 구조라, 역할이 잘 나뉘면 안정감이 생깁니다.",
+    advice: "도와주는 사람이 계속 희생하지 않도록 책임의 경계를 말로 정하세요.",
+  },
+  generatedBy: {
+    label: "받쳐주는 리듬",
+    copy: "상대의 방식이 내 흐름을 보완해 주는 쪽으로 읽힙니다. 고마움이 익숙함으로 바뀌지 않게 관리가 필요합니다.",
+    advice: "상대가 해주는 것을 당연하게 여기지 말고, 고마운 지점을 구체적으로 말하세요.",
+  },
+  controls: {
+    label: "긴장과 조율",
+    copy: "서로의 기준과 속도가 부딪히기 쉬운 구조입니다. 갈등 자체보다 갈등을 다루는 방식이 중요합니다.",
+    advice: "결론부터 정하지 말고, 각자 절대 양보하기 어려운 기준을 먼저 꺼내세요.",
+  },
+  controlledBy: {
+    label: "조심스러운 균형",
+    copy: "상대의 방식이 내 선택을 압박처럼 느끼게 할 수 있습니다. 다만 규칙을 정하면 현실적인 균형도 만들 수 있습니다.",
+    advice: "상대에게 맞추기 전에 내 속도와 한계를 먼저 알려주세요.",
+  },
+};
+
+const ELEMENT_CONTROLS = { 목: "토", 화: "금", 토: "수", 금: "목", 수: "화" };
+
 export const ELEMENT_PRESCRIPTION = {
   목: {
     color: "초록·청록",
@@ -839,6 +878,80 @@ export function buildTopicReading(chart, topic = "relationship") {
       `일간 ${context.dayPillar.stem}`,
       `${context.balance.strongest.element} ${context.balance.strongest.count}`,
       `십신 ${context.dominantTenGod}`,
+    ],
+  };
+}
+
+function relationBetweenElements(a, b) {
+  if (a === b) return "same";
+  if (ELEMENT_CONTROLS[a] === b) return "controls";
+  if (ELEMENT_CONTROLS[b] === a) return "controlledBy";
+  const generates = { 목: "화", 화: "토", 토: "금", 금: "수", 수: "목" };
+  if (generates[a] === b) return "generates";
+  if (generates[b] === a) return "generatedBy";
+  return "same";
+}
+
+function scoreCompatibility(primary, partner, relationKey) {
+  const primaryContext = getReadingContext(primary);
+  const partnerContext = getReadingContext(partner);
+  const primaryElement = primaryContext.balance.strongest.element;
+  const partnerElement = partnerContext.balance.strongest.element;
+  const elementRelation = relationBetweenElements(primaryElement, partnerElement);
+  const dayStemMatch = primaryContext.dayPillar.stem === partnerContext.dayPillar.stem ? 6 : 0;
+  const dayBranchMatch = primaryContext.dayPillar.branch === partnerContext.dayPillar.branch ? 4 : 0;
+  const relationBoost = { same: 8, generates: 12, generatedBy: 10, controls: -6, controlledBy: -4 }[elementRelation];
+  const topicBoost = relationKey === "spouse" || relationKey === "lover" ? 4 : relationKey === "reunion" ? -2 : 0;
+  return Math.max(42, Math.min(94, 68 + relationBoost + dayStemMatch + dayBranchMatch + topicBoost));
+}
+
+export function buildCompatibilityReading(primaryChart, partnerChart, relationKey = "lover") {
+  const primary = getReadingContext(primaryChart);
+  const partner = getReadingContext(partnerChart);
+  const primaryElement = primary.balance.strongest.element;
+  const partnerElement = partner.balance.strongest.element;
+  const relationType = relationBetweenElements(primaryElement, partnerElement);
+  const relationMeta = ELEMENT_RELATION[relationType];
+  const relationshipLabel = RELATIONSHIP_LABEL[relationKey] ?? RELATIONSHIP_LABEL.lover;
+  const score = scoreCompatibility(primaryChart, partnerChart, relationKey);
+
+  const verdict =
+    score >= 82
+      ? "끌림과 조율 포인트가 함께 살아나는 관계입니다"
+      : score >= 68
+        ? "잘 맞는 지점은 분명하지만 대화 규칙이 필요합니다"
+        : "감정보다 속도와 기대치를 먼저 맞춰야 합니다";
+
+  return {
+    relationshipLabel,
+    score,
+    verdict,
+    title: `${relationshipLabel} 관계에서 ${relationMeta.label}이 먼저 보입니다`,
+    copy:
+      `${primary.dayPillar.stem}${primary.dayPillar.branch} 일주와 ${partner.dayPillar.stem}${partner.dayPillar.branch} 일주를 함께 보면, ` +
+      `${primary.balance.strongest.label} 기운과 ${partner.balance.strongest.label} 기운의 만남으로 읽힙니다. ${relationMeta.copy}`,
+    strengths: [
+      `${primary.balance.strongest.label} 기운의 추진 방식과 ${partner.balance.strongest.label} 기운의 반응이 서로를 자극합니다.`,
+      `${primary.dominantTenGod} 흐름과 ${partner.dominantTenGod} 흐름이 만나 관계 안의 역할이 비교적 선명해집니다.`,
+      "서로의 다름을 성격 문제로 단정하지 않고 생활 리듬으로 보면 조율 여지가 생깁니다.",
+    ],
+    frictions: [
+      `${primary.dayMeta.watch}`,
+      `${partner.dayMeta.watch}`,
+      relationMeta.advice,
+    ],
+    talkGuide: [
+      "연락과 만남의 속도를 어느 정도로 느끼는지 먼저 이야기하기",
+      "돈, 가족, 일상 루틴처럼 감정 밖의 현실 조건을 확인하기",
+      "갈등이 생겼을 때 회피하는지, 바로 풀려 하는지 대화 방식 정하기",
+    ],
+    consultQuestion: `${relationshipLabel} 관계에서 가장 자주 반복되는 서운함을 사주 흐름과 함께 정리해 볼까요?`,
+    evidence: [
+      `내 일주 ${primary.dayPillar.stem}${primary.dayPillar.branch}`,
+      `상대 일주 ${partner.dayPillar.stem}${partner.dayPillar.branch}`,
+      `내 강한 오행 ${primaryElement}`,
+      `상대 강한 오행 ${partnerElement}`,
+      `관계 리듬 ${relationMeta.label}`,
     ],
   };
 }

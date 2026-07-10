@@ -440,6 +440,109 @@ button:hover {
   line-height: 1.55;
 }
 
+.hub-card__note {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(221 214 199 / 80%);
+  font-size: 0.78rem;
+}
+
+.mini-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.mini-form label {
+  display: grid;
+  gap: 6px;
+  color: #53646b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.mini-form input,
+.mini-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.mini-form__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.6fr);
+  gap: 10px;
+}
+
+.mini-form__button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 4px;
+  background: var(--jade);
+  color: #fffdf8;
+  font-size: 0.84rem;
+}
+
+.compatibility-result {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgb(77 128 114 / 34%);
+  background: #f8fbf7;
+}
+
+.compatibility-result > span {
+  display: block;
+  color: var(--jade);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.compatibility-result > strong {
+  display: block;
+  margin: 8px 0 6px;
+  color: var(--ink);
+  font-size: 1.7rem;
+}
+
+.compatibility-result > strong em {
+  font-style: normal;
+}
+
+.compatibility-result h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-family: "Gowun Batang", serif;
+  font-size: 1.2rem;
+  line-height: 1.45;
+}
+
+.compatibility-result h5 {
+  margin: 14px 0 0;
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+
+.compatibility-result p {
+  font-size: 0.86rem;
+}
+
+.compatibility-result ul {
+  margin-top: 9px;
+}
+
+.compatibility-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .persona-strip {
   display: flex;
   flex-wrap: wrap;
@@ -1752,6 +1855,11 @@ footer span:first-child {
   .hub-card:nth-child(5) {
     grid-column: auto;
     min-height: auto;
+  }
+
+  .compatibility-columns,
+  .mini-form__row {
+    grid-template-columns: 1fr;
   }
 
   .consultation-preview ol {
