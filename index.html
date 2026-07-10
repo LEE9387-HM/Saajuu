@@ -23,6 +23,11 @@
         </p>
       </section>
 
+      <div id="shared-banner" class="shared-banner" hidden>
+        <p>공유받은 사주 결과를 보고 있어요. 이 정보는 저장되지 않습니다.</p>
+        <button type="button" id="back-to-mine" hidden>내 사주로 돌아가기</button>
+      </div>
+
       <section id="daily" class="daily" aria-live="polite" hidden>
         <p class="eyebrow">오늘의 운세</p>
         <p id="daily-date" class="daily__date"></p>
@@ -335,11 +340,18 @@
         </section>
 
         <div class="card-share">
-          <button id="save-card" type="button" class="card-share__button">
-            <span>나의 사주 카드 저장하기</span>
-            <span aria-hidden="true">↓</span>
-          </button>
-          <p>네 기둥과 올해의 처방을 한 장의 카드 이미지로 저장해 공유할 수 있어요.</p>
+          <div class="card-share__buttons">
+            <button id="save-card" type="button" class="card-share__button">
+              <span>나의 사주 카드 저장하기</span>
+              <span aria-hidden="true">↓</span>
+            </button>
+            <button id="share-link" type="button" class="card-share__button card-share__button--link">
+              <span>결과 링크 공유하기</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p>카드는 이미지로 저장되고, 링크에는 생년월일시가 포함돼요. 이름과 고민은 담기지 않아요.</p>
+          <p id="share-note" class="card-share__note" role="status"></p>
         </div>
 
         <div class="detail-action">

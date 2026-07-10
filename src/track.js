@@ -1,6 +1,6 @@
 // GoatCounter 사이트 코드. goatcounter.com에서 계정 생성 후 사이트 코드를 넣으면
 // 계측이 켜진다. 비어 있으면 모든 추적이 no-op — 배포를 막지 않는다.
-export const GOATCOUNTER_CODE = "";
+export const GOATCOUNTER_CODE = "fortune9388";
 
 export function initAnalytics() {
   if (!GOATCOUNTER_CODE || typeof document === "undefined") return;

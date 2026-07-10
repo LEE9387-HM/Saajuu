@@ -13,6 +13,7 @@ import {
   TONE_OPTIONS,
 } from "./fortune.js";
 import { buildDailyFortune, localDateKey } from "./daily.js";
+import { decodeShareHash, encodeShareHash } from "./share.js";
 import { clearProfile, loadProfile, saveProfile } from "./storage.js";
 import { initAnalytics, track } from "./track.js";
 
@@ -140,23 +141,107 @@ function applyProfileToForm(profile) {
   document.querySelector("#current-concern").value = profile.concern ?? "";
 }
 
+const sharedBanner = document.querySelector("#shared-banner");
+const backToMineButton = document.querySelector("#back-to-mine");
+const shareLinkButton = document.querySelector("#share-link");
+const shareNote = document.querySelector("#share-note");
+const dailyManage = document.querySelector(".daily__manage");
+const dailyNotice = document.querySelector(".daily__notice");
+
 // 재방문: 저장 프로필이 있으면 오늘의 운세를 폼보다 먼저 보여준다.
 // 복원~렌더 전체를 격리해, 손상 데이터로 페이지가 죽지 않게 한다.
-(function restoreProfile() {
+function restoreProfile() {
   const profile = loadProfile();
-  if (!profile) return;
+  if (!profile) return false;
   try {
     const chart = calculateChart(profile);
     applyProfileToForm(profile);
-    renderResult(chart, profile);
+    const guidance = renderResult(chart, profile);
     const daily = renderDaily(chart);
-    lastResult = { chart, input: profile, daily };
+    lastResult = { chart, input: profile, guidance, daily };
     resultSection.hidden = false;
+    return true;
   } catch {
     clearProfile();
     dailySection.hidden = true;
+    return false;
   }
-})();
+}
+
+// 공유 링크: 일회성 렌더. 저장 프로필을 덮지 않으며 관리 버튼도 숨긴다.
+function renderShared(shared) {
+  try {
+    const chart = calculateChart(shared);
+    const guidance = renderResult(chart, shared);
+    const daily = renderDaily(chart);
+    lastResult = { chart, input: shared, guidance, daily };
+    resultSection.hidden = false;
+    dailyManage.hidden = true;
+    dailyNotice.hidden = true;
+    sharedBanner.hidden = false;
+    backToMineButton.hidden = !loadProfile();
+    track("share-open");
+    return true;
+  } catch {
+    errorMessage.textContent = "공유 링크가 올바르지 않아요. 아래에서 직접 입력해 주세요.";
+    errorMessage.hidden = false;
+    return false;
+  }
+}
+
+function exitSharedView() {
+  sharedBanner.hidden = true;
+  dailyManage.hidden = false;
+  dailyNotice.hidden = false;
+  dailySection.hidden = true;
+  resultSection.hidden = true;
+  restoreProfile();
+}
+
+backToMineButton?.addEventListener("click", exitSharedView);
+
+function bootstrap(hash) {
+  const shared = decodeShareHash(hash);
+  if (shared) {
+    const rendered = renderShared(shared);
+    // 새로고침·뒤로가기 시 공유 뷰가 반복되지 않게 해시를 지운다
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (rendered) return;
+  } else if (hash.startsWith("#r=")) {
+    errorMessage.textContent = "공유 링크가 올바르지 않아요. 아래에서 직접 입력해 주세요.";
+    errorMessage.hidden = false;
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+  restoreProfile();
+}
+
+// 같은 탭에 다른 공유 링크를 붙여넣는 경우까지 처리한다
+window.addEventListener("hashchange", () => {
+  if (window.location.hash.startsWith("#r=")) bootstrap(window.location.hash);
+});
+
+shareLinkButton?.addEventListener("click", async () => {
+  if (!lastResult) return;
+  track("share-link");
+  const url =
+    window.location.origin + window.location.pathname + encodeShareHash(lastResult.input);
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "사주 한 장", url });
+      return;
+    } catch {
+      return; // 사용자가 공유 시트를 닫음
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    shareNote.textContent = "링크를 복사했어요. 붙여넣어 공유해 보세요.";
+  } catch {
+    shareNote.textContent = `이 링크를 복사해 공유하세요: ${url}`;
+  }
+});
+
+bootstrap(window.location.hash);
 
 initAnalytics();
 
