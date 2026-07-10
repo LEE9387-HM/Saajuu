@@ -30,6 +30,7 @@
 | 고민 연결 보기 | `bridge_question_view` | 주제 코드만 |
 | 상담 의도 | `consult_intent` | 주제 코드만, 원문 금지 |
 | 상담사 선택 | `persona_select` | 페르소나 코드만 |
+| 상담 모드 선택 | `consultation_mode_select` | 모드 코드만 |
 | 로그인 완료 | `signup_complete` | 자체 서버 이벤트 |
 | 무료 체험 시작 | `trial_started` | 자체 서버 이벤트 |
 | 광고 보상 | `reward_granted` | 자체 서버 이벤트 |

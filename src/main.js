@@ -1,6 +1,8 @@
 import "./styles.css";
 import {
   analyzeName,
+  CONSULTATION_MODES,
+  CONSULTATION_PERSONAS,
   buildCompatibilityReading,
   buildGuidance,
   buildNameReading,
@@ -11,6 +13,7 @@ import {
   ELEMENTS,
   formatInputSummary,
   interpretElements,
+  recommendConsultationPersonas,
   TOPIC_OPTIONS,
   TONE_OPTIONS,
 } from "./fortune.js";
@@ -42,6 +45,9 @@ const partnerLeapField = document.querySelector("#partner-leap-field");
 const partnerLeapMonth = document.querySelector("#partner-leap-month");
 const compatibilityError = document.querySelector("#compatibility-error");
 const compatibilityResult = document.querySelector("#compatibility-result");
+const personaCards = document.querySelector("#persona-cards");
+const modeCards = document.querySelector("#mode-cards");
+const personaRecommendation = document.querySelector("#persona-recommendation");
 
 premiumInterestButton?.addEventListener("click", () => {
   // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
@@ -72,6 +78,39 @@ for (const tone of TONE_OPTIONS) {
   option.textContent = `${tone.label} — ${tone.prompt}`;
   toneSelect.append(option);
 }
+
+renderConsultationCatalog();
+
+topicSelect.addEventListener("change", () => {
+  updatePersonaRecommendation(topicSelect.value);
+});
+
+personaCards?.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const button = target?.closest("[data-persona]");
+  if (!button) return;
+  const personaId = button.dataset.persona;
+  const persona = CONSULTATION_PERSONAS.find((item) => item.id === personaId);
+  if (!persona) return;
+  track("persona_select");
+  premiumInterestLabel.textContent = `${persona.name} 상담 관심 등록`;
+  premiumInterestNote.textContent = `${persona.name} 스타일로 상담이 열리면 알려드릴게요.`;
+});
+
+modeCards?.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const button = target?.closest("[data-mode]");
+  if (!button) return;
+  const modeId = button.dataset.mode;
+  const mode = CONSULTATION_MODES.find((item) => item.id === modeId);
+  if (!mode) return;
+  track("consultation_mode_select");
+  premiumInterestLabel.textContent = `${mode.name} 관심 등록`;
+  premiumInterestNote.textContent =
+    mode.id === "pro"
+      ? "프로 상담은 깊은 분석과 리포트 구조로 먼저 준비하겠습니다."
+      : `${mode.name} 상품 구성이 정리되면 알려드릴게요.`;
+});
 
 calendarType.addEventListener("change", () => {
   leapMonthField.hidden = calendarType.value !== "lunar";
@@ -705,6 +744,62 @@ function renderCompatibility(reading) {
     compatibilityResult.hidden = false;
     compatibilityResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
+}
+
+function renderConsultationCatalog() {
+  if (personaCards) {
+    personaCards.innerHTML = CONSULTATION_PERSONAS.map(
+      (persona) => `
+        <article class="persona-card" data-persona="${escapeHtml(persona.id)}">
+          <div class="persona-card__top">
+            <span class="persona-avatar" aria-hidden="true">${escapeHtml(persona.initial)}</span>
+            <div>
+              <h4>${escapeHtml(persona.name)}</h4>
+              <p>${escapeHtml(persona.role)}</p>
+            </div>
+          </div>
+          <p>${escapeHtml(persona.tone)}</p>
+          <div class="persona-tags">
+            ${persona.specialties.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+          </div>
+          <blockquote>${escapeHtml(persona.sample)}</blockquote>
+          <button type="button" class="persona-select" data-persona="${escapeHtml(persona.id)}">
+            ${escapeHtml(persona.name)} 상담 관심
+          </button>
+        </article>
+      `,
+    ).join("");
+  }
+
+  if (modeCards) {
+    modeCards.innerHTML = CONSULTATION_MODES.map(
+      (mode) => `
+        <article class="mode-card mode-card--${escapeHtml(mode.id)}">
+          <span>${escapeHtml(mode.turns)}</span>
+          <h4>${escapeHtml(mode.name)}</h4>
+          <strong>${escapeHtml(mode.price)}</strong>
+          <p>${escapeHtml(mode.summary)}</p>
+          <ul>
+            ${mode.features.map((feature) => `<li>${escapeHtml(feature)}</li>`).join("")}
+          </ul>
+          <button type="button" class="mode-select" data-mode="${escapeHtml(mode.id)}">
+            ${escapeHtml(mode.name)} 관심
+          </button>
+        </article>
+      `,
+    ).join("");
+  }
+
+  updatePersonaRecommendation(topicSelect.value);
+}
+
+function updatePersonaRecommendation(topic) {
+  if (!personaRecommendation) return;
+  const recommended = recommendConsultationPersonas(topic);
+  personaRecommendation.innerHTML = `
+    <span>현재 고민 추천</span>
+    <strong>${recommended.map((persona) => escapeHtml(persona.name)).join(" · ")}</strong>
+  `;
 }
 
 function renderResult(chart, input) {

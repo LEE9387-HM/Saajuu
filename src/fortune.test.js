@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeName,
+  CONSULTATION_MODES,
+  CONSULTATION_PERSONAS,
   buildCompatibilityReading,
   buildGuidance,
   buildDetailedReading,
@@ -12,6 +14,7 @@ import {
   formatInputSummary,
   interpretElements,
   parseBirthDate,
+  recommendConsultationPersonas,
   TOPIC_OPTIONS,
   TONE_OPTIONS,
 } from "./fortune.js";
@@ -215,6 +218,31 @@ describe("buildCompatibilityReading", () => {
     expect(reading.frictions).toHaveLength(3);
     expect(reading.talkGuide).toHaveLength(3);
     expect(reading.evidence.some((item) => item.includes("관계 리듬"))).toBe(true);
+  });
+});
+
+describe("consultation catalog", () => {
+  it("keeps persona choice separate from consultation mode", () => {
+    expect(CONSULTATION_PERSONAS.map((persona) => persona.id)).toEqual([
+      "miseon",
+      "junho",
+      "seongu",
+    ]);
+    expect(CONSULTATION_MODES.map((mode) => mode.id)).toEqual(["trial", "basic", "pro"]);
+    expect(CONSULTATION_MODES.find((mode) => mode.id === "pro").features).toContain(
+      "대운·세운·관계 종합",
+    );
+  });
+
+  it("recommends personas from the concern topic without changing the paid mode", () => {
+    expect(recommendConsultationPersonas("marriage").map((persona) => persona.name)).toEqual([
+      "미선 이모",
+      "성우 선생",
+    ]);
+    expect(recommendConsultationPersonas("career").map((persona) => persona.name)).toEqual([
+      "성우 선생",
+      "준호 형",
+    ]);
   });
 });
 

@@ -22,6 +22,78 @@ export const TONE_OPTIONS = [
   { value: "warm", label: "위로 중심톤", prompt: "불안을 먼저 낮추며 이야기해요" },
 ];
 
+export const CONSULTATION_PERSONAS = [
+  {
+    id: "miseon",
+    name: "미선 이모",
+    role: "마음을 받아주는 동네 이모",
+    initial: "미",
+    tone: "부드러운 존댓말과 생활 비유로 감정을 먼저 받아줍니다.",
+    specialties: ["부부", "가족", "자녀", "관계 불안"],
+    bestFor: "누군가에게 편안히 말하면서 마음을 정리하고 싶을 때",
+    sample:
+      "그동안 혼자 생각을 많이 하셨겠어요. 지금은 상대 마음보다, 내가 어디까지 기다릴 수 있는지가 더 힘든 것 같아요.",
+  },
+  {
+    id: "junho",
+    name: "준호 형",
+    role: "따뜻하지만 현실적인 이웃",
+    initial: "준",
+    tone: "편한 존댓말로 상황을 요약하고 선택지를 좁혀줍니다.",
+    specialties: ["연애", "재회", "이직", "자신감"],
+    bestFor: "위로도 필요하지만 실제 행동 기준을 같이 잡고 싶을 때",
+    sample:
+      "지금 당장 결론을 내리지 않아도 괜찮아요. 다만 추측과 실제 행동으로 확인된 것은 나눠서 봐야 해요.",
+  },
+  {
+    id: "seongu",
+    name: "성우 선생",
+    role: "경험 많은 인생 선배",
+    initial: "성",
+    tone: "간결하게 사실, 해석, 감정을 분리해 판단 기준을 세웁니다.",
+    specialties: ["직장", "사업", "리더십", "결혼생활"],
+    bestFor: "위로보다 구조적인 정리와 결정 기준이 필요할 때",
+    sample:
+      "현재 문제는 능력 부족이라기보다 역할과 책임이 불분명한 데서 시작된 것으로 보입니다.",
+  },
+];
+
+export const CONSULTATION_MODES = [
+  {
+    id: "trial",
+    name: "무료 체험",
+    price: "0원",
+    turns: "3턴",
+    summary: "상담사 한 명과 고민의 핵심을 가볍게 잡습니다.",
+    features: ["핵심 사주 근거 1~2개", "현재 질문 중심", "저장 24시간 후보"],
+  },
+  {
+    id: "basic",
+    name: "기본 상담",
+    price: "4,900~9,900원",
+    turns: "10턴",
+    summary: "대화 전체를 바탕으로 선택지와 짧은 요약을 제공합니다.",
+    features: ["상담사 3명 선택", "핵심 사주 근거 3~5개", "24시간 후속 질문 후보"],
+  },
+  {
+    id: "pro",
+    name: "프로 상담",
+    price: "14,900원부터",
+    turns: "20턴 이상",
+    summary: "고민 구조화, 상반 근거 검토, 행동 계획까지 깊게 정리합니다.",
+    features: ["대운·세운·관계 종합", "다단계 분석과 안전 검토", "상세 리포트와 7일 후속 상담 후보"],
+  },
+];
+
+const PERSONA_RECOMMENDATION = {
+  relationship: ["junho", "miseon"],
+  marriage: ["miseon", "seongu"],
+  business: ["seongu", "junho"],
+  career: ["seongu", "junho"],
+  family: ["miseon", "seongu"],
+  yearly: ["seongu", "miseon"],
+};
+
 const ELEMENT_META = {
   목: { label: "나무", hint: "성장과 시작을" },
   화: { label: "불", hint: "표현과 활력을" },
@@ -954,6 +1026,13 @@ export function buildCompatibilityReading(primaryChart, partnerChart, relationKe
       `관계 리듬 ${relationMeta.label}`,
     ],
   };
+}
+
+export function recommendConsultationPersonas(topic = "relationship") {
+  const ids = PERSONA_RECOMMENDATION[topic] ?? PERSONA_RECOMMENDATION.relationship;
+  return ids
+    .map((id) => CONSULTATION_PERSONAS.find((persona) => persona.id === id))
+    .filter(Boolean);
 }
 
 export function formatInputSummary(input) {
