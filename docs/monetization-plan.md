@@ -3,6 +3,17 @@
 작성일: 2026-07-07  
 상태: Vite 정적 웹앱(v0.2.0.0), 브라우저 내 `manseryeok` 기반 사주 계산, 규칙 기반 상세 풀이, GitHub Pages 배포. 백엔드, 계정, 결제, LLM 상담 없음.
 
+> 2026-07-11 보강: GPT 챗에서 정리한 점신 실제 서비스 벤치마크, 무료 콘텐츠 허브,
+> 3인 AI 페르소나, 프로 모드, 상담 전환 퍼널은 아래 보조 문서에 반영했다. 본 문서는
+> 상위 수익화 방향을 유지하고, 상세 실행 기준은 각 문서를 따른다.
+>
+> - `docs/01_JEOMSIN_BENCHMARK.md`
+> - `docs/02_FREE_CONTENT_SPEC.md`
+> - `docs/03_AI_PERSONAS_AND_PRO_MODE.md`
+> - `docs/04_CONSULTATION_FUNNEL.md`
+> - `docs/05_ARCHITECTURE_PRIVACY_PAYMENT.md`
+> - `docs/06_IMPLEMENTATION_ROADMAP.md`
+
 ---
 
 ## 0. 핵심 결론

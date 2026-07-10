@@ -33,6 +33,7 @@ const detailReading = document.querySelector("#detail-reading");
 const premiumInterestButton = document.querySelector("#premium-interest");
 const premiumInterestLabel = document.querySelector("#premium-interest-label");
 const premiumInterestNote = document.querySelector("#premium-interest-note");
+const navLinks = [...document.querySelectorAll(".app-nav__link")];
 
 premiumInterestButton?.addEventListener("click", () => {
   // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
@@ -81,6 +82,7 @@ detailToggle.addEventListener("click", () => {
 });
 
 const dailySection = document.querySelector("#daily");
+const emptyDaily = document.querySelector("#empty-daily");
 const saveCardButton = document.querySelector("#save-card");
 let lastResult = null;
 
@@ -98,6 +100,7 @@ function renderDaily(chart, now = new Date()) {
   document.querySelector("#daily-tomorrow").textContent = daily.tomorrow.verdict;
   document.querySelector("#daily-evidence").innerHTML = renderEvidence("오늘의 근거", daily.evidence);
   dailySection.hidden = false;
+  if (emptyDaily) emptyDaily.hidden = true;
   track("daily-view");
   return daily;
 }
@@ -118,6 +121,7 @@ window.addEventListener("focus", refreshDailyIfStale);
 document.querySelector("#clear-profile")?.addEventListener("click", () => {
   clearProfile();
   dailySection.hidden = true;
+  if (emptyDaily) emptyDaily.hidden = false;
   resultSection.hidden = true;
   lastResult = null;
   errorMessage.textContent = "저장된 정보를 삭제했어요. 다시 보려면 아래에서 새로 입력해 주세요.";
@@ -165,6 +169,7 @@ function restoreProfile() {
   } catch {
     clearProfile();
     dailySection.hidden = true;
+    if (emptyDaily) emptyDaily.hidden = false;
     return false;
   }
 }
@@ -195,6 +200,7 @@ function exitSharedView() {
   dailyManage.hidden = false;
   dailyNotice.hidden = false;
   dailySection.hidden = true;
+  if (emptyDaily) emptyDaily.hidden = false;
   resultSection.hidden = true;
   restoreProfile();
 }
@@ -372,6 +378,43 @@ hanjaDoubleSurname?.addEventListener("change", () => {
 bootstrap(window.location.hash);
 
 initAnalytics();
+
+function setActiveNav(id) {
+  navLinks.forEach((link) => {
+    const isActive = link.dataset.navTarget === id;
+    link.classList.toggle("app-nav__link--active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+}
+
+const navSections = navLinks
+  .map((link) => document.getElementById(link.dataset.navTarget))
+  .filter(Boolean);
+
+if ("IntersectionObserver" in window) {
+  const navObserver = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveNav(visible.target.id);
+    },
+    { rootMargin: "-18% 0px -62% 0px", threshold: [0.15, 0.35, 0.6] },
+  );
+  navSections.forEach((section) => navObserver.observe(section));
+}
+
+window.addEventListener("hashchange", () => {
+  const id = window.location.hash.slice(1);
+  if (navSections.some((section) => section.id === id)) setActiveNav(id);
+});
+
+const initialNavId = window.location.hash.slice(1);
+setActiveNav(navSections.some((section) => section.id === initialNavId) ? initialNavId : "today");
 
 saveCardButton?.addEventListener("click", () => {
   if (!lastResult) return;

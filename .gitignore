@@ -3,3 +3,13 @@ dist/
 .vite/
 .playwright-cli/
 *.log
+
+# Local/private agent and benchmark materials
+.claude/
+점신/
+local-reference/
+data/nemotron-korea/
+
+# Secrets
+.env
+.env.local
