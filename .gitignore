@@ -3,6 +3,7 @@ dist/
 .vite/
 .playwright-cli/
 *.log
+output/
 
 # Local/private agent and benchmark materials
 .claude/
