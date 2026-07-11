@@ -313,6 +313,47 @@
             <p class="hub-card__note">
               로그인 후에는 공유 초대로 서로 친구처럼 연결하는 구조로 확장할 예정입니다.
             </p>
+            <div id="relationship-account-panel" class="relationship-account" hidden>
+              <div>
+                <p class="eyebrow">로그인 인연 연결</p>
+                <h4>초대 링크로 서로의 관계를 묶기</h4>
+                <p>
+                  상대가 링크로 들어와 로그인하면 두 계정이 같은 관계로 연결됩니다.
+                  생년월일시는 링크에 담지 않습니다.
+                </p>
+              </div>
+              <label>
+                <span>초대할 관계</span>
+                <select id="relationship-invite-type">
+                  <option value="crush">썸</option>
+                  <option value="lover" selected>연인</option>
+                  <option value="spouse">부부</option>
+                  <option value="reunion">재회</option>
+                  <option value="family">가족</option>
+                  <option value="work">직장</option>
+                </select>
+              </label>
+              <div class="relationship-account__actions">
+                <button type="button" class="auth-button auth-button--ghost" id="relationship-invite-create">
+                  초대 링크 만들기
+                </button>
+                <button type="button" class="auth-button" id="relationship-invite-copy" hidden>
+                  링크 복사
+                </button>
+              </div>
+              <p id="relationship-invite-note" class="auth-panel__note" role="status"></p>
+              <div id="relationship-accept-panel" class="relationship-accept" hidden>
+                <strong>받은 인연 초대가 있습니다.</strong>
+                <p>로그인한 계정으로 이 초대를 수락하면 상대와 인연 연결이 생성됩니다.</p>
+                <button type="button" class="auth-button auth-button--ghost" id="relationship-invite-accept">
+                  초대 수락하기
+                </button>
+              </div>
+              <div>
+                <h5>연결된 인연</h5>
+                <ul id="relationship-links" class="relationship-links"></ul>
+              </div>
+            </div>
           </article>
 
           <article id="tarot" class="hub-card">
@@ -338,6 +379,36 @@
                 <h4>누구와 이야기할지와 얼마나 깊게 볼지를 분리합니다</h4>
               </div>
               <div id="mode-cards" class="mode-cards" aria-label="상담 상품 모드"></div>
+            </div>
+            <div class="trial-session">
+              <p class="eyebrow">무료 체험</p>
+              <h4>AI 상담 3턴 세션 만들기</h4>
+              <p>
+                로그인과 필수 동의가 완료되면 실제 LLM 호출 전 단계로 상담 세션을 먼저 만들 수 있습니다.
+              </p>
+              <div class="trial-session__grid">
+                <label>
+                  <span>상담사</span>
+                  <select id="trial-persona"></select>
+                </label>
+                <label>
+                  <span>주제</span>
+                  <select id="trial-topic"></select>
+                </label>
+              </div>
+              <label class="trial-session__concern">
+                <span>상담 질문</span>
+                <textarea
+                  id="trial-concern"
+                  rows="3"
+                  maxlength="220"
+                  placeholder="예: 이 관계를 계속 이어가도 되는지 고민돼요"
+                ></textarea>
+              </label>
+              <button type="button" class="auth-button auth-button--ghost" id="trial-session-start">
+                무료 3턴 상담 세션 만들기
+              </button>
+              <p id="trial-session-note" class="auth-panel__note" role="status"></p>
             </div>
           </article>
 

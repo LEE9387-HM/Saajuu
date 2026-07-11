@@ -22,6 +22,11 @@ import { decodeShareHash, encodeShareHash } from "./share.js";
 import { clearProfile, loadProfile, saveProfile } from "./storage.js";
 import { initAnalytics, track } from "./track.js";
 import {
+  acceptRelationshipInvite,
+  createConsultationSession,
+  createRelationshipInvite,
+  getRelationshipInviteTokenFromHash,
+  getRelationshipLinks,
   getCurrentSession,
   getRequiredConsentStatus,
   isSupabaseConfigured,
@@ -34,6 +39,14 @@ import {
 } from "./auth.js";
 
 const SWATCH_COLORS = { 목: "#3f7d5c", 화: "#c05a44", 토: "#c5964f", 금: "#9aa3ab", 수: "#22333f" };
+const RELATIONSHIP_LABELS = {
+  crush: "썸",
+  lover: "연인",
+  spouse: "부부",
+  reunion: "재회",
+  family: "가족",
+  work: "직장",
+};
 
 const form = document.querySelector("#birth-form");
 const calendarType = document.querySelector("#calendar-type");
@@ -65,7 +78,23 @@ const authButtons = [...document.querySelectorAll("[data-auth-provider]")];
 const authSignout = document.querySelector("#auth-signout");
 const consentForm = document.querySelector("#consent-form");
 const consentNote = document.querySelector("#consent-note");
+const relationshipAccountPanel = document.querySelector("#relationship-account-panel");
+const relationshipInviteType = document.querySelector("#relationship-invite-type");
+const relationshipInviteCreate = document.querySelector("#relationship-invite-create");
+const relationshipInviteCopy = document.querySelector("#relationship-invite-copy");
+const relationshipInviteNote = document.querySelector("#relationship-invite-note");
+const relationshipAcceptPanel = document.querySelector("#relationship-accept-panel");
+const relationshipInviteAccept = document.querySelector("#relationship-invite-accept");
+const relationshipLinks = document.querySelector("#relationship-links");
+const trialPersona = document.querySelector("#trial-persona");
+const trialTopic = document.querySelector("#trial-topic");
+const trialConcern = document.querySelector("#trial-concern");
+const trialSessionStart = document.querySelector("#trial-session-start");
+const trialSessionNote = document.querySelector("#trial-session-note");
 let activeSession = null;
+let hasRequiredConsents = false;
+let pendingRelationshipInviteToken = "";
+let latestRelationshipInviteUrl = "";
 
 premiumInterestButton?.addEventListener("click", () => {
   // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
@@ -102,6 +131,7 @@ initAuthPanel();
 
 topicSelect.addEventListener("change", () => {
   updatePersonaRecommendation(topicSelect.value);
+  if (trialTopic) trialTopic.value = topicSelect.value;
 });
 
 personaCards?.addEventListener("click", (event) => {
@@ -112,6 +142,7 @@ personaCards?.addEventListener("click", (event) => {
   const persona = CONSULTATION_PERSONAS.find((item) => item.id === personaId);
   if (!persona) return;
   track("persona_select");
+  if (trialPersona) trialPersona.value = persona.id;
   premiumInterestLabel.textContent = `${persona.name} 상담 관심 등록`;
   premiumInterestNote.textContent = `${persona.name} 스타일로 상담이 열리면 알려드릴게요.`;
 });
@@ -131,6 +162,76 @@ modeCards?.addEventListener("click", (event) => {
       : `${mode.name} 상품 구성이 정리되면 알려드릴게요.`;
 });
 
+function relationLabel(value) {
+  return RELATIONSHIP_LABELS[value] ?? "인연";
+}
+
+function formatShortDate(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
+}
+
+function renderRelationshipLinks(links) {
+  if (!relationshipLinks) return;
+  if (!links.length) {
+    relationshipLinks.innerHTML = "<li>아직 연결된 인연이 없습니다.</li>";
+    return;
+  }
+
+  relationshipLinks.innerHTML = links
+    .map(
+      (link) => `
+        <li>
+          <strong>${escapeHtml(relationLabel(link.relationship))}</strong>
+          <span>${escapeHtml(formatShortDate(link.accepted_at ?? link.created_at))} 연결</span>
+        </li>
+      `,
+    )
+    .join("");
+}
+
+function updateTrialSessionState() {
+  if (!trialSessionStart) return;
+  trialSessionStart.disabled = !activeSession || !hasRequiredConsents;
+  if (!activeSession && trialSessionNote) {
+    trialSessionNote.textContent = "마이에서 로그인하면 무료 상담 체험을 준비할 수 있습니다.";
+  } else if (activeSession && !hasRequiredConsents && trialSessionNote) {
+    trialSessionNote.textContent = "마이에서 필수 동의를 저장한 뒤 무료 상담 체험을 시작할 수 있습니다.";
+  }
+}
+
+async function refreshRelationshipPanel(session) {
+  if (!relationshipAccountPanel) return;
+
+  pendingRelationshipInviteToken = getRelationshipInviteTokenFromHash();
+  relationshipAccountPanel.hidden = !session && !pendingRelationshipInviteToken;
+  if (relationshipAcceptPanel) relationshipAcceptPanel.hidden = !session || !pendingRelationshipInviteToken;
+  if (relationshipInviteCreate) relationshipInviteCreate.disabled = !session;
+  if (relationshipInviteType) relationshipInviteType.disabled = !session;
+
+  if (!session) {
+    renderRelationshipLinks([]);
+    if (relationshipInviteNote) {
+      relationshipInviteNote.textContent = pendingRelationshipInviteToken
+        ? "인연 초대를 받았습니다. 마이에서 로그인한 뒤 이 초대를 수락할 수 있습니다."
+        : "";
+    }
+    return;
+  }
+
+  const { links, error } = await getRelationshipLinks(session);
+  if (error) {
+    renderRelationshipLinks([]);
+    if (relationshipInviteNote) relationshipInviteNote.textContent = "인연 연결 목록은 DB 연결 확인 후 다시 불러옵니다.";
+    return;
+  }
+  renderRelationshipLinks(links);
+
+  if (relationshipInviteNote && pendingRelationshipInviteToken) {
+    relationshipInviteNote.textContent = "받은 초대를 수락하면 이 계정과 상대 계정이 연결됩니다.";
+  }
+}
+
 async function initAuthPanel() {
   if (!authStatus) return;
 
@@ -140,6 +241,9 @@ async function initAuthPanel() {
     authButtons.forEach((button) => {
       button.disabled = true;
     });
+    if (relationshipInviteNote && getRelationshipInviteTokenFromHash()) {
+      relationshipInviteNote.textContent = "인연 초대를 받았지만 Supabase 설정이 없어 수락할 수 없습니다.";
+    }
     return;
   }
 
@@ -161,15 +265,20 @@ async function initAuthPanel() {
     activeSession = session;
     consentForm.hidden = !session;
     if (!session) {
+      hasRequiredConsents = false;
       consentNote.textContent = "";
+      updateTrialSessionState();
       return;
     }
 
     const { completed, acceptedTypes, error: consentError } = await getRequiredConsentStatus(session);
     if (consentError) {
+      hasRequiredConsents = false;
       consentNote.textContent = "동의 상태는 원격 DB 연결 확인 후 다시 불러옵니다.";
+      updateTrialSessionState();
       return;
     }
+    hasRequiredConsents = completed;
 
     REQUIRED_CONSENTS.forEach((consent) => {
       const input = consentForm.elements.namedItem(consent.type);
@@ -179,6 +288,7 @@ async function initAuthPanel() {
     consentNote.textContent = completed
       ? "필수 동의가 저장되어 있습니다. 상담 체험 준비를 이어갈 수 있습니다."
       : "상담 체험과 기록 저장을 위해 필수 고지를 확인해 주세요.";
+    updateTrialSessionState();
   };
 
   const updateAuthUi = (session) => {
@@ -192,6 +302,7 @@ async function initAuthPanel() {
     if (!session) {
       authNote.textContent = "실제 상담권·결제·AI 대화는 서버 함수와 정책 검토 후 열립니다.";
     }
+    updateTrialSessionState();
   };
 
   const { session, error } = await getCurrentSession();
@@ -202,12 +313,14 @@ async function initAuthPanel() {
     updateAuthUi(session);
     await syncProfile(session);
     await updateConsentUi(session);
+    await refreshRelationshipPanel(session);
   }
 
   onAuthStateChange((nextSession) => {
     updateAuthUi(nextSession);
     syncProfile(nextSession);
     updateConsentUi(nextSession);
+    refreshRelationshipPanel(nextSession);
   });
 
   authButtons.forEach((button) => {
@@ -256,11 +369,113 @@ async function initAuthPanel() {
     const { recorded, error: consentSaveError } = await recordRequiredConsents(activeSession);
     if (recorded) {
       track("required_consents_saved");
+      hasRequiredConsents = true;
+      updateTrialSessionState();
       consentNote.textContent = "필수 동의를 저장했습니다. 다음 단계에서 무료 상담 체험을 열 수 있습니다.";
       return;
     }
 
     consentNote.textContent = consentSaveError?.message ?? "동의를 저장하지 못했습니다.";
+  });
+
+  relationshipInviteCreate?.addEventListener("click", async () => {
+    if (!activeSession) {
+      relationshipInviteNote.textContent = "로그인 후 초대 링크를 만들 수 있습니다.";
+      return;
+    }
+
+    relationshipInviteCreate.disabled = true;
+    relationshipInviteNote.textContent = "초대 링크를 만들고 있습니다.";
+    const relationship = relationshipInviteType?.value ?? "lover";
+    const { inviteUrl, error: inviteError } = await createRelationshipInvite(activeSession, relationship);
+    relationshipInviteCreate.disabled = false;
+
+    if (inviteError) {
+      relationshipInviteNote.textContent = inviteError.message;
+      return;
+    }
+
+    latestRelationshipInviteUrl = inviteUrl;
+    relationshipInviteCopy.hidden = false;
+    relationshipInviteNote.textContent = `${relationLabel(relationship)} 초대 링크를 만들었습니다. 링크에는 생년월일시가 포함되지 않습니다.`;
+    track("relationship_invite_created");
+  });
+
+  relationshipInviteCopy?.addEventListener("click", async () => {
+    if (!latestRelationshipInviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(latestRelationshipInviteUrl);
+      relationshipInviteNote.textContent = "초대 링크를 복사했습니다. 상대에게 보내 주세요.";
+    } catch {
+      relationshipInviteNote.textContent = `초대 링크: ${latestRelationshipInviteUrl}`;
+    }
+  });
+
+  relationshipInviteAccept?.addEventListener("click", async () => {
+    if (!activeSession || !pendingRelationshipInviteToken) {
+      relationshipInviteNote.textContent = "로그인 후 받은 인연 초대를 수락할 수 있습니다.";
+      return;
+    }
+
+    relationshipInviteAccept.disabled = true;
+    relationshipInviteNote.textContent = "인연 초대를 수락하고 있습니다.";
+    const { data, error: acceptError } = await acceptRelationshipInvite(
+      activeSession,
+      pendingRelationshipInviteToken,
+    );
+    relationshipInviteAccept.disabled = false;
+
+    if (acceptError) {
+      relationshipInviteNote.textContent = acceptError.message;
+      return;
+    }
+
+    track("relationship_connected");
+    relationshipInviteNote.textContent = `${relationLabel(data?.relationship)} 인연으로 연결했습니다.`;
+    relationshipAcceptPanel.hidden = true;
+    pendingRelationshipInviteToken = "";
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    await refreshRelationshipPanel(activeSession);
+  });
+
+  trialSessionStart?.addEventListener("click", async () => {
+    if (!activeSession) {
+      trialSessionNote.textContent = "로그인 후 무료 상담 체험을 시작할 수 있습니다.";
+      return;
+    }
+    if (!hasRequiredConsents) {
+      trialSessionNote.textContent = "필수 동의를 먼저 저장해 주세요.";
+      document.querySelector("#my-page")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    trialSessionStart.disabled = true;
+    trialSessionNote.textContent = "무료 상담 세션을 만들고 있습니다.";
+    const concern =
+      trialConcern?.value?.trim() ||
+      document.querySelector("#current-concern")?.value?.trim() ||
+      "지금 고민을 사주 흐름과 함께 정리하고 싶어요.";
+    const { data, error: sessionError } = await createConsultationSession(activeSession, {
+      personaId: trialPersona?.value ?? "miseon",
+      mode: "trial",
+      topic: trialTopic?.value ?? topicSelect.value ?? "relationship",
+      concernSummary: concern,
+    });
+
+    if (sessionError) {
+      trialSessionNote.textContent = sessionError.message;
+      updateTrialSessionState();
+      return;
+    }
+
+    const session = data?.session;
+    const sessionId = session?.id ? String(session.id).slice(0, 8) : "";
+    const remainingTurns = session ? Number(session.turn_limit) - Number(session.used_turns) : 3;
+    track("trial_started");
+    trialSessionNote.textContent = data?.reused
+      ? `이미 열린 무료 상담 세션을 불러왔습니다. 남은 턴 ${remainingTurns}회 · ${sessionId}`
+      : `무료 상담 세션을 만들었습니다. 남은 턴 ${remainingTurns}회 · ${sessionId}`;
+    updateTrialSessionState();
   });
 }
 
@@ -461,6 +676,10 @@ function bootstrap(hash) {
 // 같은 탭에 다른 공유 링크를 붙여넣는 경우까지 처리한다
 window.addEventListener("hashchange", () => {
   if (window.location.hash.startsWith("#r=")) bootstrap(window.location.hash);
+  if (window.location.hash.startsWith("#invite=")) {
+    refreshRelationshipPanel(activeSession);
+    document.querySelector("#relationship")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 });
 
 shareLinkButton?.addEventListener("click", async () => {
@@ -612,6 +831,9 @@ hanjaDoubleSurname?.addEventListener("change", () => {
 });
 
 bootstrap(window.location.hash);
+if (getRelationshipInviteTokenFromHash()) {
+  document.querySelector("#relationship")?.scrollIntoView({ block: "start" });
+}
 
 initAnalytics();
 
@@ -899,6 +1121,18 @@ function renderCompatibility(reading) {
 }
 
 function renderConsultationCatalog() {
+  if (trialPersona) {
+    trialPersona.innerHTML = CONSULTATION_PERSONAS.map(
+      (persona) => `<option value="${escapeHtml(persona.id)}">${escapeHtml(persona.name)}</option>`,
+    ).join("");
+  }
+
+  if (trialTopic) {
+    trialTopic.innerHTML = TOPIC_OPTIONS.map(
+      (topic) => `<option value="${escapeHtml(topic.value)}">${escapeHtml(topic.label)}</option>`,
+    ).join("");
+  }
+
   if (personaCards) {
     personaCards.innerHTML = CONSULTATION_PERSONAS.map(
       (persona) => `
@@ -943,6 +1177,7 @@ function renderConsultationCatalog() {
   }
 
   updatePersonaRecommendation(topicSelect.value);
+  if (trialTopic) trialTopic.value = topicSelect.value;
 }
 
 function updatePersonaRecommendation(topic) {

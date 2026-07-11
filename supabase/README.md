@@ -2,13 +2,14 @@
 
 Project ref: `eizojtispxmlwvhgpmgs`
 
-This folder contains reviewed migration drafts for the Saajuu monetization backend. The current migration has not been applied to production from this repository yet.
+This folder contains the reviewed migrations and Edge Functions for the Saajuu monetization backend. The migrations through v0.5.10.0 have been applied to the linked Supabase project.
 
 ## Current scope
 
 - Authentication profile tables and consent logs
 - Birth profile storage for logged-in users
-- Relationship invite/link tables for the future friend-style compatibility flow
+- Relationship invite/link tables and the `accept-relationship-invite` Edge Function
+- Trial consultation session creation with the `create-consultation-session` Edge Function
 - Persona and product catalogs
 - Orders, entitlements, consultation sessions, messages, summaries, safety events, ad rewards, and analytics events
 - Initial RLS policies and least-privilege grants
@@ -20,9 +21,12 @@ npx --yes supabase link --project-ref eizojtispxmlwvhgpmgs
 npx --yes supabase migration list
 npx --yes supabase db push --dry-run
 npx --yes supabase db push
+npx --yes supabase db advisors --linked --type all --level warn --fail-on none
+npx --yes supabase functions deploy accept-relationship-invite --use-api
+npx --yes supabase functions deploy create-consultation-session --use-api
 ```
 
-Run the remote apply only after privacy policy text, consent copy, and the first Edge Function boundaries are reviewed.
+Run remote schema changes only after privacy policy text, consent copy, and Edge Function boundaries are reviewed.
 
 ## Security rules
 

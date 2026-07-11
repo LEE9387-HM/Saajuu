@@ -536,6 +536,140 @@ button:hover {
   accent-color: var(--jade);
 }
 
+.relationship-account {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffaf0;
+}
+
+.relationship-account h4 {
+  margin: -4px 0 4px;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.relationship-account p {
+  font-size: 0.82rem;
+}
+
+.relationship-account label {
+  display: grid;
+  gap: 6px;
+  color: #53646b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.relationship-account select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.relationship-account__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.relationship-accept {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgb(77 128 114 / 35%);
+  background: #ffffff;
+}
+
+.relationship-accept strong {
+  color: var(--ink);
+}
+
+.relationship-links {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.relationship-links li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+  color: #53646b;
+  font-size: 0.82rem;
+}
+
+.relationship-links strong {
+  color: var(--ink);
+}
+
+.trial-session {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgb(77 128 114 / 35%);
+  background: #fffaf0;
+}
+
+.trial-session h4 {
+  margin: -4px 0 4px;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.trial-session p {
+  font-size: 0.82rem;
+}
+
+.trial-session__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.trial-session label {
+  display: grid;
+  gap: 6px;
+  color: #53646b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.trial-session select,
+.trial-session textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.trial-session textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
 .mini-form {
   display: grid;
   gap: 12px;

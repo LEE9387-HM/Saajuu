@@ -2,6 +2,35 @@
 
 이 프로젝트의 주요 변경사항을 기록합니다.
 
+## [0.5.11.0] - 2026-07-11
+
+### Added
+
+- `create-consultation-session` Supabase Edge Function 추가 및 배포
+- 필수 동의가 완료된 로그인 사용자가 무료 3턴 상담 세션을 생성하는 UI 추가
+- 상담 세션 생성 시 상담사, 주제, 상담 질문을 서버 함수로 전달하고 `concerns`, `consultation_sessions` 생성
+- 기존에 열린 활성 trial 세션이 있으면 새로 만들지 않고 재사용
+- 인증 없는 상담 세션 생성 요청이 401로 거절됨을 확인
+
+### Changed
+
+- 실제 LLM 호출 전까지는 세션 생성만 열고, OpenAI API 키가 필요한 메시지 전송은 다음 단계로 분리
+
+## [0.5.10.0] - 2026-07-11
+
+### Added
+
+- 인연 탭에 로그인 사용자용 초대 링크 생성, 복사, 받은 초대 수락 UI 추가
+- 초대 링크에는 생년월일시를 넣지 않고 고엔트로피 토큰만 담도록 구현
+- `accept-relationship-invite` Supabase Edge Function 추가 및 배포
+- 초대 토큰 검증, 자기 초대 방지, 만료/폐기/중복 수락 검사를 서버 함수에서 처리
+- `relationship_links` 활성 연결 목록을 로그인 사용자에게 표시
+
+### Changed
+
+- 경고가 발생하는 공개 `SECURITY DEFINER` RPC를 제거하고 Edge Function 경계로 수락 흐름 이동
+- Supabase 원격 DB 마이그레이션을 v0.5.10.0 상태까지 적용하고 advisor `No issues found` 확인
+
 ## [0.5.9.0] - 2026-07-11
 
 ### Added

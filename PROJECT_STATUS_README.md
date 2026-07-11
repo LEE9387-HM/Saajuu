@@ -1,6 +1,6 @@
 # Saajuu 과제 현황 / 핸드오프 문서
 
-마지막 정리일: 2026-07-11 KST (v0.5.9.0 작업 반영, Codex 인계용)
+마지막 정리일: 2026-07-11 KST (v0.5.11.0 작업 반영, Codex 인계용)
 현재 목적: 사주 기반 정적 PoC를 수익화 가능한 개인 맞춤 상담 서비스로 고도화
 
 이 문서는 도구(Claude Code, Codex 등)에 무관하게 이 저장소에서 작업을 이어받는
@@ -12,8 +12,8 @@
 - 배포 페이지: https://lee9387-hm.github.io/Saajuu/
 - GitHub 저장소: https://github.com/LEE9387-HM/Saajuu
 - 현재 브랜치: `main`
-- 최신 커밋: 이 문서가 포함된 v0.5.9.0 커밋
-- 현재 버전: `0.5.9.0` (`VERSION`, `package.json` 동일)
+- 최신 커밋: 이 문서가 포함된 v0.5.11.0 커밋
+- 현재 버전: `0.5.11.0` (`VERSION`, `package.json` 동일)
 - 수익화 계획: `docs/monetization-plan.md`
 - 점신 벤치마크: `docs/01_JEOMSIN_BENCHMARK.md`
 - 무료 콘텐츠 명세: `docs/02_FREE_CONTENT_SPEC.md`
@@ -25,11 +25,12 @@
 - 보류 작업(착수 조건 포함): `TODOS.md`
 - 변경 이력: `CHANGELOG.md`
 
-## 현재 상태 (v0.5.9.0)
+## 현재 상태 (v0.5.11.0)
 
 Saajuu는 Vite 기반 정적 웹앱이다. GitHub Actions가 `main` 푸시마다 테스트·빌드 후
-GitHub Pages에 자동 배포한다. 서버·DB·로그인은 없다. 모든 계산은 브라우저에서
-실행되고, 개인정보는 사용자 기기(localStorage)에만 저장된다.
+GitHub Pages에 자동 배포한다. 무료 사주 계산은 브라우저에서 실행되고, 생년월일시는
+기본적으로 사용자 기기(localStorage)에만 저장된다. 로그인, 동의 기록, 인연 초대/연결은
+Supabase Auth/Postgres/Edge Functions로 분리하기 시작했다.
 
 구현된 기능:
 
@@ -85,6 +86,16 @@ GitHub Pages에 자동 배포한다. 서버·DB·로그인은 없다. 모든 계
 - **필수 동의 기록(v0.5.9)**: 로그인한 사용자에게 서비스 이용약관, 개인정보 처리방침,
   AI 상담/오락·자기성찰 목적 고지 확인 폼을 표시하고 `consent_logs`에 동의 로그를 저장한다.
   저장된 현재 버전 동의는 다시 불러와 체크 상태로 표시한다.
+- **인연 초대 연결(v0.5.10)**: 로그인 사용자는 인연 탭에서 관계 유형별 초대 링크를 만들고
+  복사할 수 있다. 링크는 `#invite=` 토큰만 담고 생년월일시를 포함하지 않는다. 초대 수락은
+  Supabase Edge Function `accept-relationship-invite`가 검증하고 `relationship_links`에 활성
+  연결을 만든다. 공개 `SECURITY DEFINER` RPC는 advisor 경고 때문에 제거했고, 원격 DB advisor는
+  다시 `No issues found` 상태다.
+- **무료 상담 세션 생성(v0.5.11)**: 상담 탭에서 필수 동의가 완료된 로그인 사용자가 상담사,
+  주제, 상담 질문을 골라 무료 3턴 trial 세션을 만들 수 있다. Supabase Edge Function
+  `create-consultation-session`이 JWT와 동의 로그를 확인한 뒤 `concerns`와
+  `consultation_sessions`를 생성한다. 기존 활성 trial 세션이 있으면 재사용한다. 아직 LLM 메시지
+  전송은 없으며, OpenAI API 키가 필요한 다음 단계로 분리한다.
 - **수익화 기준 문서(v0.5.1)**: GPT 챗의 점신 벤치마크, 무료 콘텐츠 강화, 3인 AI
   페르소나, 프로 모드, 상담 퍼널, 서버/결제/개인정보 기준을 `docs/01~06_*.md`로 분리
 
@@ -247,18 +258,14 @@ https://lee9387-hm.github.io/Saajuu/
 
 ## 다음 단계 후보 (게이트 걸리지 않은 것부터)
 
-1. **모바일 정보구조와 무료 허브** — 오늘/내 사주/올해/인연/타로/상담/마이 구조를
-   잡되, 기존 사주 계산 흐름은 보존한다.
-2. **오늘의 운세 보고서 확장** — `src/daily.js`를 재사용해 총점, 시간대별 흐름,
-   일·관계·금전·생활 점수, 행운 아이템, 상담 연결 질문을 추가한다.
-3. **1회성 인연·궁합** — 다중 프로필 없이 상대 1명 입력, 궁합 점수, 잘 맞는 점,
-   충돌점, 상담 CTA를 검증한다.
-4. **상담사 3인 UI와 프로 모드 안내** — 미선 이모, 준호 형/오빠, 성우 선생 카드와
-   기본/프로 상담 차이를 노출한다.
-5. **유료화 서버 계층 설계** — Supabase Edge Functions/Vercel Functions/Cloudflare
-   Workers 중 택1. API 키 보호, LLM 호출 프록시, 상담 기록 저장 구조 설계
-6. **유료 상담 MVP** — 10분/30분 상담, 상담 후 요약 리포트, 결제 성공 시 세션 활성화
-7. **분석 고도화** — GoatCounter 이벤트를 보고 주제 선택 분포, 재방문 패턴 파악 →
+1. **실제 OAuth QA** — 카카오/Google 각각 로그인 후 `profiles`, `consent_logs`,
+   `relationship_invites`, `relationship_links`가 Supabase에서 정상 생성되는지 확인한다.
+2. **상담 대화 UI 껍데기** — 생성된 세션의 남은 턴과 메시지 입력 영역을 표시한다.
+3. **LLM 메시지 전송 Edge Function** — `OPENAI_API_KEY` 준비 후 `send-consultation-message`
+   구현. 안전 분류, 턴 수 차감, 메시지 저장을 서버에서 처리한다.
+4. **결제 주문/웹훅 Edge Function** — PortOne 테스트 계정 준비 후 상품 가격 검증,
+   주문 생성, 웹훅 검증, 이용권 발급을 구현한다.
+5. **분석 고도화** — GoatCounter 이벤트를 보고 주제 선택 분포, 재방문 패턴 파악 →
    위 "보류된 작업" 게이트 판단에 사용
 
 ## 안전/법적 가드레일 (반드시 유지)

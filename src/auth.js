@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL ?? "";
 const supabaseKey =
   import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env?.VITE_SUPABASE_ANON_KEY ?? "";
+const relationshipInviteDays = 7;
 
 export const REQUIRED_CONSENTS = [
   { type: "terms", label: "서비스 이용약관", version: "2026-07-11" },
@@ -110,6 +111,95 @@ export async function recordRequiredConsents(session) {
 
   const { error } = await supabase.from("consent_logs").insert(rows);
   return { recorded: !error, error };
+}
+
+function base64UrlEncode(bytes) {
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+async function sha256Hex(value) {
+  const data = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(hash)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function createInviteToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64UrlEncode(bytes);
+}
+
+export function getRelationshipInviteTokenFromHash(hash = window.location.hash) {
+  if (!hash.startsWith("#invite=")) return "";
+  return decodeURIComponent(hash.slice("#invite=".length)).trim();
+}
+
+export async function createRelationshipInvite(session, relationship) {
+  const supabase = getSupabaseClient();
+  const user = session?.user;
+  if (!supabase || !user) return { inviteUrl: "", error: new Error("로그인 후 초대 링크를 만들 수 있습니다.") };
+  if (!crypto?.subtle || !crypto?.getRandomValues) {
+    return { inviteUrl: "", error: new Error("이 브라우저에서는 안전한 초대 토큰을 만들 수 없습니다.") };
+  }
+
+  const token = createInviteToken();
+  const inviteTokenHash = await sha256Hex(token);
+  const expiresAt = new Date(Date.now() + relationshipInviteDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const { error } = await supabase.from("relationship_invites").insert({
+    inviter_user_id: user.id,
+    invite_token_hash: inviteTokenHash,
+    relationship,
+    expires_at: expiresAt,
+  });
+
+  if (error) return { inviteUrl: "", error };
+
+  const inviteUrl = `${window.location.origin}${window.location.pathname}#invite=${encodeURIComponent(token)}`;
+  return { inviteUrl, error: null };
+}
+
+export async function acceptRelationshipInvite(session, token) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 인연 초대를 수락할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("accept-relationship-invite", {
+    body: { inviteToken: token },
+  });
+
+  return { data: data ?? null, error };
+}
+
+export async function getRelationshipLinks(session) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) return { links: [], error: null };
+
+  const { data, error } = await supabase
+    .from("relationship_links")
+    .select("id, user_a_id, user_b_id, relationship, status, accepted_at, created_at")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  return { links: data ?? [], error };
+}
+
+export async function createConsultationSession(session, payload) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 무료 상담 체험을 시작할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("create-consultation-session", {
+    body: payload,
+  });
+
+  return { data: data ?? null, error };
 }
 
 export function onAuthStateChange(callback) {
