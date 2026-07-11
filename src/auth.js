@@ -202,6 +202,19 @@ export async function createConsultationSession(session, payload) {
   return { data: data ?? null, error };
 }
 
+export async function sendConsultationMessage(session, payload) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("濡쒓렇???? AI ?곷떞 硫붿떆吏瑜??꾨떖???덉뒿?덈떎.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("send-consultation-message", {
+    body: payload,
+  });
+
+  return { data: data ?? null, error };
+}
+
 export function onAuthStateChange(callback) {
   const supabase = getSupabaseClient();
   if (!supabase) return () => {};
