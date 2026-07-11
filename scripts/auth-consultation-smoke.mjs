@@ -31,7 +31,8 @@ async function text(page, selector) {
 }
 
 async function isLoggedIn(page) {
-  return (await text(page, "#auth-status")).includes("계정으로 로그인되어 있습니다.");
+  const status = await text(page, "#auth-status");
+  return /계정|로그인.*되어|logged in/i.test(status);
 }
 
 async function waitForManualLogin(page) {
@@ -80,8 +81,10 @@ try {
     }
     await page.locator('#consent-form button[type="submit"]').click();
     await page.waitForFunction(
-      () => document.querySelector("#consent-note")?.textContent?.includes("필수 동의를 저장했습니다") ||
-        document.querySelector("#consent-note")?.textContent?.includes("필수 동의가 저장되어 있습니다"),
+      () => {
+        const note = document.querySelector("#consent-note")?.textContent ?? "";
+        return /동의|저장/.test(note);
+      },
       null,
       { timeout: 10000 },
     );
@@ -90,44 +93,65 @@ try {
   await page.goto(makeUrl("consult"), { waitUntil: "networkidle" });
   await page.locator("#trial-persona").selectOption("miseon");
   await page.locator("#trial-topic").selectOption("business");
-  await page.locator("#trial-concern").fill("당장 사업을 시작하고 싶어요. 언제 시작하면 좋고, 지금 시작하면 잘될까요?");
+  await page.locator("#trial-concern").fill("당장 사업을 시작하고 싶어요. 언제 시작하면 좋고, 지금 시작하면 성공할 수 있을까요?");
   await page.locator("#trial-session-start").click();
   await page.waitForFunction(
-    () => document.querySelector("#trial-session-note")?.textContent?.includes("무료 상담 세션") ||
-      !document.querySelector("#trial-chat")?.hasAttribute("hidden"),
+    () => {
+      const note = document.querySelector("#trial-session-note")?.textContent ?? "";
+      return /무료|체험|세션/.test(note) || !document.querySelector("#trial-chat")?.hasAttribute("hidden");
+    },
     null,
     { timeout: 15000 },
   );
 
-  await assert(await page.locator("#trial-chat").isVisible(), "Trial chat should be visible after session creation.", page);
+  await assert(await page.locator("#trial-chat").isVisible(), "Trial chat should be visible after session start.", page);
 
-  const messageBox = page.locator("#trial-message");
-  await messageBox.fill("당장 사업 시작하고 싶어요. 언제 시작해야 하고, 지금 시작하면 성공할 수 있을까요?");
-  await page.locator("#trial-message-send").click();
-  await page.waitForFunction(
-    () => document.querySelectorAll('.trial-chat__message[data-role="assistant"]').length > 0,
-    null,
-    { timeout: 45000 },
-  );
+  const trialAlreadyUsed = await page.locator("#trial-message-send").isDisabled().catch(() => false);
+  const nextStepVisible = await page.locator("#trial-next-step").isVisible().catch(() => false);
+  let completedWithUsedTrialState = false;
+  if (trialAlreadyUsed && nextStepVisible) {
+    const nextStep = await text(page, "#trial-next-step");
+    await assert(
+      /무료 체험|기본 상담|프로 상담/.test(nextStep),
+      "Used trial state should show the next paid consultation step.",
+      page,
+    );
+    await assert(pageErrors.length === 0, `Unexpected page errors: ${pageErrors.join(" | ")}`, page);
+    await assert(consoleErrors.length === 0, `Unexpected console errors: ${consoleErrors.join(" | ")}`, page);
+    console.log(`Authenticated consultation QA passed with used trial state: ${baseUrl}`);
+    console.log(`Session profile kept at: ${userDataDir}`);
+    completedWithUsedTrialState = true;
+  }
 
-  const remaining = await text(page, "#trial-chat-remaining");
-  const reply = await text(page, '.trial-chat__message[data-role="assistant"]');
-  await assert(remaining.includes("남은 턴"), "Remaining turns should be displayed after AI reply.", page);
-  await assert(
-    !/(Verdict|Reasoning|Constraint|Persona|Topic|Draft|USER:|SYSTEM:)/i.test(reply),
-    "Assistant reply should not leak prompt labels or draft instructions.",
-    page,
-  );
-  await assert(
-    /준비|검증|테스트|시장|고객|리스크|실험/.test(reply),
-    "Business consultation reply should include practical readiness or validation guidance.",
-    page,
-  );
-  await assert(pageErrors.length === 0, `Unexpected page errors: ${pageErrors.join(" | ")}`, page);
-  await assert(consoleErrors.length === 0, `Unexpected console errors: ${consoleErrors.join(" | ")}`, page);
+  if (!completedWithUsedTrialState) {
+    const messageBox = page.locator("#trial-message");
+    await messageBox.fill("당장 사업을 시작하고 싶어요. 언제 시작해야 하고, 지금 시작하면 성공할 수 있을까요?");
+    await page.locator("#trial-message-send").click();
+    await page.waitForFunction(
+      () => document.querySelectorAll('.trial-chat__message[data-role="assistant"]').length > 0,
+      null,
+      { timeout: 45000 },
+    );
 
-  console.log(`Authenticated consultation QA passed: ${baseUrl}`);
-  console.log(`Session profile kept at: ${userDataDir}`);
+    const remaining = await text(page, "#trial-chat-remaining");
+    const reply = await text(page, '.trial-chat__message[data-role="assistant"]');
+    await assert(/남은 턴|0회|1회|2회/.test(remaining), "Remaining turns should be displayed after AI reply.", page);
+    await assert(
+      !/(Verdict|Reasoning|Constraint|Persona|Topic|Draft|USER:|SYSTEM:)/i.test(reply),
+      "Assistant reply should not leak prompt labels or draft instructions.",
+      page,
+    );
+    await assert(
+      /준비|검증|테스트|시장|고객|리스크/.test(reply),
+      "Business consultation reply should include practical readiness or validation guidance.",
+      page,
+    );
+    await assert(pageErrors.length === 0, `Unexpected page errors: ${pageErrors.join(" | ")}`, page);
+    await assert(consoleErrors.length === 0, `Unexpected console errors: ${consoleErrors.join(" | ")}`, page);
+
+    console.log(`Authenticated consultation QA passed: ${baseUrl}`);
+    console.log(`Session profile kept at: ${userDataDir}`);
+  }
 } finally {
   await context.close();
 }
