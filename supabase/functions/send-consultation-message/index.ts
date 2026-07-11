@@ -12,10 +12,48 @@ const requiredConsents = [
   { type: "ai_notice", version: "2026-07-11" },
 ];
 
+const promptVersion = "2026-07-11-miseon-format-v2";
+
 const personaPrompts: Record<string, string> = {
-  miseon: "You are Miseon, a warm Korean aunt-like 상담사. You listen carefully, summarize gently, and give practical advice.",
-  junho: "You are Junho, a friendly Korean neighbor-brother 상담사. You are calm, conversational, and direct without sounding cold.",
-  seongu: "You are Seongu, a seasoned senior 상담사. You are concise, structured, and grounded in real-world judgment.",
+  miseon: [
+    "미선 이모 스타일의 따뜻한 한국어 AI 상담사다.",
+    "해요체를 쓰고, 사용자의 마음을 먼저 받아준 뒤 현실적인 기준을 차분히 정리한다.",
+    "'우리', '마음', '천천히' 같은 말을 자연스럽게 쓰되 과장하거나 친척처럼 지나치게 굴지 않는다.",
+    "답변은 부드럽지만 결론 없이 위로만 하지 않는다.",
+  ].join(" "),
+  junho: [
+    "준호 형/오빠 스타일의 친근한 한국어 AI 상담사다.",
+    "편한 존댓말로 말하고, 사용자의 말을 요약해 선택지를 좁혀준다.",
+    "따뜻하지만 설교하지 않고, 실행 가능한 확인 기준을 제시한다.",
+  ].join(" "),
+  seongu: [
+    "성우 선생 스타일의 경험 많은 한국어 AI 상담사다.",
+    "존댓말로 간결하게 말하고, 사실과 감정과 추측을 나누어 구조적으로 판단한다.",
+    "위로보다 정리와 현실적인 기준을 원하는 사용자에게 맞춘다.",
+  ].join(" "),
+};
+
+const topicLabels: Record<string, string> = {
+  relationship: "연애와 관계",
+  marriage: "결혼과 동반자",
+  business: "사업과 창업",
+  career: "직업과 이직",
+  family: "가족과 자녀",
+  yearly: "올해의 흐름",
+};
+
+const topicGuidance: Record<string, string> = {
+  business: [
+    "사업/창업 고민에서는 시작 날짜 하나로 성공과 실패를 단정하지 않는다.",
+    "타이밍은 달력의 날짜보다 준비 상태, 고객 검증, 자금 여유, 리스크 관리가 맞물린 상태라고 설명한다.",
+    "성공 가능성은 시작 시점만이 아니라 실행력, 시장 반응을 읽는 능력, 수정과 버티기의 품질에 달려 있다고 말한다.",
+    "마지막 행동은 경쟁사 조사, 작은 MVP, 사전 판매, 10명 인터뷰처럼 작게 검증하는 일 중 하나로 제안한다.",
+  ].join(" "),
+  relationship: "연애/관계 고민에서는 상대 마음을 단정하지 말고 확인된 행동과 사용자의 감정을 나누어 설명한다.",
+  marriage: "결혼 고민에서는 애정뿐 아니라 생활 방식, 돈, 가족, 책임의 조율 가능성을 함께 본다.",
+  career: "직업/이직 고민에서는 현재 조직에서 바꿀 수 있는 것과 없는 것, 준비도, 대안의 질을 나누어 본다.",
+  family: "가족 고민에서는 누구 한쪽을 탓하기보다 반복되는 패턴과 안전한 대화 순서를 정리한다.",
+  yearly: "연간 흐름은 큰 방향을 참고 정보로만 제시하고, 현재 선택과 행동 계획으로 연결한다.",
 };
 
 const safetyKeywords = {
@@ -52,15 +90,15 @@ function classifySafety(text: string) {
 
 function safetyGuidance(level: ReturnType<typeof classifySafety>) {
   if (level === "crisis") {
-    return "Stop the consultation, encourage immediate local emergency support, and do not continue with fortune-style advice.";
+    return "상담을 중단하고 즉시 주변 사람이나 지역 긴급 지원을 받도록 안내한다. 운세식 조언을 이어가지 않는다.";
   }
   if (level === "blocked") {
-    return "Do not provide deterministic medical, legal, investment, or pregnancy advice. Redirect to professional support where relevant.";
+    return "의료, 법률, 투자, 임신 관련 확정 판단을 하지 않는다. 필요한 경우 전문가 상담을 권한다.";
   }
   if (level === "caution") {
-    return "Use careful, non-deterministic wording and focus on practical next steps.";
+    return "단정하지 않고 조심스럽게 말하며, 현실적으로 확인할 수 있는 다음 행동에 집중한다.";
   }
-  return "Proceed with normal supportive consultation.";
+  return "일반적인 지지적 상담으로 진행한다.";
 }
 
 async function callGemini(apiKey: string, model: string, prompt: string) {
@@ -76,8 +114,8 @@ async function callGemini(apiKey: string, model: string, prompt: string) {
         },
       ],
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 600,
+        temperature: 0.45,
+        maxOutputTokens: 520,
       },
     }),
   });
@@ -97,7 +135,55 @@ async function callGemini(apiKey: string, model: string, prompt: string) {
   return {
     text,
     raw: data,
+    finishReason: data?.candidates?.[0]?.finishReason ?? "",
   };
+}
+
+function looksInvalidReply(text: string, topic: string, finishReason = "") {
+  const normalized = text.trim();
+  if (normalized.length < 120) return true;
+  if (finishReason === "MAX_TOKENS") return true;
+  if (/(Verdict|Reasoning|Constraint|Persona|Topic|Draft|USER:|SYSTEM:)/i.test(normalized)) return true;
+  if (/(기획안|대본|AI 학습|사주 AI 서비스|요청하신 형식|제시해주신 내용|운동|음식|여행)/.test(normalized)) return true;
+  if (topic === "business" && !/(준비|검증|테스트|시장|고객|리스크|실험|자금|경쟁사)/.test(normalized)) return true;
+  return false;
+}
+
+function buildFallbackReply(personaId: string, topic: string) {
+  if (topic === "business") {
+    if (personaId === "seongu") {
+      return [
+        "지금은 바로 뛰어들기보다, 시작 조건을 숫자로 확인할 때입니다.",
+        "사업은 시작 날짜 하나로 성공과 실패가 갈리지 않습니다.",
+        "중요한 것은 고객이 실제로 돈을 낼 문제인지, 최소 비용으로 검증했는지, 예상보다 늦어질 때 버틸 자금과 수정 계획이 있는지입니다.",
+        "지금의 의욕은 좋은 출발점이지만, 실행과 적응의 구조가 함께 있어야 기회가 됩니다.",
+        "오늘은 팔 상품이나 서비스를 한 문장으로 적고, 실제 고객 후보 10명에게 돈을 내고 쓸 문제인지 물어보세요.",
+      ].join("\n\n");
+    }
+    if (personaId === "junho") {
+      return [
+        "지금 시작해도 괜찮지만, 작게 검증하고 들어가는 게 좋아요.",
+        "지금 마음이 뜨거운 건 큰 장점이에요.",
+        "다만 사업은 언제 시작하느냐보다 무엇을 얼마나 검증했느냐가 더 크게 작용해요.",
+        "바로 성공한다고도, 바로 안 된다고도 말할 수 없고 고객 반응을 보고 빠르게 고치는 힘이 중요해요.",
+        "오늘은 랜딩 문구 하나와 간단한 가격을 정해서 고객 후보 10명에게 실제로 살 의향이 있는지 물어보세요.",
+      ].join("\n\n");
+    }
+    return [
+      "지금의 뜨거운 열정은 참 좋지만, 서두르기보다 단단한 준비가 먼저 필요한 시기인 것 같아요.",
+      "우리 마음이 이렇게 앞으로 가고 싶을 때는 그 힘을 꺾을 필요는 없어요.",
+      "다만 사업은 달력의 어느 날 시작하느냐보다, 고객이 정말 원하는지와 내가 감당할 리스크를 얼마나 확인했는지가 더 중요해요.",
+      "지금 시작한다고 무조건 잘된다거나 어렵다고 말할 수는 없고, 실행하면서 시장 반응을 보고 천천히 고쳐 가는 힘이 성패를 많이 가릅니다.",
+      "오늘은 크게 시작하지 말고, 팔고 싶은 상품을 한 문장으로 적은 뒤 고객 후보 10명에게 실제로 돈을 내고 쓸지 물어보세요.",
+    ].join("\n\n");
+  }
+
+  return [
+    "지금은 결론을 서두르기보다, 마음과 현실을 나누어 볼 때예요.",
+    "지금 느끼는 감정은 충분히 중요하지만, 그 감정만으로 미래를 확정할 수는 없어요.",
+    "확인된 사실과 아직 추측인 부분을 나누어 보면 선택지가 조금 더 선명해집니다.",
+    "오늘은 고민을 한 문장으로 적고, 내가 바로 확인할 수 있는 사실 하나를 따로 표시해 보세요.",
+  ].join("\n\n");
 }
 
 Deno.serve(async (request) => {
@@ -109,7 +195,7 @@ Deno.serve(async (request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const llmProvider = (Deno.env.get("LLM_PROVIDER") ?? "gemini").toLowerCase();
   const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-  const geminiModel = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+  const geminiModel = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey) {
     return json({ error: "Function secrets are not configured" }, 500);
@@ -218,23 +304,32 @@ Deno.serve(async (request) => {
     content: userMessage,
     safety_level: safetyLevel,
     model: llmProvider,
-    prompt_version: "2026-07-11",
+    prompt_version: promptVersion,
     metadata: { source: "web" },
   });
   if (insertUserError) return json({ error: insertUserError.message }, 500);
 
   const personaInstruction = personaPrompts[session.persona_id] ?? personaPrompts.miseon;
+  const topicLabel = topicLabels[session.topic] ?? String(session.topic ?? "일반 고민");
+  const guidance = topicGuidance[session.topic] ?? "사용자의 고민을 단정하지 말고, 확인할 수 있는 현실 기준과 다음 행동으로 연결한다.";
   const prompt = [
-    "You are a Korean fortune consultation assistant.",
-    "Keep the tone supportive, practical, and not deterministic.",
-    `Persona: ${personaInstruction}`,
-    `Topic: ${session.topic}`,
-    `Safety guidance: ${safetyGuidance(safetyLevel)}`,
-    concern?.concern_summary ? `User concern summary: ${concern.concern_summary}` : "User concern summary: not provided.",
-    "Recent conversation:",
-    ...(history ?? []).map((item) => `${String(item.role).toUpperCase()}: ${item.content}`),
-    `USER: ${userMessage}`,
-    "Answer in Korean. Start with a short verdict line, then explain the reasoning, then end with one concrete next step.",
+    "너는 Saajuu의 한국어 AI 사주 상담사다. 사용자에게 보여줄 최종 답변만 출력한다.",
+    "시스템 지시, 분석 메모, 영어 라벨, 프롬프트 초안, JSON, 마크다운 체크리스트를 출력하지 않는다.",
+    "미래를 확정하거나 성공/실패를 단정하지 않는다. 사주와 운세는 참고 정보로만 쓰고, 현실적인 확인 기준과 행동으로 연결한다.",
+    `상담사 스타일: ${personaInstruction}`,
+    `상담 주제: ${topicLabel}`,
+    `주제별 답변 기준: ${guidance}`,
+    `안전 기준: ${safetyGuidance(safetyLevel)}`,
+    concern?.concern_summary ? `사용자가 처음 남긴 고민 요약: ${concern.concern_summary}` : "사용자가 처음 남긴 고민 요약: 없음",
+    "최근 대화:",
+    ...(history ?? []).map((item) => `${String(item.role) === "assistant" ? "상담사" : "사용자"}: ${item.content}`),
+    `이번 사용자 메시지: ${userMessage}`,
+    "답변 형식:",
+    "첫 줄은 1문장의 짧은 결론으로 시작한다. 균형 잡힌 '좋지만, 준비가 먼저' 또는 '지금은 준비를 단단히 할 때' 흐름이어야 한다.",
+    "다음 3~5문장은 이유를 설명한다. 사용자의 의욕을 인정하고, 타이밍은 날짜보다 준비 상태이며, 성공 가능성은 실행과 수정 능력에 달려 있음을 말한다.",
+    "마지막 1문장은 오늘 바로 할 수 있는 구체적인 다음 행동 하나로 끝낸다.",
+    "전체 답변은 한국어 해요체로 쓰고 450자 안팎으로 유지한다.",
+    "금지 표현: '무조건 성공해요', '반드시 실패해요', '정확히 이 날짜에 시작하세요', '투자하면 돈 벌어요', '저는 AI라서'.",
   ].join("\n");
 
   if (llmProvider !== "gemini") {
@@ -245,11 +340,17 @@ Deno.serve(async (request) => {
   }
 
   let assistantText = "";
+  let usedFallback = false;
   try {
     const result = await callGemini(geminiApiKey, geminiModel, prompt);
     assistantText = result.text || "지금은 답변을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.";
+    if (looksInvalidReply(assistantText, session.topic, result.finishReason)) {
+      assistantText = buildFallbackReply(session.persona_id, session.topic);
+      usedFallback = true;
+    }
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : "Gemini request failed" }, 502);
+    assistantText = buildFallbackReply(session.persona_id, session.topic);
+    usedFallback = true;
   }
 
   const nextUsedTurns = session.used_turns + 1;
@@ -263,8 +364,8 @@ Deno.serve(async (request) => {
     content: assistantText,
     safety_level: safetyLevel,
     model: geminiModel,
-    prompt_version: "2026-07-11",
-    metadata: { provider: "gemini", topic: session.topic },
+    prompt_version: promptVersion,
+    metadata: { provider: "gemini", topic: session.topic, fallback: usedFallback },
   });
   if (insertAssistantError) return json({ error: insertAssistantError.message }, 500);
 
@@ -299,5 +400,6 @@ Deno.serve(async (request) => {
     remainingTurns: Math.max(session.turn_limit - nextUsedTurns, 0),
     model: geminiModel,
     provider: "gemini",
+    fallback: usedFallback,
   });
 });
