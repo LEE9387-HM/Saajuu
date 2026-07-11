@@ -670,6 +670,69 @@ button:hover {
   line-height: 1.55;
 }
 
+.trial-chat {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(77 128 114 / 22%);
+}
+
+.trial-chat__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+
+.trial-chat__head strong {
+  font-size: 0.88rem;
+}
+
+.trial-chat__remaining,
+.trial-chat__head span {
+  color: #53646b;
+}
+
+.trial-chat__log {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 4px 2px;
+}
+
+.trial-chat__message {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+}
+
+.trial-chat__message[data-role="assistant"] {
+  border-color: rgb(77 128 114 / 32%);
+  background: #f8fbf7;
+}
+
+.trial-chat__message span {
+  color: #53646b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trial-chat__message p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .mini-form {
   display: grid;
   gap: 12px;

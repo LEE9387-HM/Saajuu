@@ -205,7 +205,7 @@ export async function createConsultationSession(session, payload) {
 export async function sendConsultationMessage(session, payload) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) {
-    return { data: null, error: new Error("濡쒓렇???? AI ?곷떞 硫붿떆吏瑜??꾨떖???덉뒿?덈떎.") };
+    return { data: null, error: new Error("로그인 후 AI 상담 메시지를 보낼 수 있습니다.") };
   }
 
   const { data, error } = await supabase.functions.invoke("send-consultation-message", {

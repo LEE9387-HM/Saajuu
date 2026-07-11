@@ -33,6 +33,7 @@ import {
   onAuthStateChange,
   recordRequiredConsents,
   REQUIRED_CONSENTS,
+  sendConsultationMessage,
   signInWithOAuthProvider,
   signOut,
   syncProfileForSession,
@@ -91,10 +92,18 @@ const trialTopic = document.querySelector("#trial-topic");
 const trialConcern = document.querySelector("#trial-concern");
 const trialSessionStart = document.querySelector("#trial-session-start");
 const trialSessionNote = document.querySelector("#trial-session-note");
+const trialChat = document.querySelector("#trial-chat");
+const trialChatStatus = document.querySelector("#trial-chat-status");
+const trialChatRemaining = document.querySelector("#trial-chat-remaining");
+const trialChatLog = document.querySelector("#trial-chat-log");
+const trialMessage = document.querySelector("#trial-message");
+const trialMessageSend = document.querySelector("#trial-message-send");
 let activeSession = null;
 let hasRequiredConsents = false;
 let pendingRelationshipInviteToken = "";
 let latestRelationshipInviteUrl = "";
+let activeConsultationSession = null;
+let activeConsultationMessages = [];
 
 premiumInterestButton?.addEventListener("click", () => {
   // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
@@ -200,6 +209,67 @@ function updateTrialSessionState() {
   }
 }
 
+function renderTrialChatMessages() {
+  if (!trialChatLog) return;
+  if (!activeConsultationMessages.length) {
+    trialChatLog.innerHTML = "<p class=\"auth-panel__note\">상담을 시작하면 대화가 여기 쌓입니다.</p>";
+    return;
+  }
+
+  trialChatLog.innerHTML = activeConsultationMessages
+    .map(
+      (message) => `
+        <article class="trial-chat__message" data-role="${escapeHtml(message.role)}">
+          <span>${message.role === "assistant" ? "AI 상담" : "나"}</span>
+          <p>${escapeHtml(message.content)}</p>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function updateTrialChatUi() {
+  if (!trialChat || !trialMessageSend || !trialChatStatus || !trialChatRemaining) return;
+
+  const hasSession = Boolean(activeConsultationSession);
+  trialChat.hidden = !hasSession;
+  if (!hasSession) {
+    trialMessageSend.disabled = true;
+    return;
+  }
+
+  const turnLimit = Number(activeConsultationSession.turn_limit ?? 0);
+  const usedTurns = Number(activeConsultationSession.used_turns ?? 0);
+  const remainingTurns = Math.max(turnLimit - usedTurns, 0);
+  const isActive = activeConsultationSession.status === "active" && remainingTurns > 0;
+
+  trialChatStatus.textContent =
+    activeConsultationSession.status === "completed"
+      ? "무료 상담 3턴을 모두 사용했습니다"
+      : "무료 상담 세션이 열려 있습니다";
+  trialChatRemaining.textContent = `남은 턴 ${remainingTurns}회`;
+  trialMessageSend.disabled = !isActive;
+  if (trialMessage) trialMessage.disabled = !isActive;
+  renderTrialChatMessages();
+}
+
+function setActiveConsultationSession(session, reused = false) {
+  activeConsultationSession = session
+    ? {
+        ...session,
+        turn_limit: Number(session.turn_limit ?? 0),
+        used_turns: Number(session.used_turns ?? 0),
+      }
+    : null;
+  activeConsultationMessages = reused ? [] : [];
+  updateTrialChatUi();
+}
+
+function appendTrialMessage(role, content) {
+  activeConsultationMessages = [...activeConsultationMessages, { role, content }];
+  renderTrialChatMessages();
+}
+
 async function refreshRelationshipPanel(session) {
   if (!relationshipAccountPanel) return;
 
@@ -267,6 +337,7 @@ async function initAuthPanel() {
     if (!session) {
       hasRequiredConsents = false;
       consentNote.textContent = "";
+      setActiveConsultationSession(null);
       updateTrialSessionState();
       return;
     }
@@ -471,11 +542,60 @@ async function initAuthPanel() {
     const session = data?.session;
     const sessionId = session?.id ? String(session.id).slice(0, 8) : "";
     const remainingTurns = session ? Number(session.turn_limit) - Number(session.used_turns) : 3;
+    setActiveConsultationSession(session, Boolean(data?.reused));
     track("trial_started");
     trialSessionNote.textContent = data?.reused
       ? `이미 열린 무료 상담 세션을 불러왔습니다. 남은 턴 ${remainingTurns}회 · ${sessionId}`
       : `무료 상담 세션을 만들었습니다. 남은 턴 ${remainingTurns}회 · ${sessionId}`;
     updateTrialSessionState();
+  });
+
+  trialMessageSend?.addEventListener("click", async () => {
+    if (!activeSession) {
+      trialSessionNote.textContent = "로그인 후 AI 상담 메시지를 보낼 수 있습니다.";
+      return;
+    }
+    if (!activeConsultationSession?.id) {
+      trialSessionNote.textContent = "먼저 무료 상담 세션을 만들어 주세요.";
+      return;
+    }
+
+    const message = trialMessage?.value?.trim();
+    if (!message) {
+      trialSessionNote.textContent = "보낼 메시지를 입력해 주세요.";
+      return;
+    }
+
+    trialMessageSend.disabled = true;
+    if (trialMessage) trialMessage.disabled = true;
+    trialSessionNote.textContent = "AI 상담 답변을 받고 있습니다.";
+    appendTrialMessage("user", message);
+
+    const { data, error: messageError } = await sendConsultationMessage(activeSession, {
+      sessionId: activeConsultationSession.id,
+      message,
+    });
+
+    if (messageError) {
+      trialSessionNote.textContent = messageError.message;
+      activeConsultationMessages = activeConsultationMessages.slice(0, -1);
+      updateTrialChatUi();
+      return;
+    }
+
+    appendTrialMessage("assistant", data?.reply ?? "지금은 답변을 받지 못했습니다.");
+    activeConsultationSession = {
+      ...activeConsultationSession,
+      used_turns: Number(data?.usedTurns ?? activeConsultationSession.used_turns),
+      status: Number(data?.remainingTurns ?? 0) > 0 ? "active" : "completed",
+    };
+    if (trialMessage) trialMessage.value = "";
+    track("trial_message_sent");
+    trialSessionNote.textContent =
+      Number(data?.remainingTurns ?? 0) > 0
+        ? `답변을 받았습니다. 남은 턴 ${Number(data?.remainingTurns)}회`
+        : "답변을 받았습니다. 무료 3턴을 모두 사용했습니다.";
+    updateTrialChatUi();
   });
 }
 

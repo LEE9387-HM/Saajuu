@@ -409,6 +409,25 @@
                 무료 3턴 상담 세션 만들기
               </button>
               <p id="trial-session-note" class="auth-panel__note" role="status"></p>
+              <div id="trial-chat" class="trial-chat" hidden>
+                <div class="trial-chat__head">
+                  <strong id="trial-chat-status">세션 준비 중</strong>
+                  <span id="trial-chat-remaining">남은 턴 0회</span>
+                </div>
+                <div id="trial-chat-log" class="trial-chat__log" aria-live="polite"></div>
+                <label class="trial-session__concern">
+                  <span>메시지 보내기</span>
+                  <textarea
+                    id="trial-message"
+                    rows="3"
+                    maxlength="1200"
+                    placeholder="예: 상대가 연락이 줄었는데 기다리는 게 맞을까요?"
+                  ></textarea>
+                </label>
+                <button type="button" class="auth-button auth-button--ghost" id="trial-message-send">
+                  상담 메시지 보내기
+                </button>
+              </div>
             </div>
           </article>
 
