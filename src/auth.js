@@ -189,6 +189,33 @@ export async function getRelationshipLinks(session) {
   return { links: data ?? [], error };
 }
 
+async function normalizeFunctionError(error) {
+  if (!error) return null;
+
+  let details = null;
+  const context = error.context;
+
+  if (context?.json) {
+    try {
+      details = await context.json();
+    } catch {
+      details = null;
+    }
+  } else if (context?.text) {
+    try {
+      details = JSON.parse(await context.text());
+    } catch {
+      details = null;
+    }
+  }
+
+  const normalized = new Error(details?.error ?? error.message ?? "Supabase Function call failed");
+  normalized.code = details?.code ?? error.code ?? null;
+  normalized.status = error.status ?? context?.status ?? null;
+  normalized.details = details;
+  return normalized;
+}
+
 export async function createConsultationSession(session, payload) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) {
@@ -199,7 +226,7 @@ export async function createConsultationSession(session, payload) {
     body: payload,
   });
 
-  return { data: data ?? null, error };
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
 export async function sendConsultationMessage(session, payload) {
@@ -212,7 +239,7 @@ export async function sendConsultationMessage(session, payload) {
     body: payload,
   });
 
-  return { data: data ?? null, error };
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
 export function onAuthStateChange(callback) {

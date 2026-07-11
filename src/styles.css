@@ -725,12 +725,56 @@ button:hover {
   text-transform: uppercase;
 }
 
-.trial-chat__message p {
+.trial-chat__message-body {
+  display: grid;
+  gap: 8px;
+}
+
+.trial-chat__message-body p {
   margin: 0;
   color: var(--ink);
   font-size: 0.9rem;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.trial-next-step {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgb(77 128 114 / 28%);
+  background: #f8fbf7;
+}
+
+.trial-next-step[hidden] {
+  display: none;
+}
+
+.trial-next-step strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.trial-next-step p {
+  margin: 0;
+  color: #53646b;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.trial-next-step div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trial-next-step span {
+  padding: 5px 8px;
+  border: 1px solid rgb(77 128 114 / 24%);
+  background: #ffffff;
+  color: #4d8072;
+  font-size: 0.74rem;
+  font-weight: 800;
 }
 
 .mini-form {

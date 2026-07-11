@@ -1,5 +1,17 @@
 ﻿# Changelog
 
+## [0.5.18.0] - 2026-07-12
+
+### Changed
+
+- 상담 메시지를 문단 단위로 렌더링하고 최신 답변으로 자동 스크롤되도록 개선
+- 무료 3턴 체험 종료 후 기본 상담권과 프로 상담으로 이어지는 다음 단계 안내 표시
+
+### Fixed
+
+- 완료된 무료 trial 세션 이후 새 trial을 반복 생성할 수 있던 Edge Function 흐름 차단
+- Supabase Edge Function 에러 본문의 `code`와 `message`를 프런트에서 보존해 `trial_used` 상태 구분
+
 ## [0.5.17.0] - 2026-07-11
 
 ### Changed

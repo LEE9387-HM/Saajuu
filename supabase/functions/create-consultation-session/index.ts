@@ -127,6 +127,28 @@ Deno.serve(async (request) => {
     });
   }
 
+  const { data: completedTrial, error: completedTrialError } = await adminClient
+    .from("consultation_sessions")
+    .select("id, status, turn_limit, used_turns, completed_at, created_at")
+    .eq("user_id", currentUser.id)
+    .eq("mode", "trial")
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (completedTrialError) return json({ error: completedTrialError.message }, 500);
+  if (completedTrial) {
+    return json(
+      {
+        error: "무료 3턴 체험을 이미 사용했습니다.",
+        code: "trial_used",
+        session: completedTrial,
+      },
+      409,
+    );
+  }
+
   const { data: product, error: productError } = await adminClient
     .from("products")
     .select("id, mode, turn_limit, valid_for")

@@ -98,6 +98,7 @@ const trialChatRemaining = document.querySelector("#trial-chat-remaining");
 const trialChatLog = document.querySelector("#trial-chat-log");
 const trialMessage = document.querySelector("#trial-message");
 const trialMessageSend = document.querySelector("#trial-message-send");
+const trialNextStep = document.querySelector("#trial-next-step");
 let activeSession = null;
 let hasRequiredConsents = false;
 let pendingRelationshipInviteToken = "";
@@ -228,11 +229,14 @@ function renderTrialChatMessages() {
       (message) => `
         <article class="trial-chat__message" data-role="${escapeHtml(message.role)}">
           <span>${message.role === "assistant" ? "AI 상담" : "나"}</span>
-          <p>${escapeHtml(message.content)}</p>
+          <div class="trial-chat__message-body">
+            ${renderMessageParagraphs(message.content)}
+          </div>
         </article>
       `,
     )
     .join("");
+  trialChatLog.scrollTop = trialChatLog.scrollHeight;
 }
 
 function updateTrialChatUi() {
@@ -240,6 +244,7 @@ function updateTrialChatUi() {
 
   const hasSession = Boolean(activeConsultationSession);
   trialChat.hidden = !hasSession;
+  if (trialNextStep) trialNextStep.hidden = true;
   if (!hasSession) {
     trialMessageSend.disabled = true;
     return;
@@ -257,6 +262,17 @@ function updateTrialChatUi() {
   trialChatRemaining.textContent = `남은 턴 ${remainingTurns}회`;
   trialMessageSend.disabled = !isActive;
   if (trialMessage) trialMessage.disabled = !isActive;
+  if (trialNextStep && !isActive) {
+    trialNextStep.hidden = false;
+    trialNextStep.innerHTML = `
+      <strong>무료 체험이 끝났습니다</strong>
+      <p>다음 단계는 기본 상담권과 프로 상담으로 이어집니다. 기본 상담은 10턴 대화와 짧은 요약, 프로 상담은 더 긴 문맥과 선택지별 행동 계획을 제공하는 구조로 준비합니다.</p>
+      <div>
+        <span>기본 상담 10턴</span>
+        <span>프로 상담 20턴 + 상세 리포트</span>
+      </div>
+    `;
+  }
   renderTrialChatMessages();
 }
 
@@ -542,8 +558,19 @@ async function initAuthPanel() {
     });
 
     if (sessionError) {
-      trialSessionNote.textContent = sessionError.message;
+      trialSessionNote.textContent =
+        sessionError.code === "trial_used"
+          ? "무료 3턴 체험을 이미 사용했습니다. 다음 단계는 기본 상담권과 프로 상담으로 이어집니다."
+          : sessionError.message;
+      if (sessionError.code === "trial_used") {
+        activeConsultationSession = {
+          status: "completed",
+          turn_limit: 3,
+          used_turns: 3,
+        };
+      }
       updateTrialSessionState();
+      updateTrialChatUi();
       return;
     }
 
@@ -1219,6 +1246,16 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function renderMessageParagraphs(value) {
+  const paragraphs = String(value)
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (!paragraphs.length) return "<p></p>";
+  return paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
 }
 
 function renderList(items) {
