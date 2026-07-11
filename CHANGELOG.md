@@ -2,6 +2,60 @@
 
 이 프로젝트의 주요 변경사항을 기록합니다.
 
+## [0.5.9.0] - 2026-07-11
+
+### Added
+
+- 로그인한 사용자에게 필수 동의 폼 표시
+- 서비스 이용약관, 개인정보 처리방침, AI 상담/오락·자기성찰 목적 고지를 `consent_logs`에 저장하는 클라이언트 로직 추가
+- 저장된 필수 동의 상태를 불러와 이미 완료된 항목을 체크 상태로 표시
+
+## [0.5.8.0] - 2026-07-11
+
+### Added
+
+- Supabase 원격 프로젝트 `eizojtispxmlwvhgpmgs`에 초기 수익화 스키마 마이그레이션 적용
+- Supabase advisor 경고 해소용 보강 마이그레이션 추가
+
+### Changed
+
+- `set_updated_at()` 함수에 고정 `search_path` 설정
+- `analytics_events` INSERT RLS 정책을 민감 필드 차단과 이벤트 이름 형식 검사로 강화
+- `public.rls_auto_enable()` 실행 권한을 public/anon/authenticated에서 회수
+- Supabase CLI 임시 링크 파일이 커밋되지 않도록 `supabase/.temp/` 무시
+
+## [0.5.7.0] - 2026-07-11
+
+### Added
+
+- OAuth 로그인 성공 후 `profiles` 테이블에 사용자 프로필을 upsert하는 준비 로직 추가
+- Supabase DB 마이그레이션이 아직 적용되지 않은 경우에도 로그인 UI가 깨지지 않도록 프로필 저장 실패를 안내 문구로 처리
+
+## [0.5.6.0] - 2026-07-11
+
+### Added
+
+- Supabase Auth 클라이언트 모듈 추가
+- 마이 영역에 카카오/Google OAuth 로그인 버튼과 로그인 상태 표시 UI 추가
+- `.env.example`에 legacy `VITE_SUPABASE_ANON_KEY` 별칭 안내 추가
+
+### Changed
+
+- PortOne/PG와 OpenAI API 키 없이도 로그인 검증을 먼저 진행할 수 있도록 인증 범위를 분리
+
+## [0.5.5.0] - 2026-07-11
+
+### Added
+
+- Supabase project ref `eizojtispxmlwvhgpmgs` 기준 초기 수익화 DB 마이그레이션 초안 추가
+- 계정, 동의, 출생정보, 인연 초대/연결, 상담사, 상품, 주문, 이용권, 상담 세션, 메시지, 요약, 안전 이벤트, 광고 보상, 분석 이벤트 테이블 설계
+- 모든 앱 테이블에 RLS 활성화 및 소유자 중심 정책/권한 초안 추가
+- Supabase 적용 계획 문서, 운영 README, `.env.example` 추가
+
+### Changed
+
+- 로컬 Agent Skills 산출물과 Supabase/NVIDIA/점신 참고 자료가 공개 저장소에 들어가지 않도록 `.gitignore` 정비
+
 ## [0.5.4.0] - 2026-07-11
 
 ### Added

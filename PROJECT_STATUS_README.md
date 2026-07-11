@@ -1,6 +1,6 @@
 # Saajuu 과제 현황 / 핸드오프 문서
 
-마지막 정리일: 2026-07-11 KST (v0.5.4.0 작업 반영, Codex 인계용)
+마지막 정리일: 2026-07-11 KST (v0.5.9.0 작업 반영, Codex 인계용)
 현재 목적: 사주 기반 정적 PoC를 수익화 가능한 개인 맞춤 상담 서비스로 고도화
 
 이 문서는 도구(Claude Code, Codex 등)에 무관하게 이 저장소에서 작업을 이어받는
@@ -12,8 +12,8 @@
 - 배포 페이지: https://lee9387-hm.github.io/Saajuu/
 - GitHub 저장소: https://github.com/LEE9387-HM/Saajuu
 - 현재 브랜치: `main`
-- 최신 커밋: 이 문서가 포함된 v0.5.4.0 커밋
-- 현재 버전: `0.5.4.0` (`VERSION`, `package.json` 동일)
+- 최신 커밋: 이 문서가 포함된 v0.5.9.0 커밋
+- 현재 버전: `0.5.9.0` (`VERSION`, `package.json` 동일)
 - 수익화 계획: `docs/monetization-plan.md`
 - 점신 벤치마크: `docs/01_JEOMSIN_BENCHMARK.md`
 - 무료 콘텐츠 명세: `docs/02_FREE_CONTENT_SPEC.md`
@@ -25,7 +25,7 @@
 - 보류 작업(착수 조건 포함): `TODOS.md`
 - 변경 이력: `CHANGELOG.md`
 
-## 현재 상태 (v0.5.4.0)
+## 현재 상태 (v0.5.9.0)
 
 Saajuu는 Vite 기반 정적 웹앱이다. GitHub Actions가 `main` 푸시마다 테스트·빌드 후
 GitHub Pages에 자동 배포한다. 서버·DB·로그인은 없다. 모든 계산은 브라우저에서
@@ -66,6 +66,25 @@ GitHub Pages에 자동 배포한다. 서버·DB·로그인은 없다. 모든 계
   성우 선생의 말투·상담 분야·샘플 톤을 보여주고, 고민 주제별 추천 상담사 2명을
   표시한다. 무료 체험/기본 상담/프로 상담은 별도 모드 카드로 분리해 성능 등급과
   페르소나가 섞이지 않게 했다.
+- **Supabase 서버 계층 기준선(v0.5.5)**: Supabase 프로젝트 `eizojtispxmlwvhgpmgs`
+  기준으로 계정, 동의, 출생정보, 인연 초대/연결, 상담사/상품 카탈로그, 주문, 이용권,
+  상담 세션, 메시지, 요약, 안전 이벤트, 광고 보상, 분석 이벤트의 초기 DB 마이그레이션
+  초안을 추가했다. 원격 DB에는 아직 적용하지 않았고, 개인정보/동의 문구와 Edge Function
+  경계 확정 후 advisor/RLS 검토를 거쳐 적용한다.
+- **Supabase Auth 시작점(v0.5.6)**: `.env`의 `VITE_SUPABASE_URL`과
+  `VITE_SUPABASE_PUBLISHABLE_KEY` 또는 `VITE_SUPABASE_ANON_KEY`를 사용해 마이 영역에서
+  카카오/Google OAuth 로그인을 시작할 수 있다. 현재는 세션 표시와 로그아웃까지이며,
+  프로필 DB 생성, 인연 초대 수락, 상담 세션 생성은 DB 적용 후 진행한다.
+- **로그인 프로필 동기화 준비(v0.5.7)**: 로그인 세션이 생기면 `profiles` 테이블에
+  사용자 id와 표시 이름을 upsert한다. OAuth metadata는 표시용으로만 쓰며 권한 판단에는
+  사용하지 않는다. 원격 DB 마이그레이션이 적용되지 않았을 때는 로그인 상태를 유지하고
+  프로필 저장 대기 안내만 표시한다.
+- **Supabase 원격 DB 적용(v0.5.8)**: 초기 수익화 스키마와 advisor 보강 마이그레이션을
+  Supabase 프로젝트 `eizojtispxmlwvhgpmgs`에 적용했다. `npx supabase db advisors --linked
+  --type all --level warn --fail-on none` 결과는 `No issues found`다.
+- **필수 동의 기록(v0.5.9)**: 로그인한 사용자에게 서비스 이용약관, 개인정보 처리방침,
+  AI 상담/오락·자기성찰 목적 고지 확인 폼을 표시하고 `consent_logs`에 동의 로그를 저장한다.
+  저장된 현재 버전 동의는 다시 불러와 체크 상태로 표시한다.
 - **수익화 기준 문서(v0.5.1)**: GPT 챗의 점신 벤치마크, 무료 콘텐츠 강화, 3인 AI
   페르소나, 프로 모드, 상담 퍼널, 서버/결제/개인정보 기준을 `docs/01~06_*.md`로 분리
 

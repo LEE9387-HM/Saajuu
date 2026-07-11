@@ -6,9 +6,12 @@ dist/
 
 # Local/private agent and benchmark materials
 .claude/
+.agents/
+skills-lock.json
 점신/
 local-reference/
 data/nemotron-korea/
+supabase/.temp/
 
 # Secrets
 .env

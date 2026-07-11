@@ -21,6 +21,17 @@ import { buildDailyFortune, localDateKey } from "./daily.js";
 import { decodeShareHash, encodeShareHash } from "./share.js";
 import { clearProfile, loadProfile, saveProfile } from "./storage.js";
 import { initAnalytics, track } from "./track.js";
+import {
+  getCurrentSession,
+  getRequiredConsentStatus,
+  isSupabaseConfigured,
+  onAuthStateChange,
+  recordRequiredConsents,
+  REQUIRED_CONSENTS,
+  signInWithOAuthProvider,
+  signOut,
+  syncProfileForSession,
+} from "./auth.js";
 
 const SWATCH_COLORS = { 목: "#3f7d5c", 화: "#c05a44", 토: "#c5964f", 금: "#9aa3ab", 수: "#22333f" };
 
@@ -48,6 +59,13 @@ const compatibilityResult = document.querySelector("#compatibility-result");
 const personaCards = document.querySelector("#persona-cards");
 const modeCards = document.querySelector("#mode-cards");
 const personaRecommendation = document.querySelector("#persona-recommendation");
+const authStatus = document.querySelector("#auth-status");
+const authNote = document.querySelector("#auth-note");
+const authButtons = [...document.querySelectorAll("[data-auth-provider]")];
+const authSignout = document.querySelector("#auth-signout");
+const consentForm = document.querySelector("#consent-form");
+const consentNote = document.querySelector("#consent-note");
+let activeSession = null;
 
 premiumInterestButton?.addEventListener("click", () => {
   // 이벤트는 항상 계측한다 — 수요 신호가 목적이라 영구 비활성화하지 않는다.
@@ -80,6 +98,7 @@ for (const tone of TONE_OPTIONS) {
 }
 
 renderConsultationCatalog();
+initAuthPanel();
 
 topicSelect.addEventListener("change", () => {
   updatePersonaRecommendation(topicSelect.value);
@@ -111,6 +130,139 @@ modeCards?.addEventListener("click", (event) => {
       ? "프로 상담은 깊은 분석과 리포트 구조로 먼저 준비하겠습니다."
       : `${mode.name} 상품 구성이 정리되면 알려드릴게요.`;
 });
+
+async function initAuthPanel() {
+  if (!authStatus) return;
+
+  if (!isSupabaseConfigured()) {
+    authStatus.textContent = "Supabase 공개 URL과 publishable/anon key가 필요합니다.";
+    authNote.textContent = ".env에 VITE_SUPABASE_URL과 VITE_SUPABASE_PUBLISHABLE_KEY를 입력한 뒤 다시 실행하세요.";
+    authButtons.forEach((button) => {
+      button.disabled = true;
+    });
+    return;
+  }
+
+  const syncProfile = async (session) => {
+    if (!session) return;
+    const { synced, error: syncError } = await syncProfileForSession(session);
+    if (synced) {
+      authNote.textContent = "계정 프로필을 저장했습니다. 인연 초대와 상담 기록 저장은 다음 단계에서 이어집니다.";
+      track("auth_profile_sync");
+      return;
+    }
+    if (syncError) {
+      authNote.textContent = "로그인은 완료됐습니다. 프로필 저장은 Supabase DB 마이그레이션 적용 후 활성화됩니다.";
+    }
+  };
+
+  const updateConsentUi = async (session) => {
+    if (!consentForm) return;
+    activeSession = session;
+    consentForm.hidden = !session;
+    if (!session) {
+      consentNote.textContent = "";
+      return;
+    }
+
+    const { completed, acceptedTypes, error: consentError } = await getRequiredConsentStatus(session);
+    if (consentError) {
+      consentNote.textContent = "동의 상태는 원격 DB 연결 확인 후 다시 불러옵니다.";
+      return;
+    }
+
+    REQUIRED_CONSENTS.forEach((consent) => {
+      const input = consentForm.elements.namedItem(consent.type);
+      if (input instanceof HTMLInputElement) input.checked = acceptedTypes.has(consent.type);
+    });
+
+    consentNote.textContent = completed
+      ? "필수 동의가 저장되어 있습니다. 상담 체험 준비를 이어갈 수 있습니다."
+      : "상담 체험과 기록 저장을 위해 필수 고지를 확인해 주세요.";
+  };
+
+  const updateAuthUi = (session) => {
+    const email = session?.user?.email;
+    authStatus.textContent = email ? `${email} 계정으로 로그인되어 있습니다.` : "로그인하면 상담 체험과 인연 초대를 준비할 수 있습니다.";
+    authButtons.forEach((button) => {
+      button.hidden = Boolean(session);
+      button.disabled = false;
+    });
+    if (authSignout) authSignout.hidden = !session;
+    if (!session) {
+      authNote.textContent = "실제 상담권·결제·AI 대화는 서버 함수와 정책 검토 후 열립니다.";
+    }
+  };
+
+  const { session, error } = await getCurrentSession();
+  if (error) {
+    authStatus.textContent = "로그인 상태를 불러오지 못했습니다.";
+    authNote.textContent = error.message;
+  } else {
+    updateAuthUi(session);
+    await syncProfile(session);
+    await updateConsentUi(session);
+  }
+
+  onAuthStateChange((nextSession) => {
+    updateAuthUi(nextSession);
+    syncProfile(nextSession);
+    updateConsentUi(nextSession);
+  });
+
+  authButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const provider = button.dataset.authProvider;
+      if (!provider) return;
+      track(`auth_${provider}_start`);
+      authStatus.textContent = `${button.textContent.trim()} 화면으로 이동합니다.`;
+      button.disabled = true;
+      const { error: signInError } = await signInWithOAuthProvider(provider);
+      if (signInError) {
+        authStatus.textContent = "로그인을 시작하지 못했습니다.";
+        authNote.textContent = signInError.message;
+        button.disabled = false;
+      }
+    });
+  });
+
+  authSignout?.addEventListener("click", async () => {
+    track("auth_signout");
+    authStatus.textContent = "로그아웃 중입니다.";
+    const { error: signOutError } = await signOut();
+    if (signOutError) {
+      authStatus.textContent = "로그아웃하지 못했습니다.";
+      authNote.textContent = signOutError.message;
+    }
+  });
+
+  consentForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!activeSession) {
+      consentNote.textContent = "로그인 후 동의를 저장할 수 있습니다.";
+      return;
+    }
+
+    const allChecked = REQUIRED_CONSENTS.every((consent) => {
+      const input = consentForm.elements.namedItem(consent.type);
+      return input instanceof HTMLInputElement && input.checked;
+    });
+    if (!allChecked) {
+      consentNote.textContent = "필수 고지를 모두 확인해 주세요.";
+      return;
+    }
+
+    consentNote.textContent = "필수 동의를 저장하고 있습니다.";
+    const { recorded, error: consentSaveError } = await recordRequiredConsents(activeSession);
+    if (recorded) {
+      track("required_consents_saved");
+      consentNote.textContent = "필수 동의를 저장했습니다. 다음 단계에서 무료 상담 체험을 열 수 있습니다.";
+      return;
+    }
+
+    consentNote.textContent = consentSaveError?.message ?? "동의를 저장하지 못했습니다.";
+  });
+}
 
 calendarType.addEventListener("change", () => {
   leapMonthField.hidden = calendarType.value !== "lunar";

@@ -115,6 +115,22 @@ v0.5.0.0은 정적 PoC로 안정화되어 있다. 바로 서버/결제로 뛰기
 - 상담 세션 스키마 초안
 - API 키 프런트 노출 금지 검증
 
+v0.5.5 진행 상태:
+
+- Supabase 프로젝트 `eizojtispxmlwvhgpmgs` 선택 완료
+- Codex MCP OAuth 연결 확인 완료
+- 초기 DB 마이그레이션 초안 작성 완료
+- v0.5.8에서 원격 DB 적용 완료 및 Supabase advisor `No issues found` 확인
+- v0.5.6에서 마이 영역 카카오/Google OAuth 시작 버튼과 세션 표시 UI 추가 완료
+
+다음 작업:
+
+1. 실제 카카오/Google 로그인 후 `profiles` upsert 동작 확인
+2. 필수 약관/개인정보/AI 고지 동의 화면 추가 — v0.5.9 완료
+3. `consent_logs` 생성 흐름 구현 — v0.5.9 완료
+4. 인연 초대 링크 생성 및 수락 흐름 구현
+5. 상담 세션 생성 Edge Function 구현
+
 ## 보류 유지
 
 | 항목 | 조건 |

@@ -344,10 +344,45 @@
           <article id="my-page" class="hub-card">
             <p class="eyebrow">마이</p>
             <h3>저장과 기록의 시작점</h3>
-            <p>현재는 이 기기에 단일 프로필만 저장합니다. 다중 프로필은 사용 데이터가 쌓인 뒤 시작합니다.</p>
+            <p>로그인하면 상담 체험, 인연 초대, 상담 기록 저장으로 이어질 수 있습니다.</p>
+            <div class="auth-panel" aria-live="polite">
+              <p id="auth-status" class="auth-panel__status">로그인 상태를 확인하고 있습니다.</p>
+              <div class="auth-panel__actions">
+                <button type="button" class="auth-button auth-button--kakao" data-auth-provider="kakao">
+                  카카오로 시작
+                </button>
+                <button type="button" class="auth-button auth-button--google" data-auth-provider="google">
+                  Google로 시작
+                </button>
+                <button type="button" class="auth-button auth-button--ghost" id="auth-signout" hidden>
+                  로그아웃
+                </button>
+              </div>
+              <p id="auth-note" class="auth-panel__note">
+                실제 상담권·결제·AI 대화는 서버 함수와 정책 검토 후 열립니다.
+              </p>
+            </div>
+            <form id="consent-form" class="consent-form" hidden>
+              <p class="eyebrow">필수 동의</p>
+              <h4>상담 체험 전 필요한 고지</h4>
+              <label>
+                <input type="checkbox" name="terms" required />
+                서비스 이용약관을 확인했습니다.
+              </label>
+              <label>
+                <input type="checkbox" name="privacy" required />
+                생년월일시와 상담 내용의 수집·보관 기준을 확인했습니다.
+              </label>
+              <label>
+                <input type="checkbox" name="ai_notice" required />
+                AI 상담은 의료·법률·투자·임신 판단을 대체하지 않는 참고용 서비스임을 확인했습니다.
+              </label>
+              <button type="submit" class="auth-button auth-button--ghost">필수 동의 저장</button>
+              <p id="consent-note" class="auth-panel__note" role="status"></p>
+            </form>
             <ul>
               <li>단일 localStorage 프로필</li>
-              <li>정보 수정·삭제</li>
+              <li>카카오·Google 로그인과 필수 동의 기록</li>
               <li>향후 상담 요약 보관</li>
             </ul>
           </article>

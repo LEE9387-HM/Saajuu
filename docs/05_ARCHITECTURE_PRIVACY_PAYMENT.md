@@ -111,3 +111,27 @@ Vite Frontend
 - 상품 범위, 이용기간, 환불 기준
 - 사업자 정보와 고객센터
 - 제3자 처리 위탁: LLM, 결제, 이메일 등
+
+## v0.5.5 Supabase 선택 및 적용 경계
+
+Supabase 프로젝트 `eizojtispxmlwvhgpmgs`를 서버 계층의 1차 후보로 확정했다.
+
+v0.5.8에서 초기 마이그레이션과 advisor 보강 마이그레이션을 Supabase 원격 DB에 적용했다.
+
+- 마이그레이션: `supabase/migrations/20260711002500_initial_monetization_schema.sql`
+- 보강 마이그레이션: `supabase/migrations/20260711065737_harden_advisor_findings.sql`
+- 운영 메모: `supabase/README.md`
+- 적용 계획: `docs/07_SUPABASE_IMPLEMENTATION_PLAN.md`
+- 환경변수 예시: `.env.example`
+
+적용 전 필수 조건:
+
+1. 개인정보처리방침과 약관의 수집 항목, 보관기간, 삭제 정책 초안 확정
+2. 상담 시작 전 AI 고지와 민감 상담 동의 문구 확정
+3. Auth redirect URL과 로그인 제공자 확정
+4. Edge Functions에서만 처리할 작업 경계 확정
+5. Edge Functions 구현 전 실제 로그인/프로필 저장 동작 확인
+
+프런트엔드는 브라우저 공개 키만 사용한다. `SUPABASE_SERVICE_ROLE_KEY`, LLM 키, PG 키는 Edge Functions 또는 별도 서버 런타임에서만 사용한다.
+
+원격 적용 후 Supabase advisor 결과는 `No issues found`다.
