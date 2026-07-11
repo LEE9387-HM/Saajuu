@@ -1,5 +1,12 @@
 ﻿# Changelog
 
+## [0.5.14.0] - 2026-07-11
+
+### Fixed
+
+- GitHub Pages 배포 워크플로에 VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY 환경변수를 주입하도록 수정
+- 라이브 배포본에서 로그인과 무료 3턴 세션 생성이 막히던 원인을 제거
+
 ## [0.5.13.0] - 2026-07-11
 
 ### Added
