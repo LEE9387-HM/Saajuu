@@ -201,12 +201,19 @@ function renderRelationshipLinks(links) {
 
 function updateTrialSessionState() {
   if (!trialSessionStart) return;
-  trialSessionStart.disabled = !activeSession || !hasRequiredConsents;
+  trialSessionStart.disabled = false;
   if (!activeSession && trialSessionNote) {
     trialSessionNote.textContent = "마이에서 로그인하면 무료 상담 체험을 준비할 수 있습니다.";
   } else if (activeSession && !hasRequiredConsents && trialSessionNote) {
     trialSessionNote.textContent = "마이에서 필수 동의를 저장한 뒤 무료 상담 체험을 시작할 수 있습니다.";
   }
+}
+
+function focusMyPageForConsultation() {
+  if (window.location.hash !== "#my-page") {
+    window.location.hash = "my-page";
+  }
+  document.querySelector("#my-page")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderTrialChatMessages() {
@@ -512,11 +519,12 @@ async function initAuthPanel() {
   trialSessionStart?.addEventListener("click", async () => {
     if (!activeSession) {
       trialSessionNote.textContent = "로그인 후 무료 상담 체험을 시작할 수 있습니다.";
+      focusMyPageForConsultation();
       return;
     }
     if (!hasRequiredConsents) {
       trialSessionNote.textContent = "필수 동의를 먼저 저장해 주세요.";
-      document.querySelector("#my-page")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      focusMyPageForConsultation();
       return;
     }
 
