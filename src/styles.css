@@ -404,6 +404,10 @@ button:hover {
   gap: 16px;
 }
 
+.hub-grid > .hub-card:not([hidden]) {
+  grid-column: 1 / -1;
+}
+
 .hub-card {
   grid-column: span 2;
   min-height: 280px;
@@ -957,6 +961,7 @@ button:hover {
 .persona-cards,
 .mode-cards {
   grid-template-columns: minmax(0, 1fr);
+  max-width: 760px;
 }
 
 .persona-recommendation span {
