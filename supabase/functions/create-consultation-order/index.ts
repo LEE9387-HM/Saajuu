@@ -114,7 +114,7 @@ Deno.serve(async (request) => {
       amount_krw: product.price_krw,
       status: "pending",
       metadata: {
-        checkout_status: "pg_not_configured",
+        checkout_status: "ready",
         product_mode: product.mode,
         requested_from: "web",
       },
@@ -128,8 +128,8 @@ Deno.serve(async (request) => {
     order,
     product,
     checkout: {
-      status: "pg_not_configured",
-      message: "PortOne 테스트 계정 연결 후 결제창을 열 수 있습니다.",
+      status: "ready",
+      message: "PortOne 결제창을 열 수 있습니다.",
     },
   });
 });

@@ -242,6 +242,19 @@ export async function createConsultationOrder(session, payload) {
   return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
+export async function completePortonePayment(session, payload) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 결제 완료를 확인할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("complete-portone-payment", {
+    body: payload,
+  });
+
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
+}
+
 export async function sendConsultationMessage(session, payload) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) {

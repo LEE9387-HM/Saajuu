@@ -1,7 +1,7 @@
 {
   "name": "saajuu",
   "private": true,
-  "version": "0.5.20.0",
+  "version": "0.5.21.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@portone/browser-sdk": "0.1.9",
     "@supabase/supabase-js": "2.110.2",
     "manseryeok": "^2.0.0"
   },

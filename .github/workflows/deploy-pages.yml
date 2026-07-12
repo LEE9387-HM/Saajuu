@@ -40,6 +40,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_PORTONE_STORE_ID: ${{ secrets.VITE_PORTONE_STORE_ID }}
+          VITE_PORTONE_CHANNEL_KEY: ${{ secrets.VITE_PORTONE_CHANNEL_KEY }}
         run: npm run build
 
       - name: Upload Pages artifact

@@ -1,4 +1,5 @@
 import "./styles.css";
+import * as PortOne from "@portone/browser-sdk/v2";
 import {
   analyzeName,
   CONSULTATION_MODES,
@@ -23,6 +24,7 @@ import { clearProfile, loadProfile, saveProfile } from "./storage.js";
 import { initAnalytics, track } from "./track.js";
 import {
   acceptRelationshipInvite,
+  completePortonePayment,
   createConsultationOrder,
   createConsultationSession,
   createRelationshipInvite,
@@ -49,6 +51,8 @@ const RELATIONSHIP_LABELS = {
   family: "가족",
   work: "직장",
 };
+const portoneStoreId = import.meta.env?.VITE_PORTONE_STORE_ID ?? "";
+const portoneChannelKey = import.meta.env?.VITE_PORTONE_CHANNEL_KEY ?? "";
 
 const form = document.querySelector("#birth-form");
 const calendarType = document.querySelector("#calendar-type");
@@ -662,12 +666,17 @@ async function initAuthPanel() {
     }
 
     const productId = button.dataset.orderProduct;
+    if (!portoneStoreId || !portoneChannelKey) {
+      setNote("PortOne Store ID와 Channel Key가 아직 설정되지 않았습니다.");
+      return;
+    }
+
     button.disabled = true;
     setNote("상담권 주문 정보를 서버에 준비하고 있습니다.");
     const { data, error: orderError } = await createConsultationOrder(activeSession, { productId });
-    button.disabled = false;
 
     if (orderError) {
+      button.disabled = false;
       setNote(orderError.message);
       return;
     }
@@ -675,8 +684,50 @@ async function initAuthPanel() {
     const amount = Number(data?.order?.amount_krw ?? 0).toLocaleString("ko-KR");
     const orderId = data?.order?.provider_order_id ?? data?.order?.id ?? "";
     const productName = data?.product?.name ?? "상담권";
-    setNote(`${productName} ${amount}원 주문 준비가 완료됐습니다. PortOne 테스트 계정 연결 후 결제창을 열 수 있습니다. 주문번호 ${orderId}`);
+    setNote(`${productName} ${amount}원 주문을 준비했습니다. 결제창을 여는 중입니다.`);
     track("paid_order_intent");
+
+    let paymentResponse;
+    try {
+      paymentResponse = await PortOne.requestPayment({
+        storeId: portoneStoreId,
+        channelKey: portoneChannelKey,
+        paymentId: orderId,
+        orderName: productName,
+        totalAmount: Number(data?.order?.amount_krw ?? 0),
+        currency: "CURRENCY_KRW",
+        payMethod: "CARD",
+      });
+    } catch (error) {
+      button.disabled = false;
+      setNote(error instanceof Error ? error.message : "결제창을 열지 못했습니다.");
+      return;
+    }
+
+    if (paymentResponse?.code) {
+      button.disabled = false;
+      setNote(paymentResponse.message ?? "결제가 완료되지 않았습니다.");
+      return;
+    }
+
+    setNote("결제 결과를 서버에서 검증하고 있습니다.");
+    const paymentId = paymentResponse?.paymentId ?? orderId;
+    const { data: completeData, error: completeError } = await completePortonePayment(activeSession, { paymentId });
+    button.disabled = false;
+
+    if (completeError) {
+      setNote(`결제 검증에 실패했습니다. ${completeError.message}`);
+      return;
+    }
+
+    if (completeData?.finalized) {
+      const turns = completeData?.entitlement?.total_turns ?? data?.product?.turn_limit ?? "";
+      setNote(`${productName} 결제가 확인됐습니다. 상담 ${turns}턴 이용권이 발급됐습니다.`);
+      track("payment_complete");
+      return;
+    }
+
+    setNote("결제는 접수됐지만 아직 완료 상태가 아닙니다. 상태가 바뀌면 웹훅으로 다시 확인합니다.");
   });
 }
 

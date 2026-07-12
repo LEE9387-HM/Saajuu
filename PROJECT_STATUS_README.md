@@ -1,6 +1,6 @@
 # Saajuu 怨쇱젣 ?꾪솴 / ?몃뱶?ㅽ봽 臾몄꽌
 
-留덉?留??뺣━?? 2026-07-12 KST (v0.5.20.0 ?묒뾽 諛섏쁺, Codex ?멸퀎??
+留덉?留??뺣━?? 2026-07-12 KST (v0.5.21.0 ?묒뾽 諛섏쁺, Codex ?멸퀎??
 ?꾩옱 紐⑹쟻: ?ъ＜ 湲곕컲 ?뺤쟻 PoC瑜??섏씡??媛?ν븳 媛쒖씤 留욎땄 ?곷떞 ?쒕퉬?ㅻ줈 怨좊룄??
 ??臾몄꽌???꾧뎄(Claude Code, Codex ????臾닿??섍쾶 ????μ냼?먯꽌 ?묒뾽???댁뼱諛쏅뒗
 ?꾧뎄??泥?踰덉㎏濡??쎌뼱???섎뒗 ?뚯씪?대떎. 濡쒖뺄 ?꾩슜 寃쎈줈(?? ?ㅻⅨ ?꾧뎄???몄뀡
@@ -10,8 +10,8 @@
 - 諛고룷 ?섏씠吏: https://lee9387-hm.github.io/Saajuu/
 - GitHub ??μ냼: https://github.com/LEE9387-HM/Saajuu
 - ?꾩옱 釉뚮옖移? `main`
-- 理쒖떊 而ㅻ컠: ??臾몄꽌媛 ?ы븿??v0.5.20.0 而ㅻ컠
-- ?꾩옱 踰꾩쟾: `0.5.20.0` (`VERSION`, `package.json` ?숈씪)
+- 理쒖떊 而ㅻ컠: ??臾몄꽌媛 ?ы븿??v0.5.21.0 而ㅻ컠
+- ?꾩옱 踰꾩쟾: `0.5.21.0` (`VERSION`, `package.json` ?숈씪)
 - ?섏씡??怨꾪쉷: `docs/monetization-plan.md`
 - ?먯떊 踰ㅼ튂留덊겕: `docs/01_JEOMSIN_BENCHMARK.md`
 - 臾대즺 肄섑뀗痢?紐낆꽭: `docs/02_FREE_CONTENT_SPEC.md`
@@ -23,7 +23,7 @@
 - 蹂대쪟 ?묒뾽(李⑹닔 議곌굔 ?ы븿): `TODOS.md`
 - 蹂寃??대젰: `CHANGELOG.md`
 
-## ?꾩옱 ?곹깭 (v0.5.20.0)
+## ?꾩옱 ?곹깭 (v0.5.21.0)
 
 Saajuu??Vite 湲곕컲 ?뺤쟻 ?뱀빋?대떎. GitHub Actions媛 `main` ?몄떆留덈떎 ?뚯뒪?맞룸퉴????GitHub Pages???먮룞 諛고룷?쒕떎. 臾대즺 ?ъ＜ 怨꾩궛? 釉뚮씪?곗??먯꽌 ?ㅽ뻾?섍퀬, ?앸뀈?붿씪?쒕뒗
 湲곕낯?곸쑝濡??ъ슜??湲곌린(localStorage)?먮쭔 ??λ맂?? 濡쒓렇?? ?숈쓽 湲곕줉, ?몄뿰 珥덈?/?곌껐?
@@ -92,6 +92,7 @@ Supabase Auth/Postgres/Edge Functions濡?遺꾨━?섍린 ?쒖옉?덈떎.
 - **무료 상담 종료/반복 생성 방지(v0.5.18)**: 완료된 무료 trial 세션 뒤 새 무료 세션이 반복 생성되지 않도록 `create-consultation-session` Edge Function에서 `trial_used`를 반환한다. 프런트는 Supabase Function 에러 본문의 `code`를 보존해 이미 사용한 무료 체험 상태를 구분하고, 상담 메시지를 문단 단위로 표시하며 무료 3턴 종료 후 기본 상담권/프로 상담 안내를 보여준다.
 - **사용 완료 계정 QA 보강(v0.5.19)**: `npm run qa:auth`가 이미 무료 3턴을 모두 사용한 로그인 계정에서도 다음 상담권/프로 상담 안내가 보이면 정상 흐름으로 통과하도록 조정했다.
 - **유료 상담권 주문 준비(v0.5.20)**: `create-consultation-order` Edge Function을 배포해 로그인과 필수 동의를 마친 사용자만 기본 상담권/프로 상담 주문을 `pending` 상태로 만들 수 있게 했다. PortOne/PG 검증 전에는 이용권을 발급하지 않고, 프런트는 무료 체험 종료 후 주문 준비 완료와 PG 연결 대기 상태를 안내한다.
+- **PortOne 테스트 결제 연결(v0.5.21)**: PortOne V2 브라우저 SDK, `complete-portone-payment`, `portone-webhook` Edge Function을 연결했다. 결제창 응답만으로 이용권을 발급하지 않고 PortOne 결제 단건 조회로 `PAID` 상태와 금액을 검증한 뒤에만 `entitlements`를 발급한다. 웹훅 함수는 JWT 없이 PortOne 서명 검증으로만 수신한다.
 - **?섏씡??湲곗? 臾몄꽌(v0.5.1)**: GPT 梨쀬쓽 ?먯떊 踰ㅼ튂留덊겕, 臾대즺 肄섑뀗痢?媛뺥솕, 3??AI
   ?섎Ⅴ?뚮굹, ?꾨줈 紐⑤뱶, ?곷떞 ?쇰꼸, ?쒕쾭/寃곗젣/媛쒖씤?뺣낫 湲곗???`docs/01~06_*.md`濡?遺꾨━
 

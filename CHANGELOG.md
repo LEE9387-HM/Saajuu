@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.21.0] - 2026-07-12
+
+### Added
+
+- PortOne V2 브라우저 SDK를 연결해 무료 상담 종료 후 기본/프로 상담권 결제창을 열 수 있도록 준비
+- `complete-portone-payment` Edge Function 추가 및 배포
+- `portone-webhook` Edge Function 추가 및 JWT 없이 PortOne 서명 검증으로만 수신하도록 배포
+
+### Changed
+
+- 결제 완료 후 브라우저 응답만 신뢰하지 않고 PortOne 결제 단건 조회 API로 금액과 상태를 검증한 뒤에만 이용권을 발급
+- GitHub Pages 빌드에 PortOne 공개 설정(`VITE_PORTONE_STORE_ID`, `VITE_PORTONE_CHANNEL_KEY`)을 주입하도록 워크플로 갱신
+
 ## [0.5.20.0] - 2026-07-12
 
 ### Added
