@@ -63,25 +63,25 @@ export const CONSULTATION_MODES = [
     id: "trial",
     name: "무료 체험",
     price: "0원",
-    turns: "3턴",
-    summary: "상담사 한 명과 고민의 핵심을 가볍게 잡습니다.",
-    features: ["핵심 사주 근거 1~2개", "현재 질문 중심", "저장 24시간 후보"],
+    turns: "대화 3회",
+    summary: "마음을 듣고, 조건을 좁히고, 다음 행동을 정리합니다.",
+    features: ["공감과 핵심 확인", "현실 조건 구체화", "선택지와 다음 행동"],
   },
   {
     id: "basic",
     name: "기본 상담",
     price: "4,900~9,900원",
-    turns: "10턴",
+    turns: "대화 10회",
     summary: "대화 전체를 바탕으로 선택지와 짧은 요약을 제공합니다.",
-    features: ["상담사 3명 선택", "핵심 사주 근거 3~5개", "24시간 후속 질문 후보"],
+    features: ["상담사 3명 선택", "대화 전체 맥락 반영", "상담 요약 제공"],
   },
   {
     id: "pro",
     name: "프로 상담",
     price: "14,900원부터",
-    turns: "20턴 이상",
+    turns: "대화 20회 이상",
     summary: "고민 구조화, 상반 근거 검토, 행동 계획까지 깊게 정리합니다.",
-    features: ["대운·세운·관계 종합", "다단계 분석과 안전 검토", "상세 리포트와 7일 후속 상담 후보"],
+    features: ["현재 상황과 장기 흐름 종합", "선택지별 장단점 비교", "상세 리포트와 7일 후속 상담"],
   },
 ];
 
@@ -934,18 +934,30 @@ export function buildDetailedReading(chart) {
   ];
 }
 
-export function buildTopicReading(chart, topic = "relationship") {
+export function buildTopicReading(chart, topic = "relationship", concern = "") {
   const context = getReadingContext(chart);
   const meta = TOPIC_META[topic] ?? TOPIC_META.relationship;
+  const normalizedConcern = normalizeFreeText(concern);
+  const concernTitle = normalizedConcern ? `“${normalizedConcern}” 질문부터 풀어볼게요` : meta.title(context);
+  const concernCopy = normalizedConcern
+    ? `${meta.copy(context)} 지금 적어주신 질문에서는 운의 좋고 나쁨보다 “무엇이 이미 확인됐고, 무엇을 아직 추측하고 있는지”를 나누는 일이 먼저입니다.`
+    : meta.copy(context);
+  const concernQuestions = normalizedConcern
+    ? [
+        `“${normalizedConcern}”에서 가장 바꾸고 싶은 장면은 무엇인가요?`,
+        "이 고민과 관련해 이미 확인된 사실은 무엇이고, 아직 추측인 부분은 무엇인가요?",
+        meta.questions[0],
+      ]
+    : meta.questions;
 
   return {
     eyebrow: meta.eyebrow,
     verdict: meta.verdict,
-    title: meta.title(context),
-    copy: meta.copy(context),
+    title: concernTitle,
+    copy: concernCopy,
     point: meta.point,
     checklist: meta.checklist,
-    questions: meta.questions,
+    questions: concernQuestions,
     evidence: [
       `일간 ${context.dayPillar.stem}`,
       `${context.balance.strongest.element} ${context.balance.strongest.count}`,
@@ -972,7 +984,8 @@ function scoreCompatibility(primary, partner, relationKey) {
   const elementRelation = relationBetweenElements(primaryElement, partnerElement);
   const dayStemMatch = primaryContext.dayPillar.stem === partnerContext.dayPillar.stem ? 6 : 0;
   const dayBranchMatch = primaryContext.dayPillar.branch === partnerContext.dayPillar.branch ? 4 : 0;
-  const relationBoost = { same: 8, generates: 12, generatedBy: 10, controls: -6, controlledBy: -4 }[elementRelation];
+  // 관계 점수는 두 사람의 입력 순서를 바꿔도 같아야 한다. 방향성은 설명에서만 다룬다.
+  const relationBoost = { same: 8, generates: 11, generatedBy: 11, controls: -5, controlledBy: -5 }[elementRelation];
   const topicBoost = relationKey === "spouse" || relationKey === "lover" ? 4 : relationKey === "reunion" ? -2 : 0;
   return Math.max(42, Math.min(94, 68 + relationBoost + dayStemMatch + dayBranchMatch + topicBoost));
 }

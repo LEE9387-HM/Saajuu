@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="생년월일시와 한글 이름으로 사주, 오행, 성명학 보조 해석, 궁합, 결혼, 사업, 신년운세 관점의 맞춤 풀이를 읽는 브라우저 기반 만세력"
+      content="생년월일시와 지금의 고민을 바탕으로 사주, 오늘의 흐름, 궁합과 AI 상담을 차분히 살펴보는 서비스"
     />
     <meta name="theme-color" content="#152a38" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <title>사주 한 장 | 간단 만세력</title>
+    <title>사주 한 장 | 고민을 정리하는 사주 상담</title>
   </head>
   <body>
     <main>
@@ -198,7 +198,7 @@
                 maxlength="80"
                 placeholder="예: 결혼을 확신해도 될지 고민돼요"
               />
-              <small>선택 입력 · 정적 버전에서는 문맥을 요약해 상담 질문으로 연결합니다</small>
+              <small>선택 입력 · 적어주신 질문을 중심으로 결과를 먼저 보여드려요</small>
             </label>
 
             <label id="leap-month-field" class="check-field" hidden>
@@ -206,10 +206,7 @@
               <span>윤달로 입력</span>
             </label>
 
-            <p class="form-note">
-              현재 버전은 브라우저 안에서만 계산합니다. 입력값은 서버로 전송하거나
-              저장하지 않습니다.
-            </p>
+            <p class="form-note">생년월일시와 이름은 이 기기에서만 계산하며, 계정이나 상담 기록에 자동 저장하지 않습니다.</p>
 
             <button type="submit">
               <span>나의 사주 펼쳐보기</span>
@@ -222,29 +219,27 @@
 
       <section class="free-hub" aria-labelledby="free-hub-title">
         <div class="section-heading">
-          <p class="eyebrow">무료 콘텐츠 허브</p>
-          <h2 id="free-hub-title">점신형 탐색 구조를 Saajuu답게 정리합니다</h2>
-          <p>
-            현재는 정적 앱이므로 개인정보와 결제 없이 볼 수 있는 콘텐츠부터 단계적으로 확장합니다.
-          </p>
+          <p class="eyebrow">나의 운세</p>
+          <h2 id="free-hub-title">궁금한 내용만 골라서 보세요</h2>
+          <p>상단 메뉴에서 오늘의 흐름, 인연, 상담과 내 기록을 바로 오갈 수 있어요.</p>
         </div>
 
         <div class="hub-grid">
           <article id="year-flow" class="hub-card">
             <p class="eyebrow">올해의 흐름</p>
             <h3>연간·월간 운세</h3>
-            <p>2026/2027 총운, 상·하반기 흐름, 12개월 점수와 현재 달의 조언으로 확장합니다.</p>
+            <p>올해의 큰 흐름과 지금 집중할 시기를 월별로 살펴보세요.</p>
             <ul>
-              <li>연간 총운과 월별 리듬</li>
-              <li>신년운세 성수기 랜딩 기반</li>
-              <li>향후 상세 리포트 업셀</li>
+              <li>올해의 핵심 흐름</li>
+              <li>상반기와 하반기 리듬</li>
+              <li>현재 달에 확인할 행동</li>
             </ul>
           </article>
 
           <article id="relationship" class="hub-card">
             <p class="eyebrow">인연</p>
-            <h3>1회성 궁합과 관계 흐름</h3>
-            <p>다중 프로필 전에 상대 1명을 저장 없이 입력해 궁합과 대화 포인트를 검증합니다.</p>
+            <h3>두 사람의 관계 흐름</h3>
+            <p>상대 정보를 저장하지 않고 두 사람의 강점, 충돌 지점과 대화 포인트를 살펴봅니다.</p>
             <form id="compatibility-form" class="mini-form">
               <label>
                 <span>관계</span>
@@ -310,9 +305,7 @@
               </div>
               <div id="compatibility-evidence" class="evidence"></div>
             </div>
-            <p class="hub-card__note">
-              로그인 후에는 공유 초대로 서로 친구처럼 연결하는 구조로 확장할 예정입니다.
-            </p>
+            <p class="hub-card__note">로그인하면 초대 링크로 서로의 계정을 안전하게 연결할 수 있어요.</p>
             <div id="relationship-account-panel" class="relationship-account" hidden>
               <div>
                 <p class="eyebrow">로그인 인연 연결</p>
@@ -358,8 +351,8 @@
 
           <article id="tarot" class="hub-card">
             <p class="eyebrow">타로·테스트</p>
-            <h3>가볍게 들어오는 질문형 콘텐츠</h3>
-            <p>사주 입력이 부담스러운 방문자를 위해 오늘의 한 장, 선택 비교, 관계 테스트를 둡니다.</p>
+            <h3>오늘 마음에 필요한 한 장</h3>
+            <p>결정을 서두르기보다 지금 마음을 비춰볼 질문을 가볍게 골라보세요.</p>
             <ul>
               <li>오늘의 한 장</li>
               <li>A/B 선택 비교</li>
@@ -376,16 +369,14 @@
             <div class="consult-mode">
               <div>
                 <p class="eyebrow">상담 모드</p>
-                <h4>누구와 이야기할지와 얼마나 깊게 볼지를 분리합니다</h4>
+                <h4>상담 스타일과 대화의 깊이를 골라보세요</h4>
               </div>
               <div id="mode-cards" class="mode-cards" aria-label="상담 상품 모드"></div>
             </div>
             <div class="trial-session">
               <p class="eyebrow">무료 체험</p>
-              <h4>AI 상담 3턴 세션 만들기</h4>
-              <p>
-                로그인과 필수 동의가 완료되면 실제 LLM 호출 전 단계로 상담 세션을 먼저 만들 수 있습니다.
-              </p>
+              <h4>세 번의 대화로 고민을 구체화해요</h4>
+              <p>첫 대화에서는 마음을 듣고, 두 번째는 조건을 좁히고, 마지막에는 선택지와 다음 행동을 정리합니다.</p>
               <div class="trial-session__grid">
                 <label>
                   <span>상담사</span>
@@ -406,17 +397,17 @@
                 ></textarea>
               </label>
               <button type="button" class="auth-button auth-button--ghost" id="trial-session-start">
-                무료 3턴 상담 세션 만들기
+                이 고민으로 무료 상담 시작
               </button>
               <p id="trial-session-note" class="auth-panel__note" role="status"></p>
               <div id="trial-chat" class="trial-chat" hidden>
                 <div class="trial-chat__head">
-                  <strong id="trial-chat-status">세션 준비 중</strong>
+                  <strong id="trial-chat-status">상담 준비 중</strong>
                   <span id="trial-chat-remaining">남은 턴 0회</span>
                 </div>
                 <div id="trial-chat-log" class="trial-chat__log" aria-live="polite"></div>
                 <label class="trial-session__concern">
-                  <span>메시지 보내기</span>
+                  <span>답변하기</span>
                   <textarea
                     id="trial-message"
                     rows="3"
@@ -425,7 +416,7 @@
                   ></textarea>
                 </label>
                 <button type="button" class="auth-button auth-button--ghost" id="trial-message-send">
-                  상담 메시지 보내기
+                  답변 보내기
                 </button>
                 <div id="trial-next-step" class="trial-next-step" hidden></div>
               </div>
@@ -434,8 +425,8 @@
 
           <article id="my-page" class="hub-card">
             <p class="eyebrow">마이</p>
-            <h3>저장과 기록의 시작점</h3>
-            <p>로그인하면 상담 체험, 인연 초대, 상담 기록 저장으로 이어질 수 있습니다.</p>
+            <h3>내 정보와 연결 관리</h3>
+            <p>로그인하면 상담 체험과 인연 초대를 한곳에서 관리할 수 있어요.</p>
             <div class="auth-panel" aria-live="polite">
               <p id="auth-status" class="auth-panel__status">로그인 상태를 확인하고 있습니다.</p>
               <div class="auth-panel__actions">
@@ -450,7 +441,7 @@
                 </button>
               </div>
               <p id="auth-note" class="auth-panel__note">
-                실제 상담권·결제·AI 대화는 서버 함수와 정책 검토 후 열립니다.
+                로그인하면 무료 상담과 인연 연결을 이용할 수 있어요.
               </p>
             </div>
             <form id="consent-form" class="consent-form" hidden>
@@ -472,44 +463,10 @@
               <p id="consent-note" class="auth-panel__note" role="status"></p>
             </form>
             <ul>
-              <li>단일 localStorage 프로필</li>
-              <li>카카오·Google 로그인과 필수 동의 기록</li>
-              <li>향후 상담 요약 보관</li>
+              <li>이 기기에 저장된 내 사주</li>
+              <li>카카오·Google 계정 로그인</li>
+              <li>연결된 인연과 상담 이용 내역</li>
             </ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="service-content" aria-labelledby="service-title">
-        <div class="section-heading">
-          <p class="eyebrow">서비스 방향</p>
-          <h2 id="service-title">사주는 답을 맞히기보다 고민을 정리하는 언어입니다</h2>
-          <p>
-            지금 페이지는 무료 사주 계산과 풀이까지 제공합니다. 더 깊은 이야기가 필요하다면
-            아래에서 준비 중인 유료 상담을 먼저 만나보세요.
-          </p>
-        </div>
-
-        <div class="service-grid">
-          <article class="service-card">
-            <span>01</span>
-            <h3>궁합과 결혼</h3>
-            <p>상대의 마음을 단정하기보다, 관계에서 반복되는 기대와 거리감을 정리합니다.</p>
-          </article>
-          <article class="service-card">
-            <span>02</span>
-            <h3>사업과 일</h3>
-            <p>성공을 보장하지 않고, 돈을 버는 방식과 동업·역할의 리스크를 점검합니다.</p>
-          </article>
-          <article class="service-card">
-            <span>03</span>
-            <h3>가족과 시기</h3>
-            <p>자녀나 건강을 예측하지 않고, 가족 안의 역할과 올해의 생활 리듬을 살펴봅니다.</p>
-          </article>
-          <article class="service-card">
-            <span>04</span>
-            <h3>성명학과 상담</h3>
-            <p>이름의 소리 흐름과 현재 고민을 더해 실제 점술가와 대화하는 듯한 상담 구조로 확장합니다.</p>
           </article>
         </div>
       </section>
@@ -521,9 +478,17 @@
           <p id="result-date" class="result__date"></p>
         </div>
 
-        <div id="pillars" class="pillars"></div>
+        <div class="result-tabs" role="tablist" aria-label="사주 결과 메뉴">
+          <button type="button" role="tab" data-result-tab="question" aria-selected="true">질문 풀이</button>
+          <button type="button" role="tab" data-result-tab="overview" aria-selected="false">전체 흐름</button>
+          <button type="button" role="tab" data-result-tab="name" aria-selected="false">이름</button>
+          <button type="button" role="tab" data-result-tab="basis" aria-selected="false">계산 근거</button>
+        </div>
 
-        <div class="result-grid">
+        <div data-result-panel="overview" hidden>
+          <div id="pillars" class="pillars"></div>
+
+          <div class="result-grid">
           <article class="result-card">
             <div class="card-heading">
               <div>
@@ -540,9 +505,9 @@
             <h3 id="reading-title"></h3>
             <p id="reading-copy"></p>
           </article>
-        </div>
+          </div>
 
-        <section class="guidance" aria-labelledby="guidance-title">
+          <section class="guidance" aria-labelledby="guidance-title">
           <div class="guidance__intro">
             <p id="guidance-eyebrow" class="eyebrow"></p>
             <h3 id="guidance-title"></h3>
@@ -559,8 +524,10 @@
               <ul id="guidance-avoid"></ul>
             </div>
           </div>
-        </section>
+          </section>
+        </div>
 
+        <div data-result-panel="question">
         <section class="topic-reading" aria-labelledby="topic-title">
           <div class="topic-reading__main">
             <p id="topic-eyebrow" class="eyebrow"></p>
@@ -597,8 +564,8 @@
           <div id="briefing-notes" class="briefing-notes"></div>
 
           <div class="session-panel">
-            <p class="eyebrow">30분 상담으로 확장하면</p>
-            <h4>첫 대화의 구조</h4>
+            <p class="eyebrow">AI 상담에서 이어서 볼 내용</p>
+            <h4>첫 대화에서 확인할 것</h4>
             <p id="session-opening"></p>
             <div class="session-panel__avoid">
               <span>피해야 할 해석</span>
@@ -607,7 +574,9 @@
             <ul id="session-questions"></ul>
           </div>
         </section>
+        </div>
 
+        <div data-result-panel="name" hidden>
         <section id="name-reading" class="name-reading" aria-labelledby="name-title" hidden>
           <div class="name-reading__main">
             <p id="name-eyebrow" class="eyebrow"></p>
@@ -652,17 +621,17 @@
             </div>
           </div>
         </section>
+        </div>
 
-        <section class="consultation-preview" aria-labelledby="consultation-title">
+        <section class="consultation-preview" aria-labelledby="consultation-title" data-result-panel="question">
           <div>
             <p class="eyebrow">다음 단계</p>
-            <h3 id="consultation-title">실제 대화처럼 이어지는 30분 상담을 준비하고 있어요</h3>
+            <h3 id="consultation-title">이 고민을 AI 상담에서 더 구체화해 보세요</h3>
             <p>
-              지금 화면은 무료 계산과 풀이까지입니다. 곧 만날 유료 상담에서는 궁합, 결혼, 사업, 신년 고민을
-              사람에게 이야기하듯 꺼내면 사주 근거와 함께 하나씩 정리해 드립니다.
+              무료 상담은 세 번의 대화로 마음을 듣고, 조건을 좁힌 뒤, 지금 할 수 있는 행동까지 정리해 드립니다.
             </p>
             <button id="premium-interest" type="button" class="premium-cta">
-              <span id="premium-interest-label">상담 오픈되면 알려주세요</span>
+              <span id="premium-interest-label">AI 상담으로 이어가기</span>
             </button>
             <p id="premium-interest-note" class="premium-cta__note" role="status"></p>
           </div>
@@ -674,7 +643,7 @@
           </ol>
         </section>
 
-        <div class="card-share">
+        <div class="card-share" data-result-panel="overview" hidden>
           <div class="card-share__buttons">
             <button id="save-card" type="button" class="card-share__button">
               <span>나의 사주 카드 저장하기</span>
@@ -689,6 +658,7 @@
           <p id="share-note" class="card-share__note" role="status"></p>
         </div>
 
+        <div data-result-panel="basis" hidden>
         <div class="detail-action">
           <button
             id="detail-toggle"
@@ -713,10 +683,10 @@
           </div>
           <div id="detail-sections" class="detail-sections"></div>
         </section>
+        </div>
 
         <p class="disclaimer">
           이 결과는 전통 명리 계산과 한글 이름 기반 보조 해석을 간단히 표현한 문화·오락용 정보입니다.
-          정확한 성명학을 위해서는 한자 이름과 획수 기준 데이터가 추가로 필요합니다.
           정신건강 상담, 의료, 법률, 투자, 임신·출산 판단을 대체하지 않습니다.
         </p>
       </section>
@@ -724,7 +694,7 @@
 
     <footer>
       <span>사주 한 장</span>
-      <span>브라우저에서만 계산되는 작은 만세력</span>
+      <span>고민을 차분히 정리하는 사주 기록</span>
     </footer>
 
     <script type="module" src="/src/main.js"></script>

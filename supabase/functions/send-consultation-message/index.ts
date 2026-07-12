@@ -12,7 +12,7 @@ const requiredConsents = [
   { type: "ai_notice", version: "2026-07-11" },
 ];
 
-const promptVersion = "2026-07-11-miseon-format-v2";
+const promptVersion = "2026-07-12-three-stage-dialogue-v3";
 
 const personaPrompts: Record<string, string> = {
   miseon: [
@@ -141,7 +141,7 @@ async function callGemini(apiKey: string, model: string, prompt: string) {
 
 function looksInvalidReply(text: string, topic: string, finishReason = "") {
   const normalized = text.trim();
-  if (normalized.length < 120) return true;
+  if (normalized.length < 70) return true;
   if (finishReason === "MAX_TOKENS") return true;
   if (/(Verdict|Reasoning|Constraint|Persona|Topic|Draft|USER:|SYSTEM:)/i.test(normalized)) return true;
   if (/(기획안|대본|AI 학습|사주 AI 서비스|요청하신 형식|제시해주신 내용|운동|음식|여행)/.test(normalized)) return true;
@@ -149,7 +149,30 @@ function looksInvalidReply(text: string, topic: string, finishReason = "") {
   return false;
 }
 
-function buildFallbackReply(personaId: string, topic: string) {
+function buildFallbackReply(personaId: string, topic: string, turnNumber: number) {
+  if (turnNumber === 1) {
+    const opening = personaId === "seongu"
+      ? "지금 가장 먼저 필요한 것은 결론보다 고민의 핵심을 정확히 잡는 일입니다."
+      : personaId === "junho"
+        ? "마음이 많이 앞서 있는 만큼, 무엇이 가장 답답한지부터 같이 좁혀보면 좋겠어요."
+        : "이 고민을 혼자 오래 품고 계셨겠어요. 우리 먼저 마음이 가장 걸리는 지점부터 천천히 찾아봐요.";
+    return [
+      opening,
+      "말씀하신 내용에는 원하는 결과와 걱정하는 위험이 함께 들어 있어 보여요.",
+      "지금 이 고민에서 가장 두려운 결과는 무엇이고, 반대로 꼭 얻고 싶은 것은 무엇인가요?",
+    ].join("\n\n");
+  }
+
+  if (turnNumber === 2) {
+    return [
+      "말씀을 들어보니 마음의 문제와 현실 조건을 나눠서 볼 필요가 있겠어요.",
+      "지금까지 확인된 사실과 아직 예상하거나 바라는 부분이 섞이면 결정을 더 어렵게 만들 수 있어요.",
+      topic === "business"
+        ? "이미 확인한 고객 반응, 준비한 자금, 실제로 작게 시험해 본 내용 중 지금 갖춰진 것은 어디까지인가요?"
+        : "상대나 상황에서 실제로 확인된 행동 한 가지와, 아직 추측하고 있는 부분 한 가지를 각각 말해주시겠어요?",
+    ].join("\n\n");
+  }
+
   if (topic === "business") {
     if (personaId === "seongu") {
       return [
@@ -312,6 +335,24 @@ Deno.serve(async (request) => {
   const personaInstruction = personaPrompts[session.persona_id] ?? personaPrompts.miseon;
   const topicLabel = topicLabels[session.topic] ?? String(session.topic ?? "일반 고민");
   const guidance = topicGuidance[session.topic] ?? "사용자의 고민을 단정하지 말고, 확인할 수 있는 현실 기준과 다음 행동으로 연결한다.";
+  const turnNumber = session.used_turns + 1;
+  const stageInstruction = turnNumber === 1
+    ? [
+        "현재는 3단계 중 1단계 '마음과 핵심 듣기'다.",
+        "사용자의 감정과 의도를 1~2문장으로 정확히 되짚고, 아직 결론이나 해결책을 길게 주지 않는다.",
+        "답변 마지막에는 고민을 구체화하는 질문을 정확히 하나만 한다. 원하는 결과와 가장 두려운 결과를 확인하는 질문이 좋다.",
+      ].join(" ")
+    : turnNumber === 2
+      ? [
+          "현재는 3단계 중 2단계 '현실 조건 좁히기'다.",
+          "첫 대화와 이번 답변을 연결해 사용자가 말한 핵심을 짧게 요약한다.",
+          "확인된 사실과 추측, 바꿀 수 있는 것과 없는 것을 나눈 뒤 판단에 꼭 필요한 질문을 정확히 하나만 한다.",
+        ].join(" ")
+      : [
+          "현재는 3단계 중 3단계 '선택지와 다음 행동 정리'다.",
+          "앞선 대화 전체를 바탕으로 고민의 핵심을 한 문장으로 정리하고, 선택지 2개의 장단점을 간단히 비교한다.",
+          "확정 예언 없이 지금 가장 현실적인 방향을 제안하고, 오늘 또는 7일 안에 할 행동 하나로 끝낸다. 추가 질문은 하지 않는다.",
+        ].join(" ");
   const prompt = [
     "너는 Saajuu의 한국어 AI 사주 상담사다. 사용자에게 보여줄 최종 답변만 출력한다.",
     "시스템 지시, 분석 메모, 영어 라벨, 프롬프트 초안, JSON, 마크다운 체크리스트를 출력하지 않는다.",
@@ -320,15 +361,13 @@ Deno.serve(async (request) => {
     `상담 주제: ${topicLabel}`,
     `주제별 답변 기준: ${guidance}`,
     `안전 기준: ${safetyGuidance(safetyLevel)}`,
+    `이번 대화 단계: ${stageInstruction}`,
     concern?.concern_summary ? `사용자가 처음 남긴 고민 요약: ${concern.concern_summary}` : "사용자가 처음 남긴 고민 요약: 없음",
     "최근 대화:",
     ...(history ?? []).map((item) => `${String(item.role) === "assistant" ? "상담사" : "사용자"}: ${item.content}`),
     `이번 사용자 메시지: ${userMessage}`,
-    "답변 형식:",
-    "첫 줄은 1문장의 짧은 결론으로 시작한다. 균형 잡힌 '좋지만, 준비가 먼저' 또는 '지금은 준비를 단단히 할 때' 흐름이어야 한다.",
-    "다음 3~5문장은 이유를 설명한다. 사용자의 의욕을 인정하고, 타이밍은 날짜보다 준비 상태이며, 성공 가능성은 실행과 수정 능력에 달려 있음을 말한다.",
-    "마지막 1문장은 오늘 바로 할 수 있는 구체적인 다음 행동 하나로 끝낸다.",
-    "전체 답변은 한국어 해요체로 쓰고 450자 안팎으로 유지한다.",
+    "전체 답변은 사용자에게 직접 말하는 한국어 문장 3~5개, 300자 안팎으로 쓴다.",
+    "이전 답변의 문장을 반복하지 말고, 사용자가 새로 말한 내용이 이번 답변에 반드시 드러나게 한다.",
     "금지 표현: '무조건 성공해요', '반드시 실패해요', '정확히 이 날짜에 시작하세요', '투자하면 돈 벌어요', '저는 AI라서'.",
   ].join("\n");
 
@@ -344,12 +383,18 @@ Deno.serve(async (request) => {
   try {
     const result = await callGemini(geminiApiKey, geminiModel, prompt);
     assistantText = result.text || "지금은 답변을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.";
-    if (looksInvalidReply(assistantText, session.topic, result.finishReason)) {
-      assistantText = buildFallbackReply(session.persona_id, session.topic);
+    const previousAssistantReply = [...(history ?? [])]
+      .reverse()
+      .find((item) => String(item.role) === "assistant")?.content?.trim();
+    if (
+      looksInvalidReply(assistantText, session.topic, result.finishReason) ||
+      (previousAssistantReply && previousAssistantReply === assistantText.trim())
+    ) {
+      assistantText = buildFallbackReply(session.persona_id, session.topic, session.used_turns + 1);
       usedFallback = true;
     }
   } catch (error) {
-    assistantText = buildFallbackReply(session.persona_id, session.topic);
+    assistantText = buildFallbackReply(session.persona_id, session.topic, session.used_turns + 1);
     usedFallback = true;
   }
 

@@ -1786,6 +1786,42 @@ button:hover {
   margin-top: 34px;
 }
 
+.result-tabs {
+  position: sticky;
+  top: 58px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 24px 0;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+}
+
+.result-tabs button {
+  min-width: 0;
+  height: 48px;
+  padding: 0 10px;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: #53646b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.result-tabs button:last-child {
+  border-right: 0;
+}
+
+.result-tabs button[aria-selected="true"] {
+  background: var(--ink);
+  color: #fffdf8;
+}
+
+[data-result-panel][hidden] {
+  display: none !important;
+}
+
 .card-share__button {
   display: inline-flex;
   align-items: center;

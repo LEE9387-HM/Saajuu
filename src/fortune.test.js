@@ -174,6 +174,21 @@ describe("buildTopicReading", () => {
     ]);
   });
 
+  it("uses the user's concern as the primary reading context", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+    const reading = buildTopicReading(chart, "business", "지금 사업을 시작해도 될까요?");
+
+    expect(reading.title).toContain("지금 사업을 시작해도 될까요?");
+    expect(reading.copy).toContain("확인됐고");
+    expect(reading.questions[0]).toContain("지금 사업을 시작해도 될까요?");
+  });
+
   it("creates a topic-specific reading with counseling prompts", () => {
     const chart = calculateChart({
       calendarType: "solar",
@@ -219,6 +234,27 @@ describe("buildCompatibilityReading", () => {
     expect(reading.talkGuide).toHaveLength(3);
     expect(reading.evidence.some((item) => item.includes("관계 리듬"))).toBe(true);
   });
+
+  it("keeps the relationship score identical when the two people are swapped", () => {
+    const first = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const second = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    expect(buildCompatibilityReading(first, second, "spouse").score).toBe(
+      buildCompatibilityReading(second, first, "spouse").score,
+    );
+  });
 });
 
 describe("consultation catalog", () => {
@@ -230,7 +266,7 @@ describe("consultation catalog", () => {
     ]);
     expect(CONSULTATION_MODES.map((mode) => mode.id)).toEqual(["trial", "basic", "pro"]);
     expect(CONSULTATION_MODES.find((mode) => mode.id === "pro").features).toContain(
-      "대운·세운·관계 종합",
+      "선택지별 장단점 비교",
     );
   });
 
