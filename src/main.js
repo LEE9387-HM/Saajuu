@@ -61,6 +61,15 @@ const topicSelect = document.querySelector("#reading-topic");
 const toneSelect = document.querySelector("#reading-tone");
 const leapMonthField = document.querySelector("#leap-month-field");
 const errorMessage = document.querySelector("#form-error");
+const profileModal = document.querySelector("#profile-modal");
+const profileModalClose = document.querySelector("#profile-modal-close");
+const profileModalTitle = document.querySelector("#profile-modal-title");
+const profileModalCopy = document.querySelector("#profile-modal-copy");
+const profileSummaryTitle = document.querySelector("#profile-summary-title");
+const profileSummaryCopy = document.querySelector("#profile-summary-copy");
+const profileSummaryList = document.querySelector("#profile-summary-list");
+const myProfileSummaryList = document.querySelector("#my-profile-summary-list");
+const myProfileEmpty = document.querySelector("#my-profile-empty");
 const resultSection = document.querySelector("#result");
 const detailToggle = document.querySelector("#detail-toggle");
 const detailReading = document.querySelector("#detail-reading");
@@ -110,6 +119,8 @@ const resultTabs = [...document.querySelectorAll("[data-result-tab]")];
 const resultPanels = [...document.querySelectorAll("[data-result-panel]")];
 const consultTabs = [...document.querySelectorAll("[data-consult-tab]")];
 const consultPanels = [...document.querySelectorAll("[data-consult-panel]")];
+const profileModalTriggers = [...document.querySelectorAll("[data-profile-modal-open]")];
+const profileClearButtons = [...document.querySelectorAll("[data-profile-clear]")];
 let activeSession = null;
 let hasRequiredConsents = false;
 let pendingRelationshipInviteToken = "";
@@ -118,6 +129,7 @@ let activeConsultationSession = null;
 let activeConsultationMessages = [];
 let selectedPersonaId = "miseon";
 let selectedModeId = "trial";
+let profileModalMode = "create";
 
 function setResultTab(tabId) {
   const nameAvailable = !document.querySelector("#name-reading")?.hidden;
@@ -234,10 +246,135 @@ function relationLabel(value) {
   return RELATIONSHIP_LABELS[value] ?? "인연";
 }
 
+function topicLabel(value) {
+  return TOPIC_OPTIONS.find((item) => item.value === value)?.label ?? "기본 흐름";
+}
+
+function toneLabel(value) {
+  return TONE_OPTIONS.find((item) => item.value === value)?.label ?? "차분한 해석";
+}
+
 function formatShortDate(value) {
   if (!value) return "";
   return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
 }
+
+function formatProfileDate(profile) {
+  if (!profile?.birthDate) return "입력 전";
+  const date = new Date(profile.birthDate);
+  const dateLabel = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+  const minute = String(Number(profile.minute ?? 0)).padStart(2, "0");
+  return `${dateLabel} ${String(profile.hour).padStart(2, "0")}:${minute}`;
+}
+
+function buildProfileSummaryItems(profile) {
+  if (!profile) return [];
+  return [
+    { label: "생년월일시", value: formatProfileDate(profile) },
+    { label: "주제", value: topicLabel(profile.topic) },
+    { label: "톤", value: toneLabel(profile.tone) },
+    { label: "이름", value: profile.name?.trim() || "입력 안 함" },
+    { label: "고민", value: profile.concern?.trim() || "입력 안 함" },
+  ];
+}
+
+function renderProfileSummaryList(target, profile) {
+  if (!target) return;
+  const items = buildProfileSummaryItems(profile);
+  target.hidden = !items.length;
+  target.innerHTML = items
+    .map(
+      (item) => `
+        <div>
+          <dt>${escapeHtml(item.label)}</dt>
+          <dd>${escapeHtml(item.value)}</dd>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderStoredProfilePanels(profile = loadProfile()) {
+  const hasProfile = Boolean(profile);
+  if (profileSummaryTitle) {
+    profileSummaryTitle.textContent = hasProfile ? "저장된 사주 정보를 관리할 수 있어요" : "아직 저장된 사주 정보가 없어요";
+  }
+  if (profileSummaryCopy) {
+    profileSummaryCopy.textContent = hasProfile
+      ? "수정은 팝업에서 바로 하고, 로그인과 동의 상태는 마이 페이지에서 이어서 관리할 수 있어요."
+      : "생년월일시와 지금 궁금한 주제를 입력하면 오늘의 운세와 상담 연결 질문이 함께 열립니다.";
+  }
+  renderProfileSummaryList(profileSummaryList, profile);
+  renderProfileSummaryList(myProfileSummaryList, profile);
+  if (myProfileEmpty) myProfileEmpty.hidden = hasProfile;
+}
+
+function syncFormError(message = "") {
+  if (!errorMessage) return;
+  errorMessage.hidden = !message;
+  errorMessage.textContent = message;
+}
+
+function openProfileModal(mode = "create") {
+  if (!profileModal) return;
+  profileModalMode = mode;
+  const profile = loadProfile();
+  const hasProfile = Boolean(profile);
+  if (profileModalTitle) {
+    profileModalTitle.textContent =
+      mode === "edit" || (mode === "manage" && hasProfile) ? "사주 정보 수정" : "사주 정보 입력";
+  }
+  if (profileModalCopy) {
+    profileModalCopy.textContent =
+      mode === "edit" || (mode === "manage" && hasProfile)
+        ? "저장된 정보를 바꾸면 오늘의 운세와 사주 결과도 바로 함께 갱신됩니다."
+        : "입력한 정보는 이 기기에서만 저장되고 서버로 전송되지 않습니다.";
+  }
+  if (hasProfile && (mode === "edit" || mode === "manage")) {
+    applyProfileToForm(profile);
+  }
+  if (mode === "create") {
+    form.reset();
+    calendarType.value = "solar";
+    calendarType.dispatchEvent(new Event("change"));
+    topicSelect.value = TOPIC_OPTIONS[0]?.value ?? "relationship";
+    toneSelect.value = TONE_OPTIONS[0]?.value ?? "balanced";
+    hourSelect.value = "12";
+    document.querySelector("#birth-minute").value = "0";
+  }
+  syncFormError("");
+  if (typeof profileModal.showModal === "function") profileModal.showModal();
+  document.querySelector("#birth-date")?.focus();
+}
+
+function closeProfileModal() {
+  profileModal?.close();
+}
+
+profileModalTriggers.forEach((button) => {
+  button.addEventListener("click", () => {
+    openProfileModal(button.dataset.profileModalOpen ?? "create");
+  });
+});
+
+profileClearButtons.forEach((button) => {
+  button.addEventListener("click", () => clearStoredProfile());
+});
+
+profileModalClose?.addEventListener("click", closeProfileModal);
+profileModal?.addEventListener("click", (event) => {
+  const rect = profileModal.getBoundingClientRect();
+  const withinDialog =
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom;
+  if (!withinDialog) closeProfileModal();
+});
 
 function renderRelationshipLinks(links) {
   if (!relationshipLinks) return;
@@ -882,20 +1019,16 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("focus", refreshDailyIfStale);
 
-document.querySelector("#clear-profile")?.addEventListener("click", () => {
+function clearStoredProfile() {
   clearProfile();
+  closeProfileModal();
   dailySection.hidden = true;
   if (emptyDaily) emptyDaily.hidden = false;
   resultSection.hidden = true;
   lastResult = null;
-  errorMessage.textContent = "저장된 정보를 삭제했어요. 다시 보려면 아래에서 새로 입력해 주세요.";
-  errorMessage.hidden = false;
-});
-
-document.querySelector("#edit-profile")?.addEventListener("click", () => {
-  document.querySelector(".calculator").scrollIntoView({ behavior: "smooth", block: "start" });
-  document.querySelector("#birth-date").focus();
-});
+  renderStoredProfilePanels(null);
+  syncFormError("저장된 정보를 삭제했어요. 다시 보려면 새로 입력해 주세요.");
+}
 
 function applyProfileToForm(profile) {
   calendarType.value = profile.calendarType;
@@ -921,6 +1054,7 @@ const dailyNotice = document.querySelector(".daily__notice");
 // 복원~렌더 전체를 격리해, 손상 데이터로 페이지가 죽지 않게 한다.
 function restoreProfile() {
   const profile = loadProfile();
+  renderStoredProfilePanels(profile);
   if (!profile) return false;
   try {
     const chart = calculateChart(profile);
@@ -948,6 +1082,7 @@ function renderShared(shared) {
     resultSection.hidden = false;
     dailyManage.hidden = true;
     dailyNotice.hidden = true;
+    renderStoredProfilePanels(loadProfile());
     sharedBanner.hidden = false;
     backToMineButton.hidden = !loadProfile();
     track("share-open");
@@ -1361,7 +1496,7 @@ function drawSajuCard({ chart, input, guidance: storedGuidance }) {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
-  errorMessage.hidden = true;
+  syncFormError("");
 
   const data = new FormData(form);
   const input = {
@@ -1382,14 +1517,16 @@ form.addEventListener("submit", (event) => {
     const daily = renderDaily(chart);
     saveProfile(input);
     lastResult = { chart, input, guidance, daily };
+    renderStoredProfilePanels(input);
     resultSection.hidden = false;
+    closeProfileModal();
     resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
-    errorMessage.textContent =
+    syncFormError(
       error instanceof Error
         ? error.message
-        : "계산 중 문제가 생겼습니다. 입력값을 확인해 주세요.";
-    errorMessage.hidden = false;
+        : "계산 중 문제가 생겼습니다. 입력값을 확인해 주세요.",
+    );
   }
 });
 

@@ -13,6 +13,29 @@
   </head>
   <body>
     <main>
+      <header class="site-header">
+        <div class="brand-bar" aria-label="사주 한 장 브랜드">
+          <div class="brand-bar__identity">
+            <span class="brand-bar__mark" aria-hidden="true">四柱</span>
+            <div>
+              <strong>사주 한 장</strong>
+              <span>고민을 차분히 정리하는 사주 기록</span>
+            </div>
+          </div>
+          <button type="button" class="brand-bar__button" data-profile-modal-open="manage">내 정보</button>
+        </div>
+
+        <nav class="app-nav" aria-label="주요 메뉴">
+          <a href="#today" class="app-nav__link" data-nav-target="today">오늘</a>
+          <a href="#saju" class="app-nav__link" data-nav-target="saju">내 사주</a>
+          <a href="#year-flow" class="app-nav__link" data-nav-target="year-flow">올해</a>
+          <a href="#relationship" class="app-nav__link" data-nav-target="relationship">인연</a>
+          <a href="#tarot" class="app-nav__link" data-nav-target="tarot">타로</a>
+          <a href="#consult" class="app-nav__link" data-nav-target="consult">상담</a>
+          <a href="#my-page" class="app-nav__link" data-nav-target="my-page">마이</a>
+        </nav>
+      </header>
+
       <section class="hero" aria-labelledby="page-title">
         <div class="hero__mark" aria-hidden="true">四柱</div>
         <p class="eyebrow">나를 읽는 작은 기록</p>
@@ -22,16 +45,6 @@
           지금 궁금한 고민을 차분히 정리해 보세요.
         </p>
       </section>
-
-      <nav class="app-nav" aria-label="주요 메뉴">
-        <a href="#today" class="app-nav__link" data-nav-target="today">오늘</a>
-        <a href="#saju" class="app-nav__link" data-nav-target="saju">내 사주</a>
-        <a href="#year-flow" class="app-nav__link" data-nav-target="year-flow">올해</a>
-        <a href="#relationship" class="app-nav__link" data-nav-target="relationship">인연</a>
-        <a href="#tarot" class="app-nav__link" data-nav-target="tarot">타로</a>
-        <a href="#consult" class="app-nav__link" data-nav-target="consult">상담</a>
-        <a href="#my-page" class="app-nav__link" data-nav-target="my-page">마이</a>
-      </nav>
 
       <div id="shared-banner" class="shared-banner" hidden>
         <p>공유받은 사주 결과를 보고 있어요. 이 정보는 저장되지 않습니다.</p>
@@ -102,8 +115,8 @@
           </p>
           <div id="daily-evidence" class="evidence"></div>
           <div class="daily__manage">
-            <button type="button" id="edit-profile">정보 수정</button>
-            <button type="button" id="clear-profile">저장 정보 삭제</button>
+            <button type="button" data-profile-modal-open="edit">정보 수정</button>
+            <button type="button" data-profile-clear>저장 정보 삭제</button>
           </div>
           <p class="daily__notice">입력한 정보는 이 기기(브라우저)에만 저장되며 서버로 전송되지 않습니다.</p>
         </section>
@@ -111,110 +124,31 @@
         <div class="empty-daily" id="empty-daily">
           <strong>아직 저장된 사주가 없어요.</strong>
           <p>생년월일시를 입력하면 다음 방문부터 오늘의 운세가 먼저 열립니다.</p>
-          <a href="#saju">내 사주 입력하기</a>
+          <button type="button" class="empty-daily__button" data-profile-modal-open="create">내 사주 입력하기</button>
         </div>
       </section>
 
       <section id="saju" class="calculator" aria-label="사주 계산기">
-        <form id="birth-form" class="birth-form">
-          <fieldset>
-            <legend>태어난 정보를 알려주세요</legend>
-
-            <div class="field-grid">
-              <label class="field">
-                <span>달력</span>
-                <select id="calendar-type" name="calendarType">
-                  <option value="solar">양력</option>
-                  <option value="lunar">음력</option>
-                </select>
-              </label>
-
-              <label class="field field--wide">
-                <span>생년월일</span>
-                <input
-                  id="birth-date"
-                  name="birthDate"
-                  type="date"
-                  min="1800-01-01"
-                  max="2100-12-31"
-                  required
-                />
-              </label>
-
-              <label class="field">
-                <span>태어난 시각</span>
-                <select id="birth-hour" name="birthHour" required></select>
-              </label>
-
-              <label class="field">
-                <span>분</span>
-                <input
-                  id="birth-minute"
-                  name="birthMinute"
-                  type="number"
-                  min="0"
-                  max="59"
-                  step="1"
-                  value="0"
-                  inputmode="numeric"
-                  required
-                  aria-describedby="minute-help"
-                />
-                <small id="minute-help">0~59분</small>
-              </label>
-            </div>
-
-            <label class="field topic-field">
-              <span>지금 궁금한 주제</span>
-              <select id="reading-topic" name="readingTopic"></select>
-            </label>
-
-            <div class="personal-grid">
-              <label class="field">
-                <span>이름</span>
-                <input
-                  id="person-name"
-                  name="personName"
-                  type="text"
-                  maxlength="12"
-                  placeholder="예: 김사주"
-                  autocomplete="name"
-                />
-                <small>선택 입력 · 한글 이름 기반 보조 해석</small>
-              </label>
-
-              <label class="field">
-                <span>풀이 톤</span>
-                <select id="reading-tone" name="readingTone"></select>
-              </label>
-            </div>
-
-            <label class="field concern-field">
-              <span>지금 고민 한 줄</span>
-              <input
-                id="current-concern"
-                name="currentConcern"
-                type="text"
-                maxlength="80"
-                placeholder="예: 결혼을 확신해도 될지 고민돼요"
-              />
-              <small>선택 입력 · 적어주신 질문을 중심으로 결과를 먼저 보여드려요</small>
-            </label>
-
-            <label id="leap-month-field" class="check-field" hidden>
-              <input id="is-leap-month" name="isLeapMonth" type="checkbox" />
-              <span>윤달로 입력</span>
-            </label>
-
-            <p class="form-note">생년월일시와 이름은 이 기기에서만 계산하며, 계정이나 상담 기록에 자동 저장하지 않습니다.</p>
-
-            <button type="submit">
-              <span>나의 사주 펼쳐보기</span>
-              <span aria-hidden="true">→</span>
-            </button>
-            <p id="form-error" class="error" role="alert" hidden></p>
-          </fieldset>
-        </form>
+        <div class="section-heading section-heading--compact calculator__heading">
+          <p class="eyebrow">내 사주</p>
+          <h2>입력은 팝업에서, 관리는 따로</h2>
+          <p>개인 사주 정보는 팝업에서 입력하고, 저장된 정보와 계정 연결은 분리된 관리 영역에서 확인할 수 있어요.</p>
+        </div>
+        <article class="profile-admin-card">
+          <div class="profile-admin-card__copy">
+            <p class="eyebrow">개인 사주 정보</p>
+            <h3 id="profile-summary-title">아직 저장된 사주 정보가 없어요</h3>
+            <p id="profile-summary-copy">생년월일시와 지금 궁금한 주제를 입력하면 오늘의 운세와 상담 연결 질문이 함께 열립니다.</p>
+          </div>
+          <dl id="profile-summary-list" class="profile-summary-list" hidden></dl>
+          <div class="profile-admin-card__actions">
+            <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="create">정보 입력</button>
+            <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="edit">정보 수정</button>
+            <button type="button" class="auth-button auth-button--ghost" data-profile-clear>저장 삭제</button>
+            <a class="auth-button profile-admin-card__link" href="#my-page">로그인 · 동의 관리</a>
+          </div>
+          <p id="form-error" class="error" role="alert" hidden></p>
+        </article>
       </section>
 
       <section class="free-hub" aria-label="운세 서비스">
@@ -430,6 +364,22 @@
             <p class="eyebrow">마이</p>
             <h3>내 정보와 연결 관리</h3>
             <p>로그인하면 상담 체험과 인연 초대를 한곳에서 관리할 수 있어요.</p>
+            <section class="profile-admin-panel" aria-label="개인 사주 정보 관리">
+              <div class="profile-admin-panel__head">
+                <div>
+                  <p class="eyebrow">개인 사주 정보 관리</p>
+                  <h4>입력, 수정, 삭제를 여기서 관리해요</h4>
+                </div>
+                <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="manage">정보 열기</button>
+              </div>
+              <dl id="my-profile-summary-list" class="profile-summary-list" hidden></dl>
+              <p id="my-profile-empty" class="auth-panel__note">아직 저장된 사주 정보가 없습니다. 입력 후 오늘의 운세와 상담 연결 질문을 바로 볼 수 있어요.</p>
+              <div class="profile-admin-panel__actions">
+                <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="create">새 정보 입력</button>
+                <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="edit">기존 정보 수정</button>
+                <button type="button" class="auth-button auth-button--ghost" data-profile-clear>정보 삭제</button>
+              </div>
+            </section>
             <div class="auth-panel" aria-live="polite">
               <p id="auth-status" class="auth-panel__status">로그인 상태를 확인하고 있습니다.</p>
               <div class="auth-panel__actions">
@@ -473,6 +423,132 @@
           </article>
         </div>
       </section>
+
+      <dialog id="profile-modal" class="profile-modal" aria-labelledby="profile-modal-title">
+        <div class="profile-modal__shell">
+          <div class="profile-modal__header">
+            <div>
+              <p class="eyebrow">개인 사주 정보</p>
+              <h2 id="profile-modal-title">사주 정보 입력</h2>
+              <p id="profile-modal-copy">입력한 정보는 이 기기에서만 저장되고 서버로 전송되지 않습니다.</p>
+            </div>
+            <button type="button" class="profile-modal__close" id="profile-modal-close" aria-label="닫기">닫기</button>
+          </div>
+
+          <div class="profile-modal__layout">
+            <form id="birth-form" class="birth-form profile-modal__form">
+              <fieldset>
+                <legend>태어난 정보를 알려주세요</legend>
+
+                <div class="field-grid">
+                  <label class="field">
+                    <span>달력</span>
+                    <select id="calendar-type" name="calendarType">
+                      <option value="solar">양력</option>
+                      <option value="lunar">음력</option>
+                    </select>
+                  </label>
+
+                  <label class="field field--wide">
+                    <span>생년월일</span>
+                    <input
+                      id="birth-date"
+                      name="birthDate"
+                      type="date"
+                      min="1800-01-01"
+                      max="2100-12-31"
+                      required
+                    />
+                  </label>
+
+                  <label class="field">
+                    <span>태어난 시각</span>
+                    <select id="birth-hour" name="birthHour" required></select>
+                  </label>
+
+                  <label class="field">
+                    <span>분</span>
+                    <input
+                      id="birth-minute"
+                      name="birthMinute"
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="1"
+                      value="0"
+                      inputmode="numeric"
+                      required
+                      aria-describedby="minute-help"
+                    />
+                    <small id="minute-help">0~59분</small>
+                  </label>
+                </div>
+
+                <label class="field topic-field">
+                  <span>지금 궁금한 주제</span>
+                  <select id="reading-topic" name="readingTopic"></select>
+                </label>
+
+                <div class="personal-grid">
+                  <label class="field">
+                    <span>이름</span>
+                    <input
+                      id="person-name"
+                      name="personName"
+                      type="text"
+                      maxlength="12"
+                      placeholder="예: 김사주"
+                      autocomplete="name"
+                    />
+                    <small>선택 입력 · 한글 이름 기반 보조 해석</small>
+                  </label>
+
+                  <label class="field">
+                    <span>풀이 톤</span>
+                    <select id="reading-tone" name="readingTone"></select>
+                  </label>
+                </div>
+
+                <label class="field concern-field">
+                  <span>지금 고민 한 줄</span>
+                  <input
+                    id="current-concern"
+                    name="currentConcern"
+                    type="text"
+                    maxlength="80"
+                    placeholder="예: 결혼을 확신해도 될지 고민돼요"
+                  />
+                  <small>선택 입력 · 적어주신 질문을 중심으로 결과와 상담 연결 문장을 먼저 맞춥니다.</small>
+                </label>
+
+                <label id="leap-month-field" class="check-field" hidden>
+                  <input id="is-leap-month" name="isLeapMonth" type="checkbox" />
+                  <span>윤달로 입력</span>
+                </label>
+
+                <p class="form-note">생년월일시와 이름은 이 기기에서만 계산하며, 계정이나 상담 기록에 자동 저장하지 않습니다.</p>
+
+                <button type="submit">
+                  <span>나의 사주 펼쳐보기</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </fieldset>
+            </form>
+
+            <aside class="profile-modal__side">
+              <section class="auth-panel auth-panel--compact">
+                <p class="eyebrow">로그인 · 동의</p>
+                <p class="auth-panel__status">사주 계산은 로그인 없이 가능하고, 상담 · 초대 · 결제 단계에서만 계정이 필요해요.</p>
+                <div class="auth-panel__actions">
+                  <button type="button" class="auth-button auth-button--kakao" data-auth-provider="kakao">카카오로 시작</button>
+                  <button type="button" class="auth-button auth-button--google" data-auth-provider="google">Google로 시작</button>
+                </div>
+                <p class="auth-panel__note">로그인 후에는 마이 페이지에서 필수 동의, 인연 연결, 상담 체험 상태를 함께 관리할 수 있어요.</p>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </dialog>
 
       <section id="result" class="result" aria-live="polite" hidden>
         <div class="result__heading">
