@@ -51,6 +51,19 @@ const RELATIONSHIP_LABELS = {
   family: "가족",
   work: "직장",
 };
+const RELATIONSHIP_TOPIC_MAP = {
+  crush: "relationship",
+  lover: "relationship",
+  spouse: "marriage",
+  reunion: "relationship",
+  family: "family",
+  work: "career",
+};
+const TRIAL_STAGES = [
+  { number: 1, label: "마음 듣기", description: "지금 가장 걸리는 마음을 정확히 듣는 단계" },
+  { number: 2, label: "조건 좁히기", description: "사실과 걱정, 준비 상태를 나누는 단계" },
+  { number: 3, label: "행동 정리", description: "선택지와 바로 할 행동을 정리하는 단계" },
+];
 const portoneStoreId = import.meta.env?.VITE_PORTONE_STORE_ID ?? "";
 const portoneChannelKey = import.meta.env?.VITE_PORTONE_CHANNEL_KEY ?? "";
 
@@ -70,6 +83,11 @@ const profileSummaryCopy = document.querySelector("#profile-summary-copy");
 const profileSummaryList = document.querySelector("#profile-summary-list");
 const myProfileSummaryList = document.querySelector("#my-profile-summary-list");
 const myProfileEmpty = document.querySelector("#my-profile-empty");
+const myProfileTitle = document.querySelector("#my-profile-title");
+const myProfileNote = document.querySelector("#my-profile-note");
+const myProfileActions = document.querySelector("#my-profile-actions");
+const birthDateInput = document.querySelector("#birth-date");
+const partnerDateInput = document.querySelector("#partner-date");
 const resultSection = document.querySelector("#result");
 const detailToggle = document.querySelector("#detail-toggle");
 const detailReading = document.querySelector("#detail-reading");
@@ -103,6 +121,9 @@ const relationshipInviteNote = document.querySelector("#relationship-invite-note
 const relationshipAcceptPanel = document.querySelector("#relationship-accept-panel");
 const relationshipInviteAccept = document.querySelector("#relationship-invite-accept");
 const relationshipLinks = document.querySelector("#relationship-links");
+const relationshipPanelTitle = document.querySelector("#relationship-panel-title");
+const relationshipPanelCopy = document.querySelector("#relationship-panel-copy");
+const relationshipPanelSummary = document.querySelector("#relationship-panel-summary");
 const trialPersona = document.querySelector("#trial-persona");
 const trialTopic = document.querySelector("#trial-topic");
 const trialConcern = document.querySelector("#trial-concern");
@@ -111,6 +132,7 @@ const trialSessionNote = document.querySelector("#trial-session-note");
 const trialChat = document.querySelector("#trial-chat");
 const trialChatStatus = document.querySelector("#trial-chat-status");
 const trialChatRemaining = document.querySelector("#trial-chat-remaining");
+const trialStageStrip = document.querySelector("#trial-stage-strip");
 const trialChatLog = document.querySelector("#trial-chat-log");
 const trialMessage = document.querySelector("#trial-message");
 const trialMessageSend = document.querySelector("#trial-message-send");
@@ -127,6 +149,7 @@ let pendingRelationshipInviteToken = "";
 let latestRelationshipInviteUrl = "";
 let activeConsultationSession = null;
 let activeConsultationMessages = [];
+let activeRelationshipLinks = [];
 let selectedPersonaId = "miseon";
 let selectedModeId = "trial";
 let profileModalMode = "create";
@@ -259,6 +282,31 @@ function formatShortDate(value) {
   return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
 }
 
+function trialStageMeta(number) {
+  const safeNumber = Math.min(Math.max(Number(number) || 1, 1), TRIAL_STAGES.length);
+  return TRIAL_STAGES.find((stage) => stage.number === safeNumber) ?? TRIAL_STAGES[0];
+}
+
+function openHubSection(id) {
+  const currentId = window.location.hash.slice(1);
+  if (currentId !== id) {
+    window.location.hash = id;
+  } else {
+    setActiveNav(id);
+  }
+  document.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function consultationTopicForRelationship(relationship) {
+  return RELATIONSHIP_TOPIC_MAP[relationship] ?? "relationship";
+}
+
+function buildRelationshipConsultConcern(link) {
+  const name = String(link?.counterpartDisplayName ?? "").trim() || "이 상대";
+  const relation = relationLabel(link?.relationship);
+  return `${name}님과의 ${relation} 관계 흐름을 더 구체적으로 상담하고 싶어요. 지금 가장 조심해야 할 점과 먼저 꺼낼 대화를 알고 싶어요.`;
+}
+
 function formatProfileDate(profile) {
   if (!profile?.birthDate) return "입력 전";
   const date = new Date(profile.birthDate);
@@ -269,6 +317,30 @@ function formatProfileDate(profile) {
   }).format(date);
   const minute = String(Number(profile.minute ?? 0)).padStart(2, "0");
   return `${dateLabel} ${String(profile.hour).padStart(2, "0")}:${minute}`;
+}
+
+function formatDateDraft(value) {
+  const digits = String(value ?? "").replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
+function normalizeDateText(value) {
+  const compact = String(value ?? "").trim().replace(/[./\s]+/g, "-");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(compact)) return compact;
+  return formatDateDraft(compact);
+}
+
+function bindTypedDateInput(input) {
+  if (!(input instanceof HTMLInputElement)) return;
+  input.addEventListener("input", () => {
+    const nextValue = formatDateDraft(input.value);
+    if (input.value !== nextValue) input.value = nextValue;
+  });
+  input.addEventListener("blur", () => {
+    input.value = normalizeDateText(input.value);
+  });
 }
 
 function buildProfileSummaryItems(profile) {
@@ -311,6 +383,25 @@ function renderStoredProfilePanels(profile = loadProfile()) {
   renderProfileSummaryList(profileSummaryList, profile);
   renderProfileSummaryList(myProfileSummaryList, profile);
   if (myProfileEmpty) myProfileEmpty.hidden = hasProfile;
+  if (myProfileTitle) {
+    myProfileTitle.textContent = hasProfile ? "저장된 사주 정보를 요약해서 확인해요" : "입력, 수정, 삭제를 여기서 관리해요";
+  }
+  if (myProfileNote) {
+    myProfileNote.textContent = hasProfile
+      ? "수정은 팝업에서 하고, 이 화면에서는 로그인 · 인연 · 상담 상태를 이어서 관리합니다."
+      : "사주 계산과 수정은 팝업에서 하고, 로그인 · 인연 · 상담 상태는 이 화면에서 이어서 관리합니다.";
+  }
+  if (myProfileActions) {
+    myProfileActions.innerHTML = hasProfile
+      ? `
+        <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="manage">정보 열기</button>
+        <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="edit">기존 정보 수정</button>
+      `
+      : `
+        <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="create">새 정보 입력</button>
+      `;
+    bindProfileActionTriggers(myProfileActions);
+  }
 }
 
 function syncFormError(message = "") {
@@ -355,15 +446,25 @@ function closeProfileModal() {
   profileModal?.close();
 }
 
-profileModalTriggers.forEach((button) => {
-  button.addEventListener("click", () => {
-    openProfileModal(button.dataset.profileModalOpen ?? "create");
+function bindProfileActionTriggers(scope = document) {
+  scope.querySelectorAll("[data-profile-modal-open]").forEach((button) => {
+    if (button.dataset.profileBound === "true") return;
+    button.dataset.profileBound = "true";
+    button.addEventListener("click", () => {
+      openProfileModal(button.dataset.profileModalOpen ?? "create");
+    });
   });
-});
 
-profileClearButtons.forEach((button) => {
-  button.addEventListener("click", () => clearStoredProfile());
-});
+  scope.querySelectorAll("[data-profile-clear]").forEach((button) => {
+    if (button.dataset.profileBound === "true") return;
+    button.dataset.profileBound = "true";
+    button.addEventListener("click", () => clearStoredProfile());
+  });
+}
+
+bindProfileActionTriggers();
+bindTypedDateInput(birthDateInput);
+bindTypedDateInput(partnerDateInput);
 
 profileModalClose?.addEventListener("click", closeProfileModal);
 profileModal?.addEventListener("click", (event) => {
@@ -379,20 +480,72 @@ profileModal?.addEventListener("click", (event) => {
 function renderRelationshipLinks(links) {
   if (!relationshipLinks) return;
   if (!links.length) {
-    relationshipLinks.innerHTML = "<li>아직 연결된 인연이 없습니다.</li>";
+    relationshipLinks.innerHTML = "<li class=\"relationship-links__empty\">아직 연결된 인연이 없습니다.</li>";
     return;
   }
 
   relationshipLinks.innerHTML = links
     .map(
       (link) => `
-        <li>
-          <strong>${escapeHtml(relationLabel(link.relationship))}</strong>
-          <span>${escapeHtml(formatShortDate(link.accepted_at ?? link.created_at))} 연결</span>
+        <li class="relationship-link-card">
+          <div class="relationship-link-card__head">
+            <div>
+              <span class="relationship-link-card__eyebrow">${escapeHtml(relationLabel(link.relationship))}</span>
+              <strong>${escapeHtml(link.counterpartDisplayName ?? "연결된 상대")}</strong>
+            </div>
+            <span>${escapeHtml(formatShortDate(link.acceptedAt ?? link.createdAt))} 연결</span>
+          </div>
+          <p>연결된 관계에서 바로 궁합을 이어 보거나, 이 관계를 주제로 상담을 시작할 수 있어요.</p>
+          <div class="relationship-link-card__actions">
+            <button type="button" class="auth-button auth-button--ghost" data-relationship-action="compatibility" data-link-id="${escapeHtml(link.id)}">
+              이 관계로 궁합 보기
+            </button>
+            <button type="button" class="auth-button" data-relationship-action="consult" data-link-id="${escapeHtml(link.id)}">
+              이 관계로 상담 이어가기
+            </button>
+          </div>
         </li>
       `,
     )
     .join("");
+}
+
+function renderRelationshipPanelState(session, links = [], options = {}) {
+  const hasSession = Boolean(session);
+  const count = links.length;
+  const hasPendingInvite = Boolean(options.pendingInvite);
+
+  if (relationshipPanelTitle) {
+    relationshipPanelTitle.textContent = !hasSession
+      ? "로그인 후 초대 링크를 만들 수 있어요"
+      : count > 0
+        ? `연결된 인연 ${count}건을 관리해요`
+        : "초대 링크로 서로의 관계를 묶기";
+  }
+
+  if (relationshipPanelCopy) {
+    relationshipPanelCopy.textContent = !hasSession
+      ? "상대와 계정을 묶는 초대 링크와 연결 목록은 로그인 후 관리됩니다."
+      : count > 0
+        ? "연결된 관계 카드에서 바로 궁합 흐름이나 AI 상담으로 이어질 수 있고, 필요하면 새 초대 링크를 더 만들 수 있어요."
+        : "상대가 링크로 들어와 로그인하면 두 계정이 같은 관계로 연결됩니다. 생년월일시는 링크에 담지 않습니다.";
+  }
+
+  if (relationshipPanelSummary) {
+    if (!hasSession) {
+      relationshipPanelSummary.hidden = !hasPendingInvite;
+      relationshipPanelSummary.innerHTML = hasPendingInvite
+        ? `<span>받은 초대</span><strong>로그인 후 수락 가능</strong>`
+        : "";
+    } else {
+      relationshipPanelSummary.hidden = false;
+      relationshipPanelSummary.innerHTML = `
+        <span>연결 상태</span>
+        <strong>${count > 0 ? `${count}건 연결됨` : "아직 연결 전"}</strong>
+        <em>${hasPendingInvite ? "받은 초대 1건 있음" : count > 0 ? "카드에서 궁합/상담 바로가기 가능" : "새 링크 생성 가능"}</em>
+      `;
+    }
+  }
 }
 
 function updateTrialSessionState() {
@@ -440,8 +593,10 @@ function updateTrialChatUi() {
   const hasSession = Boolean(activeConsultationSession);
   trialChat.hidden = !hasSession;
   if (trialNextStep) trialNextStep.hidden = true;
+  if (trialStageStrip) trialStageStrip.hidden = !hasSession;
   if (!hasSession) {
     trialMessageSend.disabled = true;
+    if (trialStageStrip) trialStageStrip.innerHTML = "";
     return;
   }
 
@@ -449,12 +604,28 @@ function updateTrialChatUi() {
   const usedTurns = Number(activeConsultationSession.used_turns ?? 0);
   const remainingTurns = Math.max(turnLimit - usedTurns, 0);
   const isActive = activeConsultationSession.status === "active" && remainingTurns > 0;
+  const currentStageNumber = isActive ? Math.min(usedTurns + 1, TRIAL_STAGES.length) : TRIAL_STAGES.length;
+  const currentStage = trialStageMeta(currentStageNumber);
+
+  if (trialStageStrip) {
+    trialStageStrip.innerHTML = TRIAL_STAGES.map((stage) => {
+      const state = usedTurns >= stage.number ? "done" : stage.number === currentStageNumber ? "active" : "todo";
+      return `
+        <div class="trial-stage-chip trial-stage-chip--${state}">
+          <span>${stage.number}단계</span>
+          <strong>${escapeHtml(stage.label)}</strong>
+        </div>
+      `;
+    }).join("");
+  }
 
   trialChatStatus.textContent =
     activeConsultationSession.status === "completed"
-      ? "무료 상담 3턴을 모두 사용했습니다"
-      : "무료 상담을 이어갈 수 있어요";
-  trialChatRemaining.textContent = `남은 턴 ${remainingTurns}회`;
+      ? "3단계까지 고민 정리를 마쳤습니다"
+      : `지금은 ${currentStage.label} 단계예요`;
+  trialChatRemaining.textContent = activeConsultationSession.status === "completed"
+    ? "무료 3턴 완료"
+    : `남은 턴 ${remainingTurns}회`;
   trialMessageSend.disabled = !isActive;
   if (trialMessage) trialMessage.disabled = !isActive;
   if (trialNextStep && !isActive) {
@@ -518,12 +689,13 @@ async function submitTrialMessage(message) {
     ...activeConsultationSession,
     used_turns: Number(data?.usedTurns ?? activeConsultationSession.used_turns),
     status: Number(data?.remainingTurns ?? 0) > 0 ? "active" : "completed",
+    current_stage: Number(data?.stage ?? activeConsultationSession.current_stage ?? 1),
   };
   if (trialMessage) trialMessage.value = "";
   track("trial_message_sent");
   trialSessionNote.textContent =
     Number(data?.remainingTurns ?? 0) > 0
-      ? `답변을 받았습니다. 남은 대화 ${Number(data?.remainingTurns)}회`
+      ? `답변을 받았습니다. 다음은 ${data?.nextStageLabel ?? "다음 단계"}로 이어집니다.`
       : "고민 정리를 마쳤습니다. 무료 대화 3회를 모두 사용했습니다.";
   updateTrialChatUi();
   return true;
@@ -539,7 +711,9 @@ async function refreshRelationshipPanel(session) {
   if (relationshipInviteType) relationshipInviteType.disabled = !session;
 
   if (!session) {
+    activeRelationshipLinks = [];
     renderRelationshipLinks([]);
+    renderRelationshipPanelState(session, [], { pendingInvite: pendingRelationshipInviteToken });
     if (relationshipInviteNote) {
       relationshipInviteNote.textContent = pendingRelationshipInviteToken
         ? "인연 초대를 받았습니다. 마이에서 로그인한 뒤 이 초대를 수락할 수 있습니다."
@@ -550,14 +724,22 @@ async function refreshRelationshipPanel(session) {
 
   const { links, error } = await getRelationshipLinks(session);
   if (error) {
+    activeRelationshipLinks = [];
     renderRelationshipLinks([]);
+    renderRelationshipPanelState(session, [], { pendingInvite: pendingRelationshipInviteToken });
     if (relationshipInviteNote) relationshipInviteNote.textContent = "인연 연결 목록은 DB 연결 확인 후 다시 불러옵니다.";
     return;
   }
+  activeRelationshipLinks = links;
   renderRelationshipLinks(links);
+  renderRelationshipPanelState(session, links, { pendingInvite: pendingRelationshipInviteToken });
 
   if (relationshipInviteNote && pendingRelationshipInviteToken) {
     relationshipInviteNote.textContent = "받은 초대를 수락하면 이 계정과 상대 계정이 연결됩니다.";
+  } else if (relationshipInviteNote && links.length) {
+    relationshipInviteNote.textContent = "연결된 인연은 유지되고, 필요하면 새 초대 링크를 추가로 만들 수 있습니다.";
+  } else if (relationshipInviteNote) {
+    relationshipInviteNote.textContent = "초대 링크를 만들면 상대가 로그인 후 같은 관계로 연결됩니다.";
   }
 }
 
@@ -760,12 +942,56 @@ async function initAuthPanel() {
       return;
     }
 
+    const counterpartName = String(data?.counterpartDisplayName ?? "").trim();
     track("relationship_connected");
-    relationshipInviteNote.textContent = `${relationLabel(data?.relationship)} 인연으로 연결했습니다.`;
+    relationshipInviteNote.textContent = counterpartName
+      ? `${counterpartName}님과 ${relationLabel(data?.relationship)} 인연으로 연결했습니다.`
+      : `${relationLabel(data?.relationship)} 인연으로 연결했습니다.`;
     relationshipAcceptPanel.hidden = true;
     pendingRelationshipInviteToken = "";
     history.replaceState(null, "", window.location.pathname + window.location.search);
     await refreshRelationshipPanel(activeSession);
+  });
+
+  relationshipLinks?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest("[data-relationship-action]");
+    if (!(button instanceof HTMLButtonElement)) return;
+
+    const linkId = button.dataset.linkId;
+    const action = button.dataset.relationshipAction;
+    const link = Array.isArray(activeRelationshipLinks)
+      ? activeRelationshipLinks.find((item) => item.id === linkId)
+      : null;
+    if (!link) return;
+
+    if (action === "compatibility") {
+      if (relationshipInviteType) relationshipInviteType.value = link.relationship;
+      const relationInput = document.querySelector("#partner-relation");
+      if (relationInput instanceof HTMLSelectElement) relationInput.value = link.relationship;
+      if (relationshipInviteNote) {
+        relationshipInviteNote.textContent = `${link.counterpartDisplayName}님과의 궁합 흐름으로 이어집니다. 상대 생년월일시는 보안을 위해 한 번 더 직접 입력해 주세요.`;
+      }
+      openHubSection("relationship");
+      partnerDateInput?.focus();
+      return;
+    }
+
+    if (action === "consult") {
+      const mappedTopic = consultationTopicForRelationship(link.relationship);
+      const concern = buildRelationshipConsultConcern(link);
+      if (trialTopic) trialTopic.value = mappedTopic;
+      if (topicSelect) topicSelect.value = mappedTopic;
+      if (trialConcern) trialConcern.value = concern;
+      const currentConcern = document.querySelector("#current-concern");
+      if (currentConcern instanceof HTMLTextAreaElement) currentConcern.value = concern;
+      setConsultTab("start");
+      openHubSection("consult");
+      if (trialSessionNote) {
+        trialSessionNote.textContent = `${link.counterpartDisplayName}님과의 관계 고민으로 바로 이어집니다. 이 문장 그대로 시작하거나 조금 고쳐서 보내도 됩니다.`;
+      }
+      trialConcern?.focus();
+    }
   });
 
   trialSessionStart?.addEventListener("click", async () => {
@@ -816,7 +1042,7 @@ async function initAuthPanel() {
     setActiveConsultationSession(session, Boolean(data?.reused));
     track("trial_started");
     trialSessionNote.textContent = data?.reused
-      ? `이어서 이야기할 수 있어요. 남은 대화 ${remainingTurns}회`
+      ? `이어서 이야기할 수 있어요. 다음은 ${trialStageMeta(Number(session?.used_turns ?? 0) + 1).label} 단계입니다.`
       : "적어주신 고민을 읽고 있어요.";
     updateTrialSessionState();
     if (!data?.reused && concern) await submitTrialMessage(concern);
@@ -1033,7 +1259,7 @@ function clearStoredProfile() {
 function applyProfileToForm(profile) {
   calendarType.value = profile.calendarType;
   calendarType.dispatchEvent(new Event("change"));
-  document.querySelector("#birth-date").value = profile.birthDate;
+  document.querySelector("#birth-date").value = normalizeDateText(profile.birthDate);
   hourSelect.value = String(profile.hour);
   document.querySelector("#birth-minute").value = String(profile.minute);
   document.querySelector("#is-leap-month").checked = Boolean(profile.isLeapMonth);
@@ -1356,9 +1582,11 @@ compatibilityForm?.addEventListener("submit", (event) => {
   }
 
   const data = new FormData(compatibilityForm);
+  const normalizedPartnerDate = normalizeDateText(data.get("partnerDate"));
+  if (partnerDateInput) partnerDateInput.value = normalizedPartnerDate;
   const partnerInput = {
     calendarType: data.get("partnerCalendar"),
-    birthDate: data.get("partnerDate"),
+    birthDate: normalizedPartnerDate,
     hour: Number(data.get("partnerHour")),
     minute: Number(data.get("partnerMinute")),
     isLeapMonth: data.get("partnerLeapMonth") === "on",
@@ -1499,9 +1727,11 @@ form.addEventListener("submit", (event) => {
   syncFormError("");
 
   const data = new FormData(form);
+  const normalizedBirthDate = normalizeDateText(data.get("birthDate"));
+  if (birthDateInput) birthDateInput.value = normalizedBirthDate;
   const input = {
     calendarType: data.get("calendarType"),
-    birthDate: data.get("birthDate"),
+    birthDate: normalizedBirthDate,
     hour: Number(data.get("birthHour")),
     minute: Number(data.get("birthMinute")),
     isLeapMonth: data.get("isLeapMonth") === "on",

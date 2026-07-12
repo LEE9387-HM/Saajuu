@@ -562,6 +562,10 @@ button:hover {
   gap: 16px;
 }
 
+.profile-admin-panel__head .auth-button {
+  flex: 0 0 auto;
+}
+
 .profile-summary-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -693,6 +697,31 @@ button:hover {
   background: #fffaf0;
 }
 
+.relationship-panel-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgb(77 128 114 / 26%);
+  background: #ffffff;
+}
+
+.relationship-panel-summary span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.relationship-panel-summary strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.relationship-panel-summary em {
+  color: #53646b;
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
 .relationship-account h4 {
   margin: -4px 0 4px;
   color: var(--ink);
@@ -744,26 +773,73 @@ button:hover {
 
 .relationship-links {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.relationship-links li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
+.relationship-links__empty {
+  padding: 12px;
   border: 1px solid rgb(221 214 199 / 80%);
   background: #ffffff;
   color: #53646b;
   font-size: 0.82rem;
 }
 
-.relationship-links strong {
+.relationship-link-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+}
+
+.relationship-link-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.relationship-link-card__head div {
+  display: grid;
+  gap: 4px;
+}
+
+.relationship-link-card__eyebrow {
+  color: var(--jade);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.relationship-link-card strong {
   color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.relationship-link-card__head > span,
+.relationship-link-card p {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.relationship-link-card p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.relationship-link-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.relationship-link-card__actions .auth-button {
+  width: auto;
+  min-height: 40px;
+  padding: 0 12px;
 }
 
 .trial-session {
@@ -842,6 +918,42 @@ button:hover {
 .trial-chat__remaining,
 .trial-chat__head span {
   color: #53646b;
+}
+
+.trial-stage-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trial-stage-chip {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+}
+
+.trial-stage-chip span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.trial-stage-chip strong {
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+
+.trial-stage-chip--done {
+  border-color: rgb(77 128 114 / 28%);
+  background: #f4faf6;
+}
+
+.trial-stage-chip--active {
+  border-color: rgb(197 150 79 / 45%);
+  background: #fff8ea;
 }
 
 .trial-chat__log {

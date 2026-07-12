@@ -189,7 +189,16 @@
               </label>
               <label>
                 <span>상대 생년월일</span>
-                <input id="partner-date" name="partnerDate" type="date" min="1800-01-01" max="2100-12-31" required />
+                <input
+                  id="partner-date"
+                  name="partnerDate"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="10"
+                  placeholder="1992-03-27"
+                  autocomplete="off"
+                  required
+                />
               </label>
               <div class="mini-form__row">
                 <label>
@@ -237,12 +246,13 @@
             <div id="relationship-account-panel" class="relationship-account" hidden>
               <div>
                 <p class="eyebrow">로그인 인연 연결</p>
-                <h4>초대 링크로 서로의 관계를 묶기</h4>
-                <p>
+                <h4 id="relationship-panel-title">초대 링크로 서로의 관계를 묶기</h4>
+                <p id="relationship-panel-copy">
                   상대가 링크로 들어와 로그인하면 두 계정이 같은 관계로 연결됩니다.
                   생년월일시는 링크에 담지 않습니다.
                 </p>
               </div>
+              <div id="relationship-panel-summary" class="relationship-panel-summary" hidden></div>
               <label>
                 <span>초대할 관계</span>
                 <select id="relationship-invite-type">
@@ -342,6 +352,7 @@
                   <strong id="trial-chat-status">상담 준비 중</strong>
                   <span id="trial-chat-remaining">남은 턴 0회</span>
                 </div>
+                <div id="trial-stage-strip" class="trial-stage-strip" hidden></div>
                 <div id="trial-chat-log" class="trial-chat__log" aria-live="polite"></div>
                 <label class="trial-session__concern">
                   <span>답변하기</span>
@@ -368,13 +379,14 @@
               <div class="profile-admin-panel__head">
                 <div>
                   <p class="eyebrow">개인 사주 정보 관리</p>
-                  <h4>입력, 수정, 삭제를 여기서 관리해요</h4>
+                  <h4 id="my-profile-title">입력, 수정, 삭제를 여기서 관리해요</h4>
                 </div>
                 <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="manage">정보 열기</button>
               </div>
               <dl id="my-profile-summary-list" class="profile-summary-list" hidden></dl>
               <p id="my-profile-empty" class="auth-panel__note">아직 저장된 사주 정보가 없습니다. 입력 후 오늘의 운세와 상담 연결 질문을 바로 볼 수 있어요.</p>
-              <div class="profile-admin-panel__actions">
+              <p id="my-profile-note" class="auth-panel__note">사주 계산과 수정은 팝업에서 하고, 로그인 · 인연 · 상담 상태는 이 화면에서 이어서 관리합니다.</p>
+              <div id="my-profile-actions" class="profile-admin-panel__actions">
                 <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="create">새 정보 입력</button>
                 <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="edit">기존 정보 수정</button>
                 <button type="button" class="auth-button auth-button--ghost" data-profile-clear>정보 삭제</button>
@@ -454,9 +466,11 @@
                     <input
                       id="birth-date"
                       name="birthDate"
-                      type="date"
-                      min="1800-01-01"
-                      max="2100-12-31"
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="10"
+                      placeholder="1992-03-27"
+                      autocomplete="bday"
                       required
                     />
                   </label>

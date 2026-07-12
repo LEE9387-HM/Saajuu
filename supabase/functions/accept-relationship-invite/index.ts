@@ -15,6 +15,11 @@ type RelationshipInvite = {
   revoked_at: string | null;
 };
 
+function fallbackDisplayName(value: string | null | undefined) {
+  const name = String(value ?? "").trim();
+  return name || "연결된 상대";
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -99,6 +104,15 @@ Deno.serve(async (request) => {
     .maybeSingle();
 
   if (existingError) return json({ error: existingError.message }, 500);
+  const counterpartProfileId = invite.inviter_user_id;
+  const { data: counterpartProfile, error: counterpartError } = await adminClient
+    .from("profiles")
+    .select("display_name")
+    .eq("id", counterpartProfileId)
+    .maybeSingle();
+  if (counterpartError) return json({ error: counterpartError.message }, 500);
+  const counterpartDisplayName = fallbackDisplayName(counterpartProfile?.display_name);
+
   if (existingLink) {
     return json({
       linkId: existingLink.id,
@@ -106,6 +120,7 @@ Deno.serve(async (request) => {
       inviterUserId: invite.inviter_user_id,
       inviteeUserId: currentUser.id,
       acceptedAt: existingLink.accepted_at,
+      counterpartDisplayName,
     });
   }
 
@@ -130,5 +145,6 @@ Deno.serve(async (request) => {
     inviterUserId: invite.inviter_user_id,
     inviteeUserId: currentUser.id,
     acceptedAt: link.accepted_at,
+    counterpartDisplayName,
   });
 });

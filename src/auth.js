@@ -179,14 +179,11 @@ export async function getRelationshipLinks(session) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) return { links: [], error: null };
 
-  const { data, error } = await supabase
-    .from("relationship_links")
-    .select("id, user_a_id, user_b_id, relationship, status, accepted_at, created_at")
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const { data, error } = await supabase.functions.invoke("list-relationship-links", {
+    body: {},
+  });
 
-  return { links: data ?? [], error };
+  return { links: data?.links ?? [], error: await normalizeFunctionError(error) };
 }
 
 async function normalizeFunctionError(error) {

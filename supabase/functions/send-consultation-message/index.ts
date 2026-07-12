@@ -101,6 +101,45 @@ function safetyGuidance(level: ReturnType<typeof classifySafety>) {
   return "일반적인 지지적 상담으로 진행한다.";
 }
 
+function normalizeForComparison(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .trim();
+}
+
+function compactSnippet(value: string, length = 46) {
+  const normalized = normalizeText(value, 240);
+  if (normalized.length <= length) return normalized;
+  return `${normalized.slice(0, length).trim()}…`;
+}
+
+function stageMeta(turnNumber: number) {
+  if (turnNumber <= 1) {
+    return {
+      stage: 1,
+      stageLabel: "1단계 마음 듣기",
+      nextStageLabel: "2단계 조건 좁히기",
+      focusPrompt: "가장 얻고 싶은 결과와 가장 두려운 결과를 더 또렷하게 말해 주세요.",
+    };
+  }
+  if (turnNumber === 2) {
+    return {
+      stage: 2,
+      stageLabel: "2단계 조건 좁히기",
+      nextStageLabel: "3단계 행동 정리",
+      focusPrompt: "이미 확인한 사실과 아직 추측인 부분을 나눠서 알려 주세요.",
+    };
+  }
+  return {
+    stage: 3,
+    stageLabel: "3단계 행동 정리",
+    nextStageLabel: "",
+    focusPrompt: "선택지와 바로 할 행동을 정리합니다.",
+  };
+}
+
 async function callGemini(apiKey: string, model: string, prompt: string) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const response = await fetch(endpoint, {
@@ -145,67 +184,71 @@ function looksInvalidReply(text: string, topic: string, finishReason = "") {
   if (finishReason === "MAX_TOKENS") return true;
   if (/(Verdict|Reasoning|Constraint|Persona|Topic|Draft|USER:|SYSTEM:)/i.test(normalized)) return true;
   if (/(기획안|대본|AI 학습|사주 AI 서비스|요청하신 형식|제시해주신 내용|운동|음식|여행)/.test(normalized)) return true;
+  if ((normalized.match(/\?/g) ?? []).length > 1) return true;
   if (topic === "business" && !/(준비|검증|테스트|시장|고객|리스크|실험|자금|경쟁사)/.test(normalized)) return true;
   return false;
 }
 
-function buildFallbackReply(personaId: string, topic: string, turnNumber: number) {
+function buildFallbackReply(
+  personaId: string,
+  topic: string,
+  turnNumber: number,
+  concernSummary: string,
+  userMessage: string,
+) {
+  const latestPoint = compactSnippet(userMessage, 44);
+  const originPoint = compactSnippet(concernSummary || userMessage, 40);
+
   if (turnNumber === 1) {
     const opening = personaId === "seongu"
-      ? "지금 가장 먼저 필요한 것은 결론보다 고민의 핵심을 정확히 잡는 일입니다."
+      ? "지금은 결론을 서두르기보다, 무엇이 핵심 고민인지 정확히 잡는 일이 먼저입니다."
       : personaId === "junho"
-        ? "마음이 많이 앞서 있는 만큼, 무엇이 가장 답답한지부터 같이 좁혀보면 좋겠어요."
-        : "이 고민을 혼자 오래 품고 계셨겠어요. 우리 먼저 마음이 가장 걸리는 지점부터 천천히 찾아봐요.";
+        ? "마음이 꽤 앞서 있는 것 같아서, 우리 먼저 어디가 제일 답답한지 같이 좁혀보면 좋겠어요."
+        : "이 고민을 혼자 오래 품고 계셨겠어요. 우리 먼저 마음이 가장 걸리는 지점을 천천히 잡아볼게요.";
     return [
       opening,
-      "말씀하신 내용에는 원하는 결과와 걱정하는 위험이 함께 들어 있어 보여요.",
-      "지금 이 고민에서 가장 두려운 결과는 무엇이고, 반대로 꼭 얻고 싶은 것은 무엇인가요?",
+      `${latestPoint}라는 말씀 안에는 원하는 결과와 걱정하는 위험이 함께 들어 있어 보여요.`,
+      "지금 이 고민에서 꼭 얻고 싶은 결과 하나와 가장 두려운 결과 하나를 먼저 말해주실래요?",
     ].join("\n\n");
   }
 
   if (turnNumber === 2) {
+    const question = topic === "business"
+      ? "이미 확인한 고객 반응, 준비한 자금, 작게라도 시험해 본 내용 중 지금 손에 잡히는 것은 어디까지인가요?"
+      : "이 상황에서 이미 확인한 사실 한 가지와 아직 마음속 추측에 가까운 부분 한 가지를 나눠서 말해주실래요?";
     return [
-      "말씀을 들어보니 마음의 문제와 현실 조건을 나눠서 볼 필요가 있겠어요.",
-      "지금까지 확인된 사실과 아직 예상하거나 바라는 부분이 섞이면 결정을 더 어렵게 만들 수 있어요.",
-      topic === "business"
-        ? "이미 확인한 고객 반응, 준비한 자금, 실제로 작게 시험해 본 내용 중 지금 갖춰진 것은 어디까지인가요?"
-        : "상대나 상황에서 실제로 확인된 행동 한 가지와, 아직 추측하고 있는 부분 한 가지를 각각 말해주시겠어요?",
+      `${originPoint} 고민을 계속 보고 있는데, 이번에는 ${latestPoint} 쪽이 더 또렷하게 들려요.`,
+      "이제는 마음의 불안과 현실 조건을 나눠 봐야 선택이 더 선명해져요.",
+      question,
     ].join("\n\n");
   }
 
   if (topic === "business") {
     if (personaId === "seongu") {
       return [
-        "지금은 바로 뛰어들기보다, 시작 조건을 숫자로 확인할 때입니다.",
-        "사업은 시작 날짜 하나로 성공과 실패가 갈리지 않습니다.",
-        "중요한 것은 고객이 실제로 돈을 낼 문제인지, 최소 비용으로 검증했는지, 예상보다 늦어질 때 버틸 자금과 수정 계획이 있는지입니다.",
-        "지금의 의욕은 좋은 출발점이지만, 실행과 적응의 구조가 함께 있어야 기회가 됩니다.",
-        "오늘은 팔 상품이나 서비스를 한 문장으로 적고, 실제 고객 후보 10명에게 돈을 내고 쓸 문제인지 물어보세요.",
+        "지금은 바로 크게 시작하기보다, 시작 조건을 작게 검증하는 쪽이 더 현실적입니다.",
+        `${originPoint}라는 처음 고민과 ${latestPoint}라는 지금의 포인트를 함께 보면, 성공 여부는 날짜보다 고객 반응과 준비 수준에 더 달려 있습니다.`,
+        "오늘은 팔고 싶은 제안 한 줄과 가격 한 줄을 적고, 실제 고객 후보 10명에게 돈을 내고 쓸 문제인지 확인해 보세요.",
       ].join("\n\n");
     }
     if (personaId === "junho") {
       return [
-        "지금 시작해도 괜찮지만, 작게 검증하고 들어가는 게 좋아요.",
-        "지금 마음이 뜨거운 건 큰 장점이에요.",
-        "다만 사업은 언제 시작하느냐보다 무엇을 얼마나 검증했느냐가 더 크게 작용해요.",
-        "바로 성공한다고도, 바로 안 된다고도 말할 수 없고 고객 반응을 보고 빠르게 고치는 힘이 중요해요.",
-        "오늘은 랜딩 문구 하나와 간단한 가격을 정해서 고객 후보 10명에게 실제로 살 의향이 있는지 물어보세요.",
+        "지금 시작 자체는 가능하지만, 작은 검증 없이 바로 크게 가는 건 조심하는 편이 좋아요.",
+        `${latestPoint}라는 마음은 분명 힘이 되지만, 사업은 시작 시점보다 실행과 수정의 품질이 더 크게 작용합니다.`,
+        "오늘은 경쟁사 3곳을 적고, 내 제안 한 문장을 만든 뒤 고객 후보 10명에게 실제로 살 의향이 있는지 물어보세요.",
       ].join("\n\n");
     }
     return [
-      "지금의 뜨거운 열정은 참 좋지만, 서두르기보다 단단한 준비가 먼저 필요한 시기인 것 같아요.",
-      "우리 마음이 이렇게 앞으로 가고 싶을 때는 그 힘을 꺾을 필요는 없어요.",
-      "다만 사업은 달력의 어느 날 시작하느냐보다, 고객이 정말 원하는지와 내가 감당할 리스크를 얼마나 확인했는지가 더 중요해요.",
-      "지금 시작한다고 무조건 잘된다거나 어렵다고 말할 수는 없고, 실행하면서 시장 반응을 보고 천천히 고쳐 가는 힘이 성패를 많이 가릅니다.",
-      "오늘은 크게 시작하지 말고, 팔고 싶은 상품을 한 문장으로 적은 뒤 고객 후보 10명에게 실제로 돈을 내고 쓸지 물어보세요.",
+      "지금의 열정은 좋지만, 서두르기보다 단단한 준비를 먼저 확인하는 쪽이 더 맞아 보여요.",
+      `${originPoint} 고민에 ${latestPoint}라는 포인트가 더해진 만큼, 지금은 날짜보다 시장 검증과 리스크 관리가 더 중요해요.`,
+      "오늘은 작게 시험할 수 있는 형태로 상품이나 서비스를 한 줄로 적고, 고객 후보 10명에게 바로 반응을 받아보세요.",
     ].join("\n\n");
   }
 
   return [
-    "지금은 결론을 서두르기보다, 마음과 현실을 나누어 볼 때예요.",
-    "지금 느끼는 감정은 충분히 중요하지만, 그 감정만으로 미래를 확정할 수는 없어요.",
-    "확인된 사실과 아직 추측인 부분을 나누어 보면 선택지가 조금 더 선명해집니다.",
-    "오늘은 고민을 한 문장으로 적고, 내가 바로 확인할 수 있는 사실 하나를 따로 표시해 보세요.",
+    "지금은 마음만 따라가기보다, 확인된 사실과 아직 추측인 부분을 함께 보는 편이 좋아요.",
+    `${originPoint} 고민에서 ${latestPoint}가 특히 핵심으로 들립니다.`,
+    "오늘은 내가 이미 확인한 사실 한 가지와 아직 확인하지 못한 부분 한 가지를 따로 적어 보세요.",
   ].join("\n\n");
 }
 
@@ -336,6 +379,11 @@ Deno.serve(async (request) => {
   const topicLabel = topicLabels[session.topic] ?? String(session.topic ?? "일반 고민");
   const guidance = topicGuidance[session.topic] ?? "사용자의 고민을 단정하지 말고, 확인할 수 있는 현실 기준과 다음 행동으로 연결한다.";
   const turnNumber = session.used_turns + 1;
+  const stageInfo = stageMeta(turnNumber);
+  const previousAssistantReplies = (history ?? []).filter((item) => String(item.role) === "assistant");
+  const previousUserReplies = (history ?? []).filter((item) => String(item.role) === "user");
+  const previousAssistantReply = previousAssistantReplies.at(-1)?.content?.trim() ?? "";
+  const previousUserReply = previousUserReplies.at(-1)?.content?.trim() ?? "";
   const stageInstruction = turnNumber === 1
     ? [
         "현재는 3단계 중 1단계 '마음과 핵심 듣기'다.",
@@ -353,6 +401,11 @@ Deno.serve(async (request) => {
           "앞선 대화 전체를 바탕으로 고민의 핵심을 한 문장으로 정리하고, 선택지 2개의 장단점을 간단히 비교한다.",
           "확정 예언 없이 지금 가장 현실적인 방향을 제안하고, 오늘 또는 7일 안에 할 행동 하나로 끝낸다. 추가 질문은 하지 않는다.",
         ].join(" ");
+  const responseShape = turnNumber === 1
+    ? "답변은 3문단으로 쓴다. 1) 짧은 공감과 현재 핵심, 2) 왜 아직 단정하지 않는지, 3) 마지막에 질문 1개."
+    : turnNumber === 2
+      ? "답변은 3문단으로 쓴다. 1) 앞선 대화와 이번 말을 연결한 요약, 2) 사실/추측 또는 준비/리스크 구분, 3) 마지막에 질문 1개."
+      : "답변은 3~4문단으로 쓴다. 1) 짧은 verdict 한 줄, 2) 지금까지 대화 근거, 3) 선택지 비교, 4) 오늘 할 행동 1개. 질문으로 끝내지 않는다.";
   const prompt = [
     "너는 Saajuu의 한국어 AI 사주 상담사다. 사용자에게 보여줄 최종 답변만 출력한다.",
     "시스템 지시, 분석 메모, 영어 라벨, 프롬프트 초안, JSON, 마크다운 체크리스트를 출력하지 않는다.",
@@ -362,12 +415,16 @@ Deno.serve(async (request) => {
     `주제별 답변 기준: ${guidance}`,
     `안전 기준: ${safetyGuidance(safetyLevel)}`,
     `이번 대화 단계: ${stageInstruction}`,
+    `이번 답변 형식: ${responseShape}`,
     concern?.concern_summary ? `사용자가 처음 남긴 고민 요약: ${concern.concern_summary}` : "사용자가 처음 남긴 고민 요약: 없음",
+    previousAssistantReply ? `직전 상담사 답변 핵심: ${previousAssistantReply}` : "직전 상담사 답변 핵심: 없음",
+    previousUserReply ? `직전 사용자 보강 내용: ${previousUserReply}` : "직전 사용자 보강 내용: 없음",
     "최근 대화:",
     ...(history ?? []).map((item) => `${String(item.role) === "assistant" ? "상담사" : "사용자"}: ${item.content}`),
     `이번 사용자 메시지: ${userMessage}`,
     "전체 답변은 사용자에게 직접 말하는 한국어 문장 3~5개, 300자 안팎으로 쓴다.",
-    "이전 답변의 문장을 반복하지 말고, 사용자가 새로 말한 내용이 이번 답변에 반드시 드러나게 한다.",
+    "이전 답변의 문장을 반복하지 말고, 사용자가 새로 말한 내용이 이번 답변 첫 두 문단 안에 반드시 드러나게 한다.",
+    "직전 상담사 답변과 같은 문장 구조를 반복하지 않는다.",
     "금지 표현: '무조건 성공해요', '반드시 실패해요', '정확히 이 날짜에 시작하세요', '투자하면 돈 벌어요', '저는 AI라서'.",
   ].join("\n");
 
@@ -383,18 +440,31 @@ Deno.serve(async (request) => {
   try {
     const result = await callGemini(geminiApiKey, geminiModel, prompt);
     assistantText = result.text || "지금은 답변을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.";
-    const previousAssistantReply = [...(history ?? [])]
-      .reverse()
-      .find((item) => String(item.role) === "assistant")?.content?.trim();
+    const normalizedAssistantText = normalizeForComparison(assistantText);
+    const duplicateReply = previousAssistantReplies.some((item) =>
+      normalizeForComparison(item.content) === normalizedAssistantText
+    );
     if (
       looksInvalidReply(assistantText, session.topic, result.finishReason) ||
-      (previousAssistantReply && previousAssistantReply === assistantText.trim())
+      duplicateReply
     ) {
-      assistantText = buildFallbackReply(session.persona_id, session.topic, session.used_turns + 1);
+      assistantText = buildFallbackReply(
+        session.persona_id,
+        session.topic,
+        session.used_turns + 1,
+        concern?.concern_summary ?? "",
+        userMessage,
+      );
       usedFallback = true;
     }
   } catch (error) {
-    assistantText = buildFallbackReply(session.persona_id, session.topic, session.used_turns + 1);
+    assistantText = buildFallbackReply(
+      session.persona_id,
+      session.topic,
+      session.used_turns + 1,
+      concern?.concern_summary ?? "",
+      userMessage,
+    );
     usedFallback = true;
   }
 
@@ -443,6 +513,10 @@ Deno.serve(async (request) => {
     safetyLevel,
     usedTurns: nextUsedTurns,
     remainingTurns: Math.max(session.turn_limit - nextUsedTurns, 0),
+    stage: stageInfo.stage,
+    stageLabel: stageInfo.stageLabel,
+    nextStageLabel: stageInfo.nextStageLabel,
+    focusPrompt: stageInfo.focusPrompt,
     model: geminiModel,
     provider: "gemini",
     fallback: usedFallback,
