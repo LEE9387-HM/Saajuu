@@ -925,6 +925,40 @@ button:hover {
   background: #fff8e8;
 }
 
+.choice-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 18px 0 12px;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+}
+
+.choice-switcher button {
+  min-width: 0;
+  height: 46px;
+  padding: 0 8px;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: #53646b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.choice-switcher button:last-child {
+  border-right: 0;
+}
+
+.choice-switcher button[aria-selected="true"] {
+  background: var(--ink);
+  color: #fffdf8;
+}
+
+.persona-cards,
+.mode-cards {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .persona-recommendation span {
   color: var(--muted);
   font-size: 0.68rem;

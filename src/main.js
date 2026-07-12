@@ -77,6 +77,8 @@ const compatibilityError = document.querySelector("#compatibility-error");
 const compatibilityResult = document.querySelector("#compatibility-result");
 const personaCards = document.querySelector("#persona-cards");
 const modeCards = document.querySelector("#mode-cards");
+const personaSwitcher = document.querySelector("#persona-switcher");
+const modeSwitcher = document.querySelector("#mode-switcher");
 const personaRecommendation = document.querySelector("#persona-recommendation");
 const authStatus = document.querySelector("#auth-status");
 const authNote = document.querySelector("#auth-note");
@@ -112,6 +114,8 @@ let pendingRelationshipInviteToken = "";
 let latestRelationshipInviteUrl = "";
 let activeConsultationSession = null;
 let activeConsultationMessages = [];
+let selectedPersonaId = "miseon";
+let selectedModeId = "trial";
 
 function setResultTab(tabId) {
   const nameAvailable = !document.querySelector("#name-reading")?.hidden;
@@ -180,6 +184,14 @@ personaCards?.addEventListener("click", (event) => {
   premiumInterestNote.textContent = `${persona.name} 스타일로 상담이 열리면 알려드릴게요.`;
 });
 
+personaSwitcher?.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target.closest("[data-persona-tab]") : null;
+  if (!(target instanceof HTMLButtonElement)) return;
+  selectedPersonaId = target.dataset.personaTab ?? "miseon";
+  if (trialPersona) trialPersona.value = selectedPersonaId;
+  renderPersonaChoice();
+});
+
 modeCards?.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const button = target?.closest("[data-mode]");
@@ -193,6 +205,13 @@ modeCards?.addEventListener("click", (event) => {
     mode.id === "pro"
       ? "프로 상담은 깊은 분석과 리포트 구조로 먼저 준비하겠습니다."
       : `${mode.name} 상품 구성이 정리되면 알려드릴게요.`;
+});
+
+modeSwitcher?.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target.closest("[data-mode-tab]") : null;
+  if (!(target instanceof HTMLButtonElement)) return;
+  selectedModeId = target.dataset.modeTab ?? "trial";
+  renderModeChoice();
 });
 
 function relationLabel(value) {
@@ -1417,9 +1436,26 @@ function renderConsultationCatalog() {
     ).join("");
   }
 
+  renderPersonaChoice();
+  renderModeChoice();
+
+  updatePersonaRecommendation(topicSelect.value);
+  if (trialTopic) trialTopic.value = topicSelect.value;
+}
+
+function renderPersonaChoice() {
+  const persona = CONSULTATION_PERSONAS.find((item) => item.id === selectedPersonaId) ?? CONSULTATION_PERSONAS[0];
+  if (personaSwitcher) {
+    personaSwitcher.innerHTML = CONSULTATION_PERSONAS.map(
+      (item) => `
+        <button type="button" role="tab" data-persona-tab="${escapeHtml(item.id)}" aria-selected="${item.id === persona.id}">
+          ${escapeHtml(item.name)}
+        </button>
+      `,
+    ).join("");
+  }
   if (personaCards) {
-    personaCards.innerHTML = CONSULTATION_PERSONAS.map(
-      (persona) => `
+    personaCards.innerHTML = `
         <article class="persona-card" data-persona="${escapeHtml(persona.id)}">
           <div class="persona-card__top">
             <span class="persona-avatar" aria-hidden="true">${escapeHtml(persona.initial)}</span>
@@ -1437,13 +1473,23 @@ function renderConsultationCatalog() {
             ${escapeHtml(persona.name)} 상담 관심
           </button>
         </article>
+      `;
+  }
+}
+
+function renderModeChoice() {
+  const mode = CONSULTATION_MODES.find((item) => item.id === selectedModeId) ?? CONSULTATION_MODES[0];
+  if (modeSwitcher) {
+    modeSwitcher.innerHTML = CONSULTATION_MODES.map(
+      (item) => `
+        <button type="button" role="tab" data-mode-tab="${escapeHtml(item.id)}" aria-selected="${item.id === mode.id}">
+          ${escapeHtml(item.name)}
+        </button>
       `,
     ).join("");
   }
-
   if (modeCards) {
-    modeCards.innerHTML = CONSULTATION_MODES.map(
-      (mode) => `
+    modeCards.innerHTML = `
         <article class="mode-card mode-card--${escapeHtml(mode.id)}">
           <span>${escapeHtml(mode.turns)}</span>
           <h4>${escapeHtml(mode.name)}</h4>
@@ -1456,12 +1502,8 @@ function renderConsultationCatalog() {
             ${escapeHtml(mode.name)} 관심
           </button>
         </article>
-      `,
-    ).join("");
+      `;
   }
-
-  updatePersonaRecommendation(topicSelect.value);
-  if (trialTopic) trialTopic.value = topicSelect.value;
 }
 
 function updatePersonaRecommendation(topic) {
@@ -1471,6 +1513,11 @@ function updatePersonaRecommendation(topic) {
     <span>현재 고민 추천</span>
     <strong>${recommended.map((persona) => escapeHtml(persona.name)).join(" · ")}</strong>
   `;
+  if (recommended[0]) {
+    selectedPersonaId = recommended[0].id;
+    if (trialPersona) trialPersona.value = selectedPersonaId;
+    renderPersonaChoice();
+  }
 }
 
 function renderResult(chart, input) {
