@@ -2417,17 +2417,21 @@ footer span:first-child {
   }
 
   .app-nav {
+    gap: 0;
     width: calc(100% + 24px);
     margin-left: -12px;
     margin-right: -12px;
+    padding-inline: 8px;
+    overflow-x: hidden;
     border-left: 0;
     border-right: 0;
   }
 
   .app-nav__link {
-    min-width: 66px;
-    padding-inline: 10px;
-    font-size: 0.78rem;
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 2px;
+    font-size: 0.7rem;
   }
 
   .hub-grid {
