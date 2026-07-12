@@ -229,6 +229,19 @@ export async function createConsultationSession(session, payload) {
   return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
+export async function createConsultationOrder(session, payload) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 상담권 주문을 준비할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("create-consultation-order", {
+    body: payload,
+  });
+
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
+}
+
 export async function sendConsultationMessage(session, payload) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) {

@@ -23,6 +23,7 @@ import { clearProfile, loadProfile, saveProfile } from "./storage.js";
 import { initAnalytics, track } from "./track.js";
 import {
   acceptRelationshipInvite,
+  createConsultationOrder,
   createConsultationSession,
   createRelationshipInvite,
   getRelationshipInviteTokenFromHash,
@@ -267,10 +268,15 @@ function updateTrialChatUi() {
     trialNextStep.innerHTML = `
       <strong>무료 체험이 끝났습니다</strong>
       <p>다음 단계는 기본 상담권과 프로 상담으로 이어집니다. 기본 상담은 10턴 대화와 짧은 요약, 프로 상담은 더 긴 문맥과 선택지별 행동 계획을 제공하는 구조로 준비합니다.</p>
-      <div>
+      <div class="trial-next-step__chips">
         <span>기본 상담 10턴</span>
         <span>프로 상담 20턴 + 상세 리포트</span>
       </div>
+      <div class="trial-next-step__actions">
+        <button type="button" data-order-product="basic_10_turns">기본 상담권 준비</button>
+        <button type="button" data-order-product="pro_20_turns">프로 상담 준비</button>
+      </div>
+      <p id="paid-order-note" class="trial-next-step__note" role="status"></p>
     `;
   }
   renderTrialChatMessages();
@@ -631,6 +637,46 @@ async function initAuthPanel() {
         ? `답변을 받았습니다. 남은 턴 ${Number(data?.remainingTurns)}회`
         : "답변을 받았습니다. 무료 3턴을 모두 사용했습니다.";
     updateTrialChatUi();
+  });
+
+  trialNextStep?.addEventListener("click", async (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest("[data-order-product]");
+    if (!(button instanceof HTMLButtonElement)) return;
+
+    const note = trialNextStep.querySelector("#paid-order-note");
+    const setNote = (message) => {
+      if (note) note.textContent = message;
+      if (trialSessionNote) trialSessionNote.textContent = message;
+    };
+
+    if (!activeSession) {
+      setNote("로그인 후 상담권 주문을 준비할 수 있습니다.");
+      focusMyPageForConsultation();
+      return;
+    }
+    if (!hasRequiredConsents) {
+      setNote("필수 동의를 저장한 뒤 상담권 주문을 준비할 수 있습니다.");
+      focusMyPageForConsultation();
+      return;
+    }
+
+    const productId = button.dataset.orderProduct;
+    button.disabled = true;
+    setNote("상담권 주문 정보를 서버에 준비하고 있습니다.");
+    const { data, error: orderError } = await createConsultationOrder(activeSession, { productId });
+    button.disabled = false;
+
+    if (orderError) {
+      setNote(orderError.message);
+      return;
+    }
+
+    const amount = Number(data?.order?.amount_krw ?? 0).toLocaleString("ko-KR");
+    const orderId = data?.order?.provider_order_id ?? data?.order?.id ?? "";
+    const productName = data?.product?.name ?? "상담권";
+    setNote(`${productName} ${amount}원 주문 준비가 완료됐습니다. PortOne 테스트 계정 연결 후 결제창을 열 수 있습니다. 주문번호 ${orderId}`);
+    track("paid_order_intent");
   });
 }
 

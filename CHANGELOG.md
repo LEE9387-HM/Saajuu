@@ -1,4 +1,16 @@
-﻿# Changelog
+# Changelog
+
+## [0.5.20.0] - 2026-07-12
+
+### Added
+
+- `create-consultation-order` Supabase Edge Function 추가 및 배포
+- 무료 상담 종료 후 기본 상담권/프로 상담 주문 준비 버튼 추가
+
+### Changed
+
+- PortOne/PG 검증 전에는 주문을 `pending` 상태로만 만들고 이용권은 발급하지 않도록 결제 경계를 분리
+- 상담권 주문 준비는 로그인과 필수 동의가 완료된 사용자만 수행하도록 제한
 
 ## [0.5.19.0] - 2026-07-12
 

@@ -762,19 +762,43 @@ button:hover {
   line-height: 1.55;
 }
 
-.trial-next-step div {
+.trial-next-step__chips,
+.trial-next-step__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.trial-next-step span {
+.trial-next-step__chips span {
   padding: 5px 8px;
   border: 1px solid rgb(77 128 114 / 24%);
   background: #ffffff;
   color: #4d8072;
   font-size: 0.74rem;
   font-weight: 800;
+}
+
+.trial-next-step__actions button {
+  width: auto;
+  min-height: 42px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 4px;
+  background: var(--jade);
+  color: #fffdf8;
+  font-size: 0.78rem;
+}
+
+.trial-next-step__actions button:last-child {
+  border: 1px solid rgb(197 150 79 / 62%);
+  background: #fffaf0;
+  color: var(--ink);
+}
+
+.trial-next-step__note {
+  min-height: 1.2em;
+  color: var(--jade) !important;
+  font-weight: 700;
 }
 
 .mini-form {
