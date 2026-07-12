@@ -1856,6 +1856,14 @@ button:hover {
   display: none !important;
 }
 
+[data-consult-panel][hidden] {
+  display: none !important;
+}
+
+.consult-section-switcher {
+  margin-top: 22px;
+}
+
 .card-share__button {
   display: inline-flex;
   align-items: center;

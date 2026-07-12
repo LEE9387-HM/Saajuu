@@ -108,6 +108,8 @@ const trialMessageSend = document.querySelector("#trial-message-send");
 const trialNextStep = document.querySelector("#trial-next-step");
 const resultTabs = [...document.querySelectorAll("[data-result-tab]")];
 const resultPanels = [...document.querySelectorAll("[data-result-panel]")];
+const consultTabs = [...document.querySelectorAll("[data-consult-tab]")];
+const consultPanels = [...document.querySelectorAll("[data-consult-panel]")];
 let activeSession = null;
 let hasRequiredConsents = false;
 let pendingRelationshipInviteToken = "";
@@ -133,6 +135,20 @@ function setResultTab(tabId) {
 
 resultTabs.forEach((button) => {
   button.addEventListener("click", () => setResultTab(button.dataset.resultTab ?? "question"));
+});
+
+function setConsultTab(tabId) {
+  consultTabs.forEach((button) => {
+    const isActive = button.dataset.consultTab === tabId;
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  consultPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.consultPanel !== tabId;
+  });
+}
+
+consultTabs.forEach((button) => {
+  button.addEventListener("click", () => setConsultTab(button.dataset.consultTab ?? "start"));
 });
 
 premiumInterestButton?.addEventListener("click", () => {

@@ -364,10 +364,17 @@
             <p class="eyebrow">AI 상담</p>
             <h3>미선 이모·준호 형·성우 선생</h3>
             <p>상담사는 말투와 질문 방식을 고르고, 기본/프로 모드는 분석 깊이로 나눕니다.</p>
+            <div class="choice-switcher consult-section-switcher" role="tablist" aria-label="상담 메뉴">
+              <button type="button" role="tab" data-consult-tab="start" aria-selected="true">상담 시작</button>
+              <button type="button" role="tab" data-consult-tab="persona" aria-selected="false">상담사</button>
+              <button type="button" role="tab" data-consult-tab="mode" aria-selected="false">이용권</button>
+            </div>
+            <div data-consult-panel="persona" hidden>
             <div id="persona-recommendation" class="persona-recommendation" aria-live="polite"></div>
             <div id="persona-switcher" class="choice-switcher" role="tablist" aria-label="상담사 선택"></div>
             <div id="persona-cards" class="persona-cards" aria-label="상담 페르소나"></div>
-            <div class="consult-mode">
+            </div>
+            <div class="consult-mode" data-consult-panel="mode" hidden>
               <div>
                 <p class="eyebrow">상담 모드</p>
                 <h4>상담 스타일과 대화의 깊이를 골라보세요</h4>
@@ -375,7 +382,7 @@
               <div id="mode-switcher" class="choice-switcher" role="tablist" aria-label="상담 방식 선택"></div>
               <div id="mode-cards" class="mode-cards" aria-label="상담 상품 모드"></div>
             </div>
-            <div class="trial-session">
+            <div class="trial-session" data-consult-panel="start">
               <p class="eyebrow">무료 체험</p>
               <h4>세 번의 대화로 고민을 구체화해요</h4>
               <p>첫 대화에서는 마음을 듣고, 두 번째는 조건을 좁히고, 마지막에는 선택지와 다음 행동을 정리합니다.</p>
