@@ -1041,6 +1041,70 @@ export function buildCompatibilityReading(primaryChart, partnerChart, relationKe
   };
 }
 
+export function buildCompatibilityReadingSymmetric(primaryChart, partnerChart, relationKey = "lover") {
+  const primary = getReadingContext(primaryChart);
+  const partner = getReadingContext(partnerChart);
+  const pair = [
+    {
+      pillar: `${primary.dayPillar.stem}${primary.dayPillar.branch}`,
+      element: primary.balance.strongest.element,
+      elementLabel: primary.balance.strongest.label,
+      tenGod: primary.dominantTenGod,
+      watch: primary.dayMeta.watch,
+    },
+    {
+      pillar: `${partner.dayPillar.stem}${partner.dayPillar.branch}`,
+      element: partner.balance.strongest.element,
+      elementLabel: partner.balance.strongest.label,
+      tenGod: partner.dominantTenGod,
+      watch: partner.dayMeta.watch,
+    },
+  ].sort((a, b) => a.pillar.localeCompare(b.pillar, "ko-KR"));
+
+  const relationType = relationBetweenElements(pair[0].element, pair[1].element);
+  const relationMeta = ELEMENT_RELATION[relationType];
+  const relationshipLabel = RELATIONSHIP_LABEL[relationKey] ?? RELATIONSHIP_LABEL.lover;
+  const score = scoreCompatibility(primaryChart, partnerChart, relationKey);
+  const pairPillars = pair.map((item) => item.pillar).join(" · ");
+  const pairElements = pair.map((item) => item.elementLabel).join("과 ");
+  const pairTenGods = pair.map((item) => item.tenGod).join(" · ");
+  const uniqueWatchPoints = [...new Set(pair.map((item) => item.watch))];
+
+  const verdict =
+    score >= 82
+      ? "끌림과 조율 포인트가 함께 살아나는 관계입니다"
+      : score >= 68
+        ? "잘 맞는 지점은 분명하지만 대화 규칙이 필요합니다"
+        : "감정보다 속도와 기대치를 먼저 맞춰야 합니다";
+
+  return {
+    relationshipLabel,
+    score,
+    verdict,
+    title: `${relationshipLabel} 관계에서는 ${relationMeta.label}이 먼저 보입니다`,
+    copy:
+      `${pairPillars} 일주를 함께 보면, ${pairElements} 기운의 만남으로 읽힙니다. ` +
+      `${relationMeta.copy}`,
+    strengths: [
+      `${pairElements} 기운이 서로의 장면을 다르게 보게 하면서도 시야를 넓혀줍니다.`,
+      `${pairTenGods} 흐름이 만나 관계 안의 역할과 기대를 비교적 선명하게 보여줍니다.`,
+      "서로의 다름을 성격 문제로 단정하지 않고 생활 리듬으로 보면 조율 여지가 생깁니다.",
+    ],
+    frictions: [...uniqueWatchPoints, relationMeta.advice].slice(0, 3),
+    talkGuide: [
+      "연락과 만남의 속도를 어느 정도로 느끼는지 먼저 이야기하기",
+      "돈, 가족, 일상 루틴처럼 감정 밖의 현실 조건을 확인하기",
+      "갈등이 생겼을 때 회피하는지, 바로 풀려 하는지 대화 방식 정하기",
+    ],
+    consultQuestion: `${relationshipLabel} 관계에서 가장 자주 반복되는 서운함을 사주 흐름과 함께 정리해 볼까요?`,
+    evidence: [
+      `두 일주 ${pairPillars}`,
+      `두 강한 오행 ${pair.map((item) => item.element).join(" · ")}`,
+      `관계 리듬 ${relationMeta.label}`,
+    ],
+  };
+}
+
 export function recommendConsultationPersonas(topic = "relationship") {
   const ids = PERSONA_RECOMMENDATION[topic] ?? PERSONA_RECOMMENDATION.relationship;
   return ids

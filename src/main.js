@@ -5,6 +5,7 @@ import {
   CONSULTATION_MODES,
   CONSULTATION_PERSONAS,
   buildCompatibilityReading,
+  buildCompatibilityReadingSymmetric,
   buildGuidance,
   buildNameReading,
   buildDetailedReading,
@@ -31,6 +32,7 @@ import {
   getRelationshipInviteTokenFromHash,
   getRelationshipLinks,
   getCurrentSession,
+  getOAuthBrowserWarning,
   getRequiredConsentStatus,
   isSupabaseConfigured,
   onAuthStateChange,
@@ -40,6 +42,7 @@ import {
   signInWithOAuthProvider,
   signOut,
   syncProfileForSession,
+  updateRelationshipLabel,
 } from "./auth.js";
 
 const SWATCH_COLORS = { 목: "#3f7d5c", 화: "#c05a44", 토: "#c5964f", 금: "#9aa3ab", 수: "#22333f" };
@@ -133,6 +136,11 @@ const trialChat = document.querySelector("#trial-chat");
 const trialChatStatus = document.querySelector("#trial-chat-status");
 const trialChatRemaining = document.querySelector("#trial-chat-remaining");
 const trialStageStrip = document.querySelector("#trial-stage-strip");
+const trialGuidance = document.querySelector("#trial-guidance");
+const trialGuidanceStage = document.querySelector("#trial-guidance-stage");
+const trialGuidanceTitle = document.querySelector("#trial-guidance-title");
+const trialGuidancePrompt = document.querySelector("#trial-guidance-prompt");
+const trialGuidanceChips = document.querySelector("#trial-guidance-chips");
 const trialChatLog = document.querySelector("#trial-chat-log");
 const trialMessage = document.querySelector("#trial-message");
 const trialMessageSend = document.querySelector("#trial-message-send");
@@ -149,7 +157,10 @@ let pendingRelationshipInviteToken = "";
 let latestRelationshipInviteUrl = "";
 let activeConsultationSession = null;
 let activeConsultationMessages = [];
+let activeConsultationGuidance = null;
 let activeRelationshipLinks = [];
+let activeRelationshipLabelEditorId = "";
+let pendingConsultationContext = null;
 let selectedPersonaId = "miseon";
 let selectedModeId = "trial";
 let profileModalMode = "create";
@@ -220,6 +231,7 @@ initAuthPanel();
 topicSelect.addEventListener("change", () => {
   updatePersonaRecommendation(topicSelect.value);
   if (trialTopic) trialTopic.value = topicSelect.value;
+  pendingConsultationContext = null;
 });
 
 personaCards?.addEventListener("click", (event) => {
@@ -301,10 +313,131 @@ function consultationTopicForRelationship(relationship) {
   return RELATIONSHIP_TOPIC_MAP[relationship] ?? "relationship";
 }
 
+function relationshipDisplayName(link) {
+  return String(link?.counterpartDisplayName ?? "").trim() || "연결된 상대";
+}
+
 function buildRelationshipConsultConcern(link) {
-  const name = String(link?.counterpartDisplayName ?? "").trim() || "이 상대";
+  const name = relationshipDisplayName(link);
   const relation = relationLabel(link?.relationship);
   return `${name}님과의 ${relation} 관계 흐름을 더 구체적으로 상담하고 싶어요. 지금 가장 조심해야 할 점과 먼저 꺼낼 대화를 알고 싶어요.`;
+}
+
+function buildConsultationContextForRelationship(link) {
+  return {
+    source: "relationship_link",
+    relationship: link?.relationship ?? "relationship",
+    counterpartDisplayName: relationshipDisplayName(link),
+  };
+}
+
+function buildTrialPromptSuggestions(session, stageNumber) {
+  const topic = session?.topic ?? "relationship";
+  const context = session?.metadata?.context ?? {};
+  const counterpart = String(context?.counterpartDisplayName ?? "").trim();
+  const partnerWord = counterpart ? `${counterpart}님` : "상대";
+
+  if (stageNumber === 1) {
+    if (topic === "business") {
+      return [
+        "지금 바로 시작하고 싶은 이유는 이거예요.",
+        "가장 기대하는 결과와 가장 두려운 결과는 이거예요.",
+        "준비는 어느 정도 됐고 뭐가 아직 부족한지 말해볼게요.",
+      ];
+    }
+    if (context?.source === "relationship_link") {
+      return [
+        `${partnerWord}과 요즘 가장 자주 부딪히는 장면은 이거예요.`,
+        `${partnerWord}의 마음보다 제가 더 불안한 지점은 이거예요.`,
+        "이번에는 어떤 말을 먼저 꺼내야 할지가 제일 막막해요.",
+      ];
+    }
+    return [
+      "지금 가장 마음에 걸리는 장면부터 말해볼게요.",
+      "제가 원하는 결과와 두려운 결과는 이거예요.",
+      "상대보다 제 마음이 더 흔들리는 부분은 이거예요.",
+    ];
+  }
+
+  if (stageNumber === 2) {
+    if (topic === "business") {
+      return [
+        "이미 확인한 시장 반응은 여기까지예요.",
+        "자금과 일정에서 현실적으로 가능한 범위는 이 정도예요.",
+        "제가 추측만 하고 있는 부분은 이거예요.",
+      ];
+    }
+    if (context?.source === "relationship_link") {
+      return [
+        `${partnerWord}이 실제로 한 말과 제가 추측하는 마음을 나눠보면 이래요.`,
+        "바꿀 수 있는 조건과 제가 통제 못 하는 조건을 나눠보면 이래요.",
+        "이미 확인한 사실과 아직 추측인 부분을 정리해볼게요.",
+      ];
+    }
+    return [
+      "이미 확인한 사실과 아직 추측인 부분을 나눠보면 이래요.",
+      "제가 바꿀 수 있는 조건과 없는 조건은 이거예요.",
+      "상대 행동 중 확실한 신호와 제가 해석한 부분을 나눠볼게요.",
+    ];
+  }
+
+  if (topic === "business") {
+    return [
+      "당장 이번 주에 검증할 수 있는 작은 실험은 이거예요.",
+      "지금 시작할지 더 준비할지 두 선택지를 비교하면 이래요.",
+      "지금 제 상황에서 가장 안전한 다음 행동을 정리해볼게요.",
+    ];
+  }
+  if (context?.source === "relationship_link") {
+    return [
+      `${partnerWord}과 먼저 꺼낼 한 문장은 이거예요.`,
+      "지금 관계에서 멈춰야 할 행동과 먼저 해볼 행동을 나눠보면 이래요.",
+      "이번 주 안에 해볼 수 있는 대화 한 가지를 정해볼게요.",
+    ];
+  }
+  return [
+    "지금 제게 가장 현실적인 선택지 두 가지를 비교해볼게요.",
+    "이번 주 안에 해볼 수 있는 행동 한 가지를 정해볼게요.",
+    "지금 멈춰야 할 것과 먼저 해볼 것을 나눠보면 이래요.",
+  ];
+}
+
+function updateTrialGuidanceUi() {
+  if (!trialGuidance || !trialGuidanceStage || !trialGuidanceTitle || !trialGuidancePrompt || !trialGuidanceChips) {
+    return;
+  }
+
+  if (!activeConsultationSession || activeConsultationSession.status !== "active") {
+    trialGuidance.hidden = true;
+    trialGuidanceChips.innerHTML = "";
+    return;
+  }
+
+  const currentStageNumber = Math.min(
+    Number(activeConsultationSession.current_stage ?? Number(activeConsultationSession.used_turns ?? 0) + 1) || 1,
+    TRIAL_STAGES.length,
+  );
+  const stage = trialStageMeta(currentStageNumber);
+  const suggestions = buildTrialPromptSuggestions(activeConsultationSession, currentStageNumber);
+  const prompt =
+    activeConsultationGuidance?.focusPrompt ??
+    stage.description ??
+    "지금 단계에서 가장 중요한 사실과 마음을 짧게 정리해 주세요.";
+
+  trialGuidance.hidden = false;
+  trialGuidanceStage.textContent = `${stage.number}단계`;
+  trialGuidanceTitle.textContent = stage.label;
+  trialGuidancePrompt.textContent = prompt;
+  trialGuidanceChips.innerHTML = suggestions
+    .map(
+      (suggestion) =>
+        `<button type="button" data-trial-suggestion="${escapeHtml(suggestion)}">${escapeHtml(suggestion)}</button>`,
+    )
+    .join("");
+
+  if (trialMessage && suggestions[0]) {
+    trialMessage.placeholder = suggestions[0];
+  }
 }
 
 function formatProfileDate(profile) {
@@ -485,13 +618,17 @@ function renderRelationshipLinks(links) {
   }
 
   relationshipLinks.innerHTML = links
-    .map(
-      (link) => `
+    .map((link) => {
+      const isEditing = activeRelationshipLabelEditorId === link.id;
+      const displayName = relationshipDisplayName(link);
+      const editableDisplayName = String(link.editableDisplayName ?? "").trim();
+      const defaultName = String(link.counterpartDefaultName ?? "").trim() || displayName;
+      return `
         <li class="relationship-link-card">
           <div class="relationship-link-card__head">
             <div>
               <span class="relationship-link-card__eyebrow">${escapeHtml(relationLabel(link.relationship))}</span>
-              <strong>${escapeHtml(link.counterpartDisplayName ?? "연결된 상대")}</strong>
+              <strong>${escapeHtml(displayName)}</strong>
             </div>
             <span>${escapeHtml(formatShortDate(link.acceptedAt ?? link.createdAt))} 연결</span>
           </div>
@@ -503,10 +640,38 @@ function renderRelationshipLinks(links) {
             <button type="button" class="auth-button" data-relationship-action="consult" data-link-id="${escapeHtml(link.id)}">
               이 관계로 상담 이어가기
             </button>
+            <button type="button" class="auth-button auth-button--ghost" data-relationship-action="${isEditing ? "cancel-label" : "toggle-label"}" data-link-id="${escapeHtml(link.id)}">
+              ${isEditing ? "닫기" : editableDisplayName ? "이름 수정" : "이름 정하기"}
+            </button>
           </div>
+          ${
+            isEditing
+              ? `
+            <div class="relationship-link-card__label-editor">
+              <label for="relationship-label-${escapeHtml(link.id)}">내 화면에서 부를 이름</label>
+              <input
+                id="relationship-label-${escapeHtml(link.id)}"
+                type="text"
+                maxlength="40"
+                value="${escapeHtml(editableDisplayName || defaultName)}"
+                data-relationship-label-input="${escapeHtml(link.id)}"
+                placeholder="${escapeHtml(defaultName)}"
+              />
+              <div class="relationship-link-card__label-actions">
+                <button type="button" class="auth-button auth-button--ghost" data-relationship-action="cancel-label" data-link-id="${escapeHtml(link.id)}">
+                  취소
+                </button>
+                <button type="button" class="auth-button" data-relationship-action="save-label" data-link-id="${escapeHtml(link.id)}">
+                  저장
+                </button>
+              </div>
+            </div>
+          `
+              : ""
+          }
         </li>
-      `,
-    )
+      `;
+    })
     .join("");
 }
 
@@ -597,6 +762,7 @@ function updateTrialChatUi() {
   if (!hasSession) {
     trialMessageSend.disabled = true;
     if (trialStageStrip) trialStageStrip.innerHTML = "";
+    updateTrialGuidanceUi();
     return;
   }
 
@@ -644,6 +810,7 @@ function updateTrialChatUi() {
       <p id="paid-order-note" class="trial-next-step__note" role="status"></p>
     `;
   }
+  updateTrialGuidanceUi();
   renderTrialChatMessages();
 }
 
@@ -651,10 +818,13 @@ function setActiveConsultationSession(session, reused = false) {
   activeConsultationSession = session
     ? {
         ...session,
+        metadata: session.metadata ?? {},
         turn_limit: Number(session.turn_limit ?? 0),
         used_turns: Number(session.used_turns ?? 0),
+        current_stage: Number(session.current_stage ?? session.used_turns ?? 0) + 1,
       }
     : null;
+  activeConsultationGuidance = null;
   activeConsultationMessages = reused ? [] : [];
   updateTrialChatUi();
 }
@@ -687,9 +857,16 @@ async function submitTrialMessage(message) {
   appendTrialMessage("assistant", data?.reply ?? "지금은 답변을 받지 못했습니다.");
   activeConsultationSession = {
     ...activeConsultationSession,
+    metadata: activeConsultationSession.metadata ?? {},
     used_turns: Number(data?.usedTurns ?? activeConsultationSession.used_turns),
     status: Number(data?.remainingTurns ?? 0) > 0 ? "active" : "completed",
     current_stage: Number(data?.stage ?? activeConsultationSession.current_stage ?? 1),
+  };
+  activeConsultationGuidance = {
+    stage: Number(data?.stage ?? 1),
+    stageLabel: data?.stageLabel ?? "",
+    nextStageLabel: data?.nextStageLabel ?? "",
+    focusPrompt: data?.focusPrompt ?? "",
   };
   if (trialMessage) trialMessage.value = "";
   track("trial_message_sent");
@@ -712,6 +889,7 @@ async function refreshRelationshipPanel(session) {
 
   if (!session) {
     activeRelationshipLinks = [];
+    activeRelationshipLabelEditorId = "";
     renderRelationshipLinks([]);
     renderRelationshipPanelState(session, [], { pendingInvite: pendingRelationshipInviteToken });
     if (relationshipInviteNote) {
@@ -725,12 +903,16 @@ async function refreshRelationshipPanel(session) {
   const { links, error } = await getRelationshipLinks(session);
   if (error) {
     activeRelationshipLinks = [];
+    activeRelationshipLabelEditorId = "";
     renderRelationshipLinks([]);
     renderRelationshipPanelState(session, [], { pendingInvite: pendingRelationshipInviteToken });
     if (relationshipInviteNote) relationshipInviteNote.textContent = "인연 연결 목록은 DB 연결 확인 후 다시 불러옵니다.";
     return;
   }
   activeRelationshipLinks = links;
+  if (!links.some((link) => link.id === activeRelationshipLabelEditorId)) {
+    activeRelationshipLabelEditorId = "";
+  }
   renderRelationshipLinks(links);
   renderRelationshipPanelState(session, links, { pendingInvite: pendingRelationshipInviteToken });
 
@@ -812,7 +994,8 @@ async function initAuthPanel() {
     });
     if (authSignout) authSignout.hidden = !session;
     if (!session) {
-      authNote.textContent = "로그인하면 무료 상담과 인연 연결을 이용할 수 있어요.";
+      const googleBrowserWarning = getOAuthBrowserWarning("google");
+      authNote.textContent = googleBrowserWarning?.note ?? "로그인하면 무료 상담과 인연 연결을 이용할 수 있어요.";
     }
     updateTrialSessionState();
   };
@@ -839,6 +1022,13 @@ async function initAuthPanel() {
     button.addEventListener("click", async () => {
       const provider = button.dataset.authProvider;
       if (!provider) return;
+      const browserWarning = getOAuthBrowserWarning(provider);
+      if (browserWarning) {
+        authStatus.textContent = browserWarning.status;
+        authNote.textContent = browserWarning.note;
+        track(`auth_${provider}_blocked_in_app_browser`);
+        return;
+      }
       track(`auth_${provider}_start`);
       authStatus.textContent = `${button.textContent.trim()} 화면으로 이동합니다.`;
       button.disabled = true;
@@ -953,7 +1143,7 @@ async function initAuthPanel() {
     await refreshRelationshipPanel(activeSession);
   });
 
-  relationshipLinks?.addEventListener("click", (event) => {
+  relationshipLinks?.addEventListener("click", async (event) => {
     const target = event.target instanceof Element ? event.target : null;
     const button = target?.closest("[data-relationship-action]");
     if (!(button instanceof HTMLButtonElement)) return;
@@ -970,7 +1160,7 @@ async function initAuthPanel() {
       const relationInput = document.querySelector("#partner-relation");
       if (relationInput instanceof HTMLSelectElement) relationInput.value = link.relationship;
       if (relationshipInviteNote) {
-        relationshipInviteNote.textContent = `${link.counterpartDisplayName}님과의 궁합 흐름으로 이어집니다. 상대 생년월일시는 보안을 위해 한 번 더 직접 입력해 주세요.`;
+        relationshipInviteNote.textContent = `${relationshipDisplayName(link)}님과의 궁합 흐름으로 이어집니다. 상대 생년월일시는 보안을 위해 한 번 더 직접 입력해 주세요.`;
       }
       openHubSection("relationship");
       partnerDateInput?.focus();
@@ -980,6 +1170,7 @@ async function initAuthPanel() {
     if (action === "consult") {
       const mappedTopic = consultationTopicForRelationship(link.relationship);
       const concern = buildRelationshipConsultConcern(link);
+      pendingConsultationContext = buildConsultationContextForRelationship(link);
       if (trialTopic) trialTopic.value = mappedTopic;
       if (topicSelect) topicSelect.value = mappedTopic;
       if (trialConcern) trialConcern.value = concern;
@@ -988,9 +1179,61 @@ async function initAuthPanel() {
       setConsultTab("start");
       openHubSection("consult");
       if (trialSessionNote) {
-        trialSessionNote.textContent = `${link.counterpartDisplayName}님과의 관계 고민으로 바로 이어집니다. 이 문장 그대로 시작하거나 조금 고쳐서 보내도 됩니다.`;
+        trialSessionNote.textContent = `${relationshipDisplayName(link)}님과의 관계 고민으로 바로 이어집니다. 이 문장 그대로 시작하거나 조금 고쳐서 보내도 됩니다.`;
       }
       trialConcern?.focus();
+      return;
+    }
+
+    if (action === "toggle-label") {
+      activeRelationshipLabelEditorId = link.id;
+      renderRelationshipLinks(activeRelationshipLinks);
+      relationshipLinks?.querySelector(`[data-relationship-label-input="${link.id}"]`)?.focus();
+      return;
+    }
+
+    if (action === "cancel-label") {
+      activeRelationshipLabelEditorId = "";
+      renderRelationshipLinks(activeRelationshipLinks);
+      return;
+    }
+
+    if (action === "save-label") {
+      const input = relationshipLinks?.querySelector(`[data-relationship-label-input="${link.id}"]`);
+      const nextName = input instanceof HTMLInputElement ? input.value.trim() : "";
+      if (!nextName) {
+        if (relationshipInviteNote) relationshipInviteNote.textContent = "관계 카드에 표시할 이름을 입력해 주세요.";
+        input?.focus();
+        return;
+      }
+
+      button.disabled = true;
+      if (relationshipInviteNote) {
+        relationshipInviteNote.textContent = `${nextName} 이름으로 저장하고 있어요.`;
+      }
+      const { error } = await updateRelationshipLabel(activeSession, link.id, nextName);
+      button.disabled = false;
+
+      if (error) {
+        if (relationshipInviteNote) relationshipInviteNote.textContent = error.message ?? "관계 이름을 저장하지 못했습니다.";
+        input?.focus();
+        return;
+      }
+
+      activeRelationshipLinks = activeRelationshipLinks.map((item) =>
+        item.id === link.id
+          ? {
+              ...item,
+              editableDisplayName: nextName,
+              counterpartDisplayName: nextName,
+            }
+          : item,
+      );
+      activeRelationshipLabelEditorId = "";
+      if (relationshipInviteNote) {
+        relationshipInviteNote.textContent = `${nextName} 이름으로 이 관계를 다시 불러드릴게요.`;
+      }
+      renderRelationshipLinks(activeRelationshipLinks);
     }
   });
 
@@ -1017,6 +1260,11 @@ async function initAuthPanel() {
       mode: "trial",
       topic: trialTopic?.value ?? topicSelect.value ?? "relationship",
       concernSummary: concern,
+      contextMeta:
+        pendingConsultationContext ??
+        {
+          source: "manual",
+        },
     });
 
     if (sessionError) {
@@ -1037,13 +1285,12 @@ async function initAuthPanel() {
     }
 
     const session = data?.session;
-    const sessionId = session?.id ? String(session.id).slice(0, 8) : "";
-    const remainingTurns = session ? Number(session.turn_limit) - Number(session.used_turns) : 3;
     setActiveConsultationSession(session, Boolean(data?.reused));
     track("trial_started");
     trialSessionNote.textContent = data?.reused
       ? `이어서 이야기할 수 있어요. 다음은 ${trialStageMeta(Number(session?.used_turns ?? 0) + 1).label} 단계입니다.`
       : "적어주신 고민을 읽고 있어요.";
+    if (!data?.reused) pendingConsultationContext = null;
     updateTrialSessionState();
     if (!data?.reused && concern) await submitTrialMessage(concern);
   });
@@ -1065,6 +1312,16 @@ async function initAuthPanel() {
     }
 
     await submitTrialMessage(message);
+  });
+
+  trialGuidanceChips?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target.closest("[data-trial-suggestion]") : null;
+    if (!(target instanceof HTMLButtonElement) || !trialMessage) return;
+    const suggestion = target.dataset.trialSuggestion?.trim();
+    if (!suggestion) return;
+    trialMessage.value = suggestion;
+    trialMessage.focus();
+    trialSessionNote.textContent = "예시 문장을 넣었습니다. 그대로 보내거나 조금 고쳐서 보내도 됩니다.";
   });
 
   trialNextStep?.addEventListener("click", async (event) => {
@@ -1351,6 +1608,7 @@ function bootstrap(hash) {
 window.addEventListener("hashchange", () => {
   if (window.location.hash.startsWith("#r=")) bootstrap(window.location.hash);
   if (window.location.hash.startsWith("#invite=")) {
+    setActiveNav("relationship");
     refreshRelationshipPanel(activeSession);
     document.querySelector("#relationship")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1506,6 +1764,7 @@ hanjaDoubleSurname?.addEventListener("change", () => {
 
 bootstrap(window.location.hash);
 if (getRelationshipInviteTokenFromHash()) {
+  setActiveNav("relationship");
   document.querySelector("#relationship")?.scrollIntoView({ block: "start" });
 }
 
@@ -1541,8 +1800,12 @@ window.addEventListener("hashchange", () => {
   if (navSections.some((section) => section.id === id)) setActiveNav(id);
 });
 
-const initialNavId = window.location.hash.slice(1);
-setActiveNav(navSections.some((section) => section.id === initialNavId) ? initialNavId : "today");
+const initialNavId = getRelationshipInviteTokenFromHash()
+  ? "relationship"
+  : navSections.some((section) => section.id === window.location.hash.slice(1))
+    ? window.location.hash.slice(1)
+    : "today";
+setActiveNav(initialNavId);
 
 saveCardButton?.addEventListener("click", () => {
   if (!lastResult) return;
@@ -1598,7 +1861,7 @@ compatibilityForm?.addEventListener("submit", (event) => {
 
   try {
     const partnerChart = calculateChart(partnerInput);
-    const reading = buildCompatibilityReading(
+    const reading = buildCompatibilityReadingSymmetric(
       lastResult.chart,
       partnerChart,
       data.get("partnerRelation"),

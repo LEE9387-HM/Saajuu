@@ -195,9 +195,14 @@ function buildFallbackReply(
   turnNumber: number,
   concernSummary: string,
   userMessage: string,
+  contextMeta: Record<string, unknown> = {},
 ) {
   const latestPoint = compactSnippet(userMessage, 44);
   const originPoint = compactSnippet(concernSummary || userMessage, 40);
+  const counterpart = typeof contextMeta.counterpartDisplayName === "string"
+    ? contextMeta.counterpartDisplayName.trim()
+    : "";
+  const partnerWord = counterpart ? `${counterpart}님` : "상대";
 
   if (turnNumber === 1) {
     const opening = personaId === "seongu"
@@ -314,7 +319,7 @@ Deno.serve(async (request) => {
 
   const { data: session, error: sessionError } = await adminClient
     .from("consultation_sessions")
-    .select("id, user_id, persona_id, topic, mode, status, turn_limit, used_turns, expires_at, concern_id")
+    .select("id, user_id, persona_id, topic, mode, status, turn_limit, used_turns, expires_at, concern_id, metadata")
     .eq("id", sessionId)
     .eq("user_id", currentUser.id)
     .maybeSingle();
@@ -378,6 +383,19 @@ Deno.serve(async (request) => {
   const personaInstruction = personaPrompts[session.persona_id] ?? personaPrompts.miseon;
   const topicLabel = topicLabels[session.topic] ?? String(session.topic ?? "일반 고민");
   const guidance = topicGuidance[session.topic] ?? "사용자의 고민을 단정하지 말고, 확인할 수 있는 현실 기준과 다음 행동으로 연결한다.";
+  const sessionContext = typeof session.metadata === "object" && session.metadata ? session.metadata : {};
+  const relationshipContext =
+    typeof sessionContext.context === "object" && sessionContext.context
+      ? sessionContext.context as Record<string, unknown>
+      : {};
+  const relationshipCounterpart = typeof relationshipContext.counterpartDisplayName === "string"
+    ? relationshipContext.counterpartDisplayName.trim()
+    : "";
+  const relationshipNote = relationshipContext.source === "relationship_link"
+    ? relationshipCounterpart
+      ? `${relationshipCounterpart}님과의 연결된 관계 카드에서 바로 이어진 상담이다. 관계의 실제 장면, 대화 속도 차이, 지금 먼저 꺼낼 말에 집중한다.`
+      : "연결된 관계 카드에서 바로 이어진 상담이다. 관계의 실제 장면, 대화 속도 차이, 지금 먼저 꺼낼 말에 집중한다."
+    : "";
   const turnNumber = session.used_turns + 1;
   const stageInfo = stageMeta(turnNumber);
   const previousAssistantReplies = (history ?? []).filter((item) => String(item.role) === "assistant");
@@ -401,6 +419,9 @@ Deno.serve(async (request) => {
           "앞선 대화 전체를 바탕으로 고민의 핵심을 한 문장으로 정리하고, 선택지 2개의 장단점을 간단히 비교한다.",
           "확정 예언 없이 지금 가장 현실적인 방향을 제안하고, 오늘 또는 7일 안에 할 행동 하나로 끝낸다. 추가 질문은 하지 않는다.",
         ].join(" ");
+  const contextualStageInstruction = relationshipNote
+    ? `${relationshipNote} ${stageInstruction}`
+    : stageInstruction;
   const responseShape = turnNumber === 1
     ? "답변은 3문단으로 쓴다. 1) 짧은 공감과 현재 핵심, 2) 왜 아직 단정하지 않는지, 3) 마지막에 질문 1개."
     : turnNumber === 2
@@ -414,7 +435,7 @@ Deno.serve(async (request) => {
     `상담 주제: ${topicLabel}`,
     `주제별 답변 기준: ${guidance}`,
     `안전 기준: ${safetyGuidance(safetyLevel)}`,
-    `이번 대화 단계: ${stageInstruction}`,
+    `이번 대화 단계: ${contextualStageInstruction}`,
     `이번 답변 형식: ${responseShape}`,
     concern?.concern_summary ? `사용자가 처음 남긴 고민 요약: ${concern.concern_summary}` : "사용자가 처음 남긴 고민 요약: 없음",
     previousAssistantReply ? `직전 상담사 답변 핵심: ${previousAssistantReply}` : "직전 상담사 답변 핵심: 없음",
@@ -454,6 +475,7 @@ Deno.serve(async (request) => {
         session.used_turns + 1,
         concern?.concern_summary ?? "",
         userMessage,
+        relationshipContext,
       );
       usedFallback = true;
     }
@@ -464,6 +486,7 @@ Deno.serve(async (request) => {
       session.used_turns + 1,
       concern?.concern_summary ?? "",
       userMessage,
+      relationshipContext,
     );
     usedFallback = true;
   }

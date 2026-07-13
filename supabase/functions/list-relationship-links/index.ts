@@ -44,7 +44,7 @@ Deno.serve(async (request) => {
 
   const { data: links, error: linksError } = await adminClient
     .from("relationship_links")
-    .select("id, user_a_id, user_b_id, relationship, status, accepted_at, created_at")
+    .select("id, user_a_id, user_b_id, relationship, status, accepted_at, created_at, user_a_label, user_b_label")
     .eq("status", "active")
     .or(`user_a_id.eq.${currentUser.id},user_b_id.eq.${currentUser.id}`)
     .order("created_at", { ascending: false })
@@ -52,9 +52,11 @@ Deno.serve(async (request) => {
 
   if (linksError) return json({ error: linksError.message }, 500);
 
-  const counterpartIds = [...new Set((links ?? []).map((link) =>
-    link.user_a_id === currentUser.id ? link.user_b_id : link.user_a_id
-  ))];
+  const counterpartIds = [
+    ...new Set(
+      (links ?? []).map((link) => (link.user_a_id === currentUser.id ? link.user_b_id : link.user_a_id)),
+    ),
+  ];
 
   const profileMap = new Map<string, string>();
   if (counterpartIds.length) {
@@ -70,15 +72,21 @@ Deno.serve(async (request) => {
 
   return json({
     links: (links ?? []).map((link) => {
+      const participantSide = link.user_a_id === currentUser.id ? "a" : "b";
       const counterpartUserId = link.user_a_id === currentUser.id ? link.user_b_id : link.user_a_id;
+      const savedLabel = participantSide === "a" ? link.user_a_label : link.user_b_label;
+      const counterpartDefaultName = profileMap.get(counterpartUserId) ?? "연결된 상대";
       return {
         id: link.id,
         relationship: link.relationship,
         status: link.status,
         acceptedAt: link.accepted_at,
         createdAt: link.created_at,
+        participantSide,
+        editableDisplayName: String(savedLabel ?? "").trim(),
         counterpartUserId,
-        counterpartDisplayName: profileMap.get(counterpartUserId) ?? "연결된 상대",
+        counterpartDefaultName,
+        counterpartDisplayName: String(savedLabel ?? "").trim() || counterpartDefaultName,
       };
     }),
   });

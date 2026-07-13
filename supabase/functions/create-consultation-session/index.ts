@@ -22,6 +22,12 @@ type Product = {
   valid_for: string;
 };
 
+type ContextMeta = {
+  source: "manual" | "relationship_link";
+  relationship?: string;
+  counterpartDisplayName?: string;
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -33,6 +39,25 @@ function sanitizeConcern(value: unknown) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim().replace(/\s+/g, " ");
   return trimmed ? trimmed.slice(0, 220) : null;
+}
+
+function sanitizeContextMeta(value: unknown): ContextMeta {
+  if (!value || typeof value !== "object") {
+    return { source: "manual" };
+  }
+
+  const source = value.source === "relationship_link" ? "relationship_link" : "manual";
+  const relationship = typeof value.relationship === "string" ? value.relationship.trim().slice(0, 40) : undefined;
+  const counterpartDisplayName =
+    typeof value.counterpartDisplayName === "string"
+      ? value.counterpartDisplayName.trim().replace(/\s+/g, " ").slice(0, 40)
+      : undefined;
+
+  return {
+    source,
+    relationship,
+    counterpartDisplayName,
+  };
 }
 
 function addIntervalFallback() {
@@ -68,6 +93,7 @@ Deno.serve(async (request) => {
     mode?: string;
     topic?: string;
     concernSummary?: string;
+    contextMeta?: ContextMeta;
   };
   try {
     payload = await request.json();
@@ -79,6 +105,7 @@ Deno.serve(async (request) => {
   const mode = payload.mode ?? "trial";
   const topic = payload.topic ?? "relationship";
   const concernSummary = sanitizeConcern(payload.concernSummary);
+  const contextMeta = sanitizeContextMeta(payload.contextMeta);
 
   if (!allowedPersonas.has(personaId)) return json({ error: "Invalid persona" }, 400);
   if (!allowedTopics.has(topic)) return json({ error: "Invalid topic" }, 400);
@@ -110,7 +137,7 @@ Deno.serve(async (request) => {
 
   const { data: existingSession, error: existingError } = await adminClient
     .from("consultation_sessions")
-    .select("id, persona_id, mode, topic, status, turn_limit, used_turns, expires_at, created_at")
+    .select("id, persona_id, mode, topic, status, turn_limit, used_turns, expires_at, created_at, metadata")
     .eq("user_id", currentUser.id)
     .eq("mode", "trial")
     .in("status", ["draft", "active"])
@@ -183,9 +210,10 @@ Deno.serve(async (request) => {
       status: "active",
       turn_limit: product.turn_limit,
       used_turns: 0,
+      metadata: { context: contextMeta },
       expires_at: addIntervalFallback(),
     })
-    .select("id, persona_id, mode, topic, status, turn_limit, used_turns, expires_at, created_at")
+    .select("id, persona_id, mode, topic, status, turn_limit, used_turns, expires_at, created_at, metadata")
     .single();
 
   if (sessionError) return json({ error: sessionError.message }, 500);

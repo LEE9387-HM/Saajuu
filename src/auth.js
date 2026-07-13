@@ -137,6 +137,20 @@ export function getRelationshipInviteTokenFromHash(hash = window.location.hash) 
   return decodeURIComponent(hash.slice("#invite=".length)).trim();
 }
 
+export function isKakaoInAppBrowser(userAgent = navigator.userAgent) {
+  return /KAKAOTALK/i.test(userAgent ?? "");
+}
+
+export function getOAuthBrowserWarning(provider, userAgent = navigator.userAgent) {
+  if (provider === "google" && isKakaoInAppBrowser(userAgent)) {
+    return {
+      status: "카카오톡 안에서는 Google 로그인을 열 수 없습니다.",
+      note: "Google 정책상 카카오톡 인앱 브라우저에서는 로그인이 차단됩니다. 오른쪽 위 메뉴에서 Chrome 또는 Safari로 열어 다시 로그인해 주세요.",
+    };
+  }
+  return null;
+}
+
 export async function createRelationshipInvite(session, relationship) {
   const supabase = getSupabaseClient();
   const user = session?.user;
@@ -184,6 +198,19 @@ export async function getRelationshipLinks(session) {
   });
 
   return { links: data?.links ?? [], error: await normalizeFunctionError(error) };
+}
+
+export async function updateRelationshipLabel(session, linkId, displayName) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 연결된 관계 이름을 정할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("update-relationship-label", {
+    body: { linkId, displayName },
+  });
+
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
 async function normalizeFunctionError(error) {

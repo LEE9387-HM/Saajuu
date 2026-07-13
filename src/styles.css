@@ -842,6 +842,38 @@ button:hover {
   padding: 0 12px;
 }
 
+.relationship-link-card__label-editor {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.relationship-link-card__label-editor label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.relationship-link-card__label-editor input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgb(196 183 161 / 80%);
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+}
+
+.relationship-link-card__label-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.relationship-link-card__label-actions .auth-button {
+  width: auto;
+}
+
 .trial-session {
   display: grid;
   gap: 12px;
@@ -954,6 +986,66 @@ button:hover {
 .trial-stage-chip--active {
   border-color: rgb(197 150 79 / 45%);
   background: #fff8ea;
+}
+
+.trial-guidance {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgb(197 150 79 / 34%);
+  background: #fffcf3;
+}
+
+.trial-guidance[hidden] {
+  display: none;
+}
+
+.trial-guidance__copy {
+  display: grid;
+  gap: 5px;
+}
+
+.trial-guidance__copy span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.trial-guidance__copy strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.trial-guidance__copy p {
+  margin: 0;
+  color: #53646b;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.trial-guidance__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trial-guidance__chips button {
+  width: auto;
+  min-height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid rgb(77 128 114 / 24%);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.trial-guidance__chips button:hover {
+  border-color: rgb(77 128 114 / 46%);
+  background: #f6fbf8;
 }
 
 .trial-chat__log {

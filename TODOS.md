@@ -3,6 +3,21 @@
 리뷰(/plan-ceo-review, /plan-eng-review 2026-07-09)에서 명시적으로 보류된 작업 목록.
 전체 맥락은 로컬 CEO 플랜(`~/.gstack/projects/LEE9387-HM-Saajuu/ceo-plans/2026-07-08-daily-fortune-hanja.md`) 참조.
 
+## P1 — 로그인 OAuth 운영 설정 점검
+
+- **What**: 카카오톡 인앱 브라우저 로그인 에러와 Kakao/Google OAuth 설정을 운영 환경 기준으로 재점검
+- **Why**: 로그인은 인연 초대, 무료 상담, 결제 준비 흐름의 관문이다. 여기서 막히면 이후 수익화 플로우를 실제 사용자에게 검증할 수 없다.
+- **Known errors**:
+  - Google: `403 disallowed_useragent` — 카카오톡 인앱 브라우저에서 Google OAuth를 열면 Google 정책상 차단된다. 앱은 외부 브라우저 안내를 표시하지만, 실제 유입 링크에서 안내가 충분히 보이는지 모바일 실기로 확인해야 한다.
+  - Kakao: `KOE205` — 카카오 개발자 콘솔의 카카오 로그인 활성화, Redirect URI, Supabase Auth provider 설정 불일치 가능성이 높다.
+- **Check**:
+  - Kakao Developers > 카카오 로그인 활성화 여부 확인
+  - Kakao Redirect URI에 Supabase callback URL 등록 여부 확인: `https://eizojtispxmlwvhgpmgs.supabase.co/auth/v1/callback`
+  - Supabase Auth > Providers > Kakao/Google client id, secret, callback 설정 확인
+  - 카카오톡 인앱, Android Chrome, iOS Safari, 데스크톱 Chrome에서 로그인 시작과 복귀 URL 확인
+- **Done when**: 운영 배포 URL에서 Kakao 로그인과 Google 로그인이 외부 브라우저 기준으로 정상 복귀하고, 카카오톡 인앱에서는 Google 차단 안내가 OAuth 에러 페이지보다 먼저 보인다.
+- **Blocked by**: 카카오 개발자 콘솔과 Supabase 프로젝트 설정 접근 권한
+
 ## P2 — PWA 홈화면 추가
 
 - **What**: manifest + (필요 시) 최소 서비스워커로 홈화면 설치 지원

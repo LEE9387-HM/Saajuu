@@ -4,6 +4,7 @@ import {
   CONSULTATION_MODES,
   CONSULTATION_PERSONAS,
   buildCompatibilityReading,
+  buildCompatibilityReadingSymmetric,
   buildGuidance,
   buildDetailedReading,
   buildNameReading,
@@ -254,6 +255,28 @@ describe("buildCompatibilityReading", () => {
     expect(buildCompatibilityReading(first, second, "spouse").score).toBe(
       buildCompatibilityReading(second, first, "spouse").score,
     );
+  });
+
+  it("keeps the relationship copy identical when the two people are swapped", () => {
+    const first = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const second = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    const forward = buildCompatibilityReadingSymmetric(first, second, "spouse");
+    const backward = buildCompatibilityReadingSymmetric(second, first, "spouse");
+
+    expect(backward).toEqual(forward);
   });
 });
 
