@@ -38,17 +38,22 @@ export async function getCurrentSession() {
   return { session: data.session ?? null, error };
 }
 
+function getDisplayNameFromUser(user) {
+  return (
+    user?.user_metadata?.name ??
+    user?.user_metadata?.full_name ??
+    user?.user_metadata?.nickname ??
+    user?.email?.split("@")[0] ??
+    null
+  );
+}
+
 export async function syncProfileForSession(session) {
   const supabase = getSupabaseClient();
   const user = session?.user;
   if (!supabase || !user) return { synced: false, error: null };
 
-  const displayName =
-    user.user_metadata?.name ??
-    user.user_metadata?.full_name ??
-    user.user_metadata?.nickname ??
-    user.email?.split("@")[0] ??
-    null;
+  const displayName = getDisplayNameFromUser(user);
 
   const { error } = await supabase.from("profiles").upsert(
     {
@@ -299,6 +304,36 @@ export function onAuthStateChange(callback) {
   return () => data.subscription.unsubscribe();
 }
 
+export async function signUpWithPassword({ email, password, displayName }) {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { data: null, error: new Error("Supabase 설정이 없습니다.") };
+  }
+
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const normalizedName = typeof displayName === "string" ? displayName.trim().slice(0, 40) : "";
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: redirectTo,
+      data: normalizedName ? { name: normalizedName } : undefined,
+    },
+  });
+
+  return { data: data ?? null, error };
+}
+
+export async function signInWithPassword({ email, password }) {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { data: null, error: new Error("Supabase 설정이 없습니다.") };
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  return { data: data ?? null, error };
+}
+
 export async function signInWithOAuthProvider(provider) {
   const supabase = getSupabaseClient();
   if (!supabase) {
@@ -316,4 +351,44 @@ export async function signOut() {
   const supabase = getSupabaseClient();
   if (!supabase) return { error: null };
   return supabase.auth.signOut();
+}
+
+export async function getAccountProfile(session) {
+  const supabase = getSupabaseClient();
+  const user = session?.user;
+  if (!supabase || !user) {
+    return { profile: null, error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  return {
+    profile: data
+      ? {
+          displayName: String(data.display_name ?? "").trim() || getDisplayNameFromUser(user) || "",
+          role: data.role ?? "user",
+        }
+      : {
+          displayName: getDisplayNameFromUser(user) || "",
+          role: "user",
+        },
+    error,
+  };
+}
+
+export async function getAdminDashboard(session) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 관리자 화면을 확인할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("get-admin-dashboard", {
+    body: {},
+  });
+
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
 }

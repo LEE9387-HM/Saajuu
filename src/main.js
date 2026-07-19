@@ -29,6 +29,8 @@ import {
   createConsultationOrder,
   createConsultationSession,
   createRelationshipInvite,
+  getAccountProfile,
+  getAdminDashboard,
   getRelationshipInviteTokenFromHash,
   getRelationshipLinks,
   getCurrentSession,
@@ -39,7 +41,9 @@ import {
   recordRequiredConsents,
   REQUIRED_CONSENTS,
   sendConsultationMessage,
+  signInWithPassword,
   signInWithOAuthProvider,
+  signUpWithPassword,
   signOut,
   syncProfileForSession,
   updateRelationshipLabel,
@@ -114,6 +118,22 @@ const authStatus = document.querySelector("#auth-status");
 const authNote = document.querySelector("#auth-note");
 const authButtons = [...document.querySelectorAll("[data-auth-provider]")];
 const authSignout = document.querySelector("#auth-signout");
+const emailSignupForm = document.querySelector("#email-signup-form");
+const emailLoginForm = document.querySelector("#email-login-form");
+const signupDisplayNameInput = document.querySelector("#signup-display-name");
+const signupEmailInput = document.querySelector("#signup-email");
+const signupPasswordInput = document.querySelector("#signup-password");
+const loginEmailInput = document.querySelector("#login-email");
+const loginPasswordInput = document.querySelector("#login-password");
+const emailAuthNote = document.querySelector("#email-auth-note");
+const adminNavLink = document.querySelector("#admin-nav-link");
+const adminStatus = document.querySelector("#admin-status");
+const adminPanel = document.querySelector("#admin-panel");
+const adminStats = document.querySelector("#admin-stats");
+const adminProfiles = document.querySelector("#admin-profiles");
+const adminSessions = document.querySelector("#admin-sessions");
+const adminOrders = document.querySelector("#admin-orders");
+const adminSafety = document.querySelector("#admin-safety");
 const consentForm = document.querySelector("#consent-form");
 const consentNote = document.querySelector("#consent-note");
 const relationshipAccountPanel = document.querySelector("#relationship-account-panel");
@@ -164,6 +184,8 @@ let pendingConsultationContext = null;
 let selectedPersonaId = "miseon";
 let selectedModeId = "trial";
 let profileModalMode = "create";
+let activeAccountProfile = null;
+let activeAdminDashboard = null;
 
 function setResultTab(tabId) {
   const nameAvailable = !document.querySelector("#name-reading")?.hidden;
@@ -925,31 +947,138 @@ async function refreshRelationshipPanel(session) {
   }
 }
 
+function setEmailAuthBusy(isBusy) {
+  emailSignupForm?.querySelectorAll("input, button").forEach((element) => {
+    element.disabled = isBusy;
+  });
+  emailLoginForm?.querySelectorAll("input, button").forEach((element) => {
+    element.disabled = isBusy;
+  });
+}
+
+function renderAdminList(target, items, formatter) {
+  if (!target) return;
+  if (!items?.length) {
+    target.innerHTML = '<p class="admin-list__empty">아직 표시할 항목이 없습니다.</p>';
+    return;
+  }
+
+  target.innerHTML = items
+    .map((item) => {
+      const formatted = formatter(item);
+      return `
+        <article class="admin-list__item">
+          <strong class="admin-list__title">${escapeHtml(formatted.title)}</strong>
+          <p class="admin-list__meta">${escapeHtml(formatted.meta)}</p>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderAdminDashboard(dashboard) {
+  activeAdminDashboard = dashboard ?? null;
+  if (!adminNavLink || !adminStatus || !adminPanel || !adminStats) return;
+
+  const isAdmin = Boolean(dashboard);
+  adminNavLink.hidden = !isAdmin;
+  adminPanel.hidden = !isAdmin;
+
+  if (!isAdmin) {
+    adminStatus.textContent = activeSession
+      ? "관리자 권한이 있는 계정에서만 운영 화면을 열 수 있습니다."
+      : "로그인 후 관리자 권한을 확인할 수 있습니다.";
+    if (window.location.hash === "#admin") openHubSection("my-page");
+    return;
+  }
+
+  adminStatus.textContent = `${dashboard.currentAdmin.displayName} 계정으로 운영 현황을 확인하고 있습니다.`;
+  adminStats.innerHTML = [
+    ["사용자", dashboard.stats.totalUsers],
+    ["연결 인연", dashboard.stats.activeRelationships],
+    ["상담 세션", dashboard.stats.totalConsultationSessions],
+    ["결제 완료", dashboard.stats.paidOrders],
+    ["안전 이벤트", dashboard.stats.safetyEvents],
+  ]
+    .map(
+      ([label, value]) => `
+        <article class="admin-stat">
+          <span>${escapeHtml(String(label))}</span>
+          <strong>${escapeHtml(String(value))}</strong>
+        </article>
+      `,
+    )
+    .join("");
+
+  renderAdminList(adminProfiles, dashboard.recentProfiles, (item) => ({
+    title: `${item.displayName} · ${item.role}`,
+    meta: `가입 ${formatShortDate(item.createdAt)}`,
+  }));
+  renderAdminList(adminSessions, dashboard.recentSessions, (item) => ({
+    title: `${item.userLabel} · ${item.topic} · ${item.mode}`,
+    meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · ${formatShortDate(item.createdAt)}`,
+  }));
+  renderAdminList(adminOrders, dashboard.recentOrders, (item) => ({
+    title: `${item.userLabel} · ${item.productId}`,
+    meta: `${item.status} · ${Number(item.amountKrw).toLocaleString("ko-KR")}원 · ${formatShortDate(item.createdAt)}`,
+  }));
+  renderAdminList(adminSafety, dashboard.recentSafetyEvents, (item) => ({
+    title: `${item.userLabel} · ${item.level}`,
+    meta: `${item.category} / ${item.action} · ${formatShortDate(item.createdAt)}`,
+  }));
+}
+
+async function refreshAdminDashboard(session) {
+  if (!adminNavLink || !adminStatus || !adminPanel) return;
+  if (!session) {
+    renderAdminDashboard(null);
+    return;
+  }
+
+  const { data, error } = await getAdminDashboard(session);
+  if (error) {
+    renderAdminDashboard(null);
+    if (error.code !== "admin_only") {
+      adminStatus.textContent = error.message ?? "관리자 화면을 불러오지 못했습니다.";
+    }
+    return;
+  }
+
+  renderAdminDashboard(data);
+}
+
 async function initAuthPanel() {
   if (!authStatus) return;
 
   if (!isSupabaseConfigured()) {
-    authStatus.textContent = "Supabase 공개 URL과 publishable/anon key가 필요합니다.";
-    authNote.textContent = ".env에 VITE_SUPABASE_URL과 VITE_SUPABASE_PUBLISHABLE_KEY를 입력한 뒤 다시 실행하세요.";
+    authStatus.textContent = "Supabase ?? URL? publishable/anon key? ?????.";
+    authNote.textContent = ".env? VITE_SUPABASE_URL? VITE_SUPABASE_PUBLISHABLE_KEY? ??? ? ?? ?????.";
     authButtons.forEach((button) => {
       button.disabled = true;
     });
+    setEmailAuthBusy(true);
+    if (adminStatus) adminStatus.textContent = "Supabase ??? ?? ??? ??? ??? ? ????.";
     if (relationshipInviteNote && getRelationshipInviteTokenFromHash()) {
-      relationshipInviteNote.textContent = "인연 초대를 받았지만 Supabase 설정이 없어 수락할 수 없습니다.";
+      relationshipInviteNote.textContent = "?? ??? ???? Supabase ??? ?? ??? ? ????.";
     }
     return;
   }
 
   const syncProfile = async (session) => {
-    if (!session) return;
+    if (!session) {
+      activeAccountProfile = null;
+      return;
+    }
     const { synced, error: syncError } = await syncProfileForSession(session);
+    const { profile } = await getAccountProfile(session);
+    activeAccountProfile = profile;
     if (synced) {
-      authNote.textContent = "계정 프로필을 저장했습니다. 인연 초대와 상담 기록 저장은 다음 단계에서 이어집니다.";
+      authNote.textContent = "?? ???? ??????. ?? ??? ?? ?? ??? ?? ???? ?????.";
       track("auth_profile_sync");
       return;
     }
     if (syncError) {
-      authNote.textContent = "로그인은 완료됐습니다. 프로필 저장은 Supabase DB 마이그레이션 적용 후 활성화됩니다.";
+      authNote.textContent = "???? ??????. ??? ??? Supabase DB ?????? ?? ? ??????.";
     }
   };
 
@@ -968,7 +1097,7 @@ async function initAuthPanel() {
     const { completed, acceptedTypes, error: consentError } = await getRequiredConsentStatus(session);
     if (consentError) {
       hasRequiredConsents = false;
-      consentNote.textContent = "동의 상태는 원격 DB 연결 확인 후 다시 불러옵니다.";
+      consentNote.textContent = "?? ??? ?? DB ?? ?? ? ?? ?????.";
       updateTrialSessionState();
       return;
     }
@@ -980,42 +1109,126 @@ async function initAuthPanel() {
     });
 
     consentNote.textContent = completed
-      ? "필수 동의가 저장되어 있습니다. 상담 체험 준비를 이어갈 수 있습니다."
-      : "상담 체험과 기록 저장을 위해 필수 고지를 확인해 주세요.";
+      ? "?? ??? ???? ????. ?? ?? ??? ??? ? ????."
+      : "?? ??? ?? ??? ?? ?? ??? ??? ???.";
     updateTrialSessionState();
   };
 
   const updateAuthUi = (session) => {
     const email = session?.user?.email;
-    authStatus.textContent = email ? `${email} 계정으로 로그인되어 있습니다.` : "로그인하면 상담 체험과 인연 초대를 준비할 수 있습니다.";
+    const roleSuffix =
+      session && activeAccountProfile?.role === "admin"
+        ? " (???)"
+        : activeAdminDashboard
+          ? " (?? ?? ??)"
+          : "";
+
+    authStatus.textContent = email
+      ? `${email} ???? ????? ????.${roleSuffix}`
+      : "????? ?? ??? ?? ??? ??? ? ????.";
     authButtons.forEach((button) => {
       button.hidden = Boolean(session);
       button.disabled = false;
     });
     if (authSignout) authSignout.hidden = !session;
+    if (emailSignupForm) emailSignupForm.hidden = Boolean(session);
+    if (emailLoginForm) emailLoginForm.hidden = Boolean(session);
+
     if (!session) {
       const googleBrowserWarning = getOAuthBrowserWarning("google");
-      authNote.textContent = googleBrowserWarning?.note ?? "로그인하면 무료 상담과 인연 연결을 이용할 수 있어요.";
+      authNote.textContent = googleBrowserWarning?.note ?? "????? ?? ??? ?? ??? ??? ? ???.";
+      if (emailAuthNote) {
+        emailAuthNote.textContent = "?? ??? ??? ?? ??? ?? ??? ??? ? ???.";
+      }
+      updateTrialSessionState();
+      return;
+    }
+
+    if (emailAuthNote) {
+      const displayName = activeAccountProfile?.displayName?.trim();
+      emailAuthNote.textContent = displayName
+        ? `${displayName} ???? ??? ???? ????.`
+        : "? ???? ?? ??? ?? ??? ???? ???.";
     }
     updateTrialSessionState();
   };
 
   const { session, error } = await getCurrentSession();
   if (error) {
-    authStatus.textContent = "로그인 상태를 불러오지 못했습니다.";
+    authStatus.textContent = "??? ??? ???? ?????.";
     authNote.textContent = error.message;
   } else {
-    updateAuthUi(session);
     await syncProfile(session);
+    await refreshAdminDashboard(session);
+    updateAuthUi(session);
     await updateConsentUi(session);
     await refreshRelationshipPanel(session);
   }
 
-  onAuthStateChange((nextSession) => {
+  onAuthStateChange(async (nextSession) => {
+    await syncProfile(nextSession);
+    await refreshAdminDashboard(nextSession);
     updateAuthUi(nextSession);
-    syncProfile(nextSession);
-    updateConsentUi(nextSession);
-    refreshRelationshipPanel(nextSession);
+    await updateConsentUi(nextSession);
+    await refreshRelationshipPanel(nextSession);
+  });
+
+  emailSignupForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!(signupEmailInput instanceof HTMLInputElement) || !(signupPasswordInput instanceof HTMLInputElement)) return;
+
+    const email = signupEmailInput.value.trim();
+    const password = signupPasswordInput.value;
+    const displayName = signupDisplayNameInput instanceof HTMLInputElement ? signupDisplayNameInput.value.trim() : "";
+
+    if (!email || !password) {
+      if (emailAuthNote) emailAuthNote.textContent = "???? ????? ?? ??? ???.";
+      return;
+    }
+
+    setEmailAuthBusy(true);
+    if (emailAuthNote) emailAuthNote.textContent = "??? ??? ??? ????.";
+    const { data, error: signUpError } = await signUpWithPassword({ email, password, displayName });
+    setEmailAuthBusy(false);
+
+    if (signUpError) {
+      if (emailAuthNote) emailAuthNote.textContent = signUpError.message;
+      return;
+    }
+
+    track("auth_email_signup");
+    if (signupPasswordInput instanceof HTMLInputElement) signupPasswordInput.value = "";
+    if (emailAuthNote) {
+      emailAuthNote.textContent = data?.session
+        ? "??? ??? ?? ????????."
+        : "???????. ?? ????? ?? ??? ??? ? ???? ???.";
+    }
+  });
+
+  emailLoginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!(loginEmailInput instanceof HTMLInputElement) || !(loginPasswordInput instanceof HTMLInputElement)) return;
+
+    const email = loginEmailInput.value.trim();
+    const password = loginPasswordInput.value;
+    if (!email || !password) {
+      if (emailAuthNote) emailAuthNote.textContent = "???? ????? ?? ??? ???.";
+      return;
+    }
+
+    setEmailAuthBusy(true);
+    if (emailAuthNote) emailAuthNote.textContent = "??? ???? ????? ????.";
+    const { error: signInError } = await signInWithPassword({ email, password });
+    setEmailAuthBusy(false);
+
+    if (signInError) {
+      if (emailAuthNote) emailAuthNote.textContent = signInError.message;
+      return;
+    }
+
+    track("auth_email_login");
+    if (loginPasswordInput instanceof HTMLInputElement) loginPasswordInput.value = "";
+    if (emailAuthNote) emailAuthNote.textContent = "??? ?? ???? ???????.";
   });
 
   authButtons.forEach((button) => {
@@ -1030,11 +1243,11 @@ async function initAuthPanel() {
         return;
       }
       track(`auth_${provider}_start`);
-      authStatus.textContent = `${button.textContent.trim()} 화면으로 이동합니다.`;
+      authStatus.textContent = `${button.textContent.trim()} ???? ?????.`;
       button.disabled = true;
       const { error: signInError } = await signInWithOAuthProvider(provider);
       if (signInError) {
-        authStatus.textContent = "로그인을 시작하지 못했습니다.";
+        authStatus.textContent = "???? ???? ?????.";
         authNote.textContent = signInError.message;
         button.disabled = false;
       }
@@ -1043,10 +1256,10 @@ async function initAuthPanel() {
 
   authSignout?.addEventListener("click", async () => {
     track("auth_signout");
-    authStatus.textContent = "로그아웃 중입니다.";
+    authStatus.textContent = "???? ????.";
     const { error: signOutError } = await signOut();
     if (signOutError) {
-      authStatus.textContent = "로그아웃하지 못했습니다.";
+      authStatus.textContent = "?????? ?????.";
       authNote.textContent = signOutError.message;
     }
   });
@@ -1054,7 +1267,7 @@ async function initAuthPanel() {
   consentForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!activeSession) {
-      consentNote.textContent = "로그인 후 동의를 저장할 수 있습니다.";
+      consentNote.textContent = "??? ? ??? ??? ? ????.";
       return;
     }
 
@@ -1063,22 +1276,23 @@ async function initAuthPanel() {
       return input instanceof HTMLInputElement && input.checked;
     });
     if (!allChecked) {
-      consentNote.textContent = "필수 고지를 모두 확인해 주세요.";
+      consentNote.textContent = "?? ??? ?? ??? ???.";
       return;
     }
 
-    consentNote.textContent = "필수 동의를 저장하고 있습니다.";
+    consentNote.textContent = "?? ??? ???? ????.";
     const { recorded, error: consentSaveError } = await recordRequiredConsents(activeSession);
     if (recorded) {
       track("required_consents_saved");
       hasRequiredConsents = true;
       updateTrialSessionState();
-      consentNote.textContent = "필수 동의를 저장했습니다. 다음 단계에서 무료 상담 체험을 열 수 있습니다.";
+      consentNote.textContent = "?? ??? ??????. ?? ???? ?? ?? ??? ??? ? ????.";
       return;
     }
 
-    consentNote.textContent = consentSaveError?.message ?? "동의를 저장하지 못했습니다.";
+    consentNote.textContent = consentSaveError?.message ?? "??? ???? ?????.";
   });
+
 
   relationshipInviteCreate?.addEventListener("click", async () => {
     if (!activeSession) {
@@ -1782,7 +1996,7 @@ function setActiveNav(id) {
   });
 
   const freeHub = document.querySelector(".free-hub");
-  const hubIds = ["year-flow", "relationship", "tarot", "consult", "my-page"];
+  const hubIds = ["year-flow", "relationship", "tarot", "consult", "my-page", "admin"];
   const isHubView = hubIds.includes(id);
   if (freeHub) freeHub.hidden = !isHubView;
   document.querySelector("#today")?.toggleAttribute("hidden", id !== "today");

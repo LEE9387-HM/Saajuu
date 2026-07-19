@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.33.0 - 2026-07-14
+
+- `마이` 화면에 소셜 로그인과 별도로 이메일/비밀번호 자체 가입 및 로그인 폼을 추가하고, 세션 상태에 따라 가입/로그인 폼과 로그아웃 상태 문구가 자연스럽게 전환되도록 정리
+- `profiles.role` 컬럼과 권한 제약 migration을 추가해 일반 사용자가 자기 프로필을 통해 관리자 권한으로 승격되지 못하도록 막고, 표시명과 마케팅 동의만 수정 가능하도록 `UPDATE` 권한을 축소
+- `get-admin-dashboard` Supabase Edge Function과 `#admin` 운영 화면을 추가해 최근 가입자, 상담 세션, 결제, 안전 이벤트를 관리자 전용으로 조회할 수 있게 구성
+- `.env.example`에 `VITE_SUPABASE_PUBLISHABLE_KEY`와 `ADMIN_EMAILS` 예시를 추가해 브라우저용 키와 서버 전용 관리자 allowlist를 분리해서 안내
+- `npm test`, `npm run build`, `supabase db push --linked --include-all --yes`, `supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`까지 완료
 ## 0.5.32.0 - 2026-07-13
 
 - 궁합 결과 렌더링을 대칭 버전으로 전환해, 누가 누구를 입력했는지와 무관하게 동일한 궁합 문구와 근거가 나오도록 수정

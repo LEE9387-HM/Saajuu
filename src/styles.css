@@ -657,6 +657,132 @@ button:hover {
   margin-top: 0;
 }
 
+.auth-credentials {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.auth-credentials__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+}
+
+.auth-form h4 {
+  margin: -4px 0 2px;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  color: #53646b;
+  font-size: 0.82rem;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+}
+
+.admin-panel {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.admin-panel__stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-stat {
+  padding: 14px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffaf0;
+}
+
+.admin-stat span {
+  display: block;
+  color: #6d7b81;
+  font-size: 0.74rem;
+}
+
+.admin-stat strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 1.2rem;
+}
+
+.admin-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+}
+
+.admin-card__head h4 {
+  margin-top: 2px;
+}
+
+.admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-list__empty {
+  color: #6d7b81;
+  font-size: 0.82rem;
+}
+
+.admin-list__item {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgb(221 214 199 / 60%);
+}
+
+.admin-list__item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.admin-list__title {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.admin-list__meta {
+  color: #6d7b81;
+  font-size: 0.78rem;
+}
+
 .consent-form {
   display: grid;
   gap: 10px;
@@ -2922,8 +3048,17 @@ footer span:first-child {
   }
 
   .profile-admin-card__actions,
-  .profile-admin-panel__actions {
+  .profile-admin-panel__actions,
+  .auth-credentials__grid,
+  .admin-panel__stats,
+  .admin-panel__grid {
     flex-direction: column;
+  }
+
+  .auth-credentials__grid,
+  .admin-panel__stats,
+  .admin-panel__grid {
+    grid-template-columns: 1fr;
   }
 
   .profile-modal {
