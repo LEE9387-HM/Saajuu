@@ -340,6 +340,22 @@ export async function sendConsultationMessage(session, payload) {
   return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
+export async function getConsultationMessages(session, sessionId) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user || !sessionId) {
+    return { messages: [], error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("consultation_messages")
+    .select("id, role, content, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(100);
+
+  return { messages: data ?? [], error };
+}
+
 export function onAuthStateChange(callback) {
   const supabase = getSupabaseClient();
   if (!supabase) return () => {};

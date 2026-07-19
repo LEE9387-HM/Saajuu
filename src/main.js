@@ -34,6 +34,7 @@ import {
   getCommerceOverview,
   getAccountProfile,
   getAdminDashboard,
+  getConsultationMessages,
   getRelationshipInviteTokenFromHash,
   getRelationshipLinks,
   getCurrentSession,
@@ -1228,6 +1229,30 @@ function renderTrialChatMessages() {
   trialChatLog.scrollTop = trialChatLog.scrollHeight;
 }
 
+function replaceConsultationMessages(messages) {
+  activeConsultationMessages = (messages ?? []).map((message) => ({
+    role: message.role === "assistant" ? "assistant" : "user",
+    content: typeof message.content === "string" ? message.content : "",
+  }));
+  renderTrialChatMessages();
+}
+
+async function hydrateConsultationMessages(sessionId) {
+  if (!activeSession || !sessionId) {
+    replaceConsultationMessages([]);
+    return { loaded: false, error: null };
+  }
+
+  const { messages, error } = await getConsultationMessages(activeSession, sessionId);
+  if (error) {
+    replaceConsultationMessages([]);
+    return { loaded: false, error };
+  }
+
+  replaceConsultationMessages(messages);
+  return { loaded: true, error: null };
+}
+
 function renderSelectedPersonaSurfaces() {
   const persona = getPersonaById(trialPersona?.value ?? selectedPersonaId ?? "miseon");
   selectedPersonaId = persona.id;
@@ -1416,7 +1441,7 @@ function setActiveConsultationSession(session, reused = false) {
       }
     : null;
   activeConsultationGuidance = null;
-  activeConsultationMessages = reused ? [] : [];
+  activeConsultationMessages = reused ? activeConsultationMessages : [];
   updateTrialChatUiV2();
 }
 
@@ -2117,12 +2142,23 @@ async function initAuthPanel() {
     const session = data?.session;
     preferredEntitlementId = sessionMode === "trial" ? "" : String(session?.entitlement_id ?? entitlement?.id ?? "");
     setActiveConsultationSession(session, Boolean(data?.reused));
+    let historyLoadFailed = false;
+    if (data?.reused && session?.id) {
+      const { error: historyError } = await hydrateConsultationMessages(session.id);
+      if (historyError) {
+        historyLoadFailed = true;
+      }
+    } else {
+      replaceConsultationMessages([]);
+    }
     track(sessionMode === "trial" ? "trial_started" : "paid_session_started");
-    trialSessionNote.textContent = data?.reused
-      ? `이어서 이야기할 수 있어요. 다음은 ${trialStageMeta(Number(session?.used_turns ?? 0) + 1).label} 단계입니다.`
-      : sessionMode === "trial"
-        ? "적어주신 고민을 듣고 있어요."
-        : "선택한 상담권으로 바로 대화를 이어갑니다.";
+    trialSessionNote.textContent = historyLoadFailed
+      ? "이전 대화를 불러오지 못했습니다. 새 메시지는 계속 이어서 보낼 수 있습니다."
+      : data?.reused
+        ? `이어서 이야기할 수 있어요. 다음은 ${trialStageMeta(Number(session?.used_turns ?? 0) + 1).label} 단계입니다.`
+        : sessionMode === "trial"
+          ? "적어주신 고민을 듣고 있어요."
+          : "선택한 상담권으로 바로 대화를 이어갑니다.";
     if (!data?.reused) pendingConsultationContext = null;
     updateTrialSessionState();
     if (!data?.reused && concern) await submitTrialMessage(concern);
