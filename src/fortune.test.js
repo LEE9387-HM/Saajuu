@@ -6,10 +6,12 @@ import {
   buildCompatibilityReading,
   buildCompatibilityReadingSymmetric,
   buildGuidance,
+  buildTarotOverview,
   buildDetailedReading,
   buildNameReading,
   buildPersonalizedBriefing,
   buildTopicReading,
+  buildYearlyOverview,
   calculateChart,
   countElements,
   formatInputSummary,
@@ -223,6 +225,51 @@ describe("buildTopicReading", () => {
     expect(reading.checklist).toHaveLength(3);
     expect(reading.questions).toHaveLength(3);
     expect(reading.evidence).toContain("일간 계");
+  });
+});
+
+describe("buildYearlyOverview", () => {
+  it("creates twelve monthly scores and a current-month action", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+
+    const overview = buildYearlyOverview(chart, "business", new Date("2026-07-19T09:00:00+09:00"));
+
+    expect(overview.monthScores).toHaveLength(12);
+    expect(overview.currentMonth.label).toBe("7월 집중 포인트");
+    expect(overview.currentMonth.score).toBeGreaterThanOrEqual(45);
+    expect(overview.currentMonth.score).toBeLessThanOrEqual(92);
+    expect(overview.halfYear).toHaveLength(2);
+    expect(overview.evidence.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("buildTarotOverview", () => {
+  it("creates a deterministic lead card and reflection prompts", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    const tarot = buildTarotOverview(
+      chart,
+      "business",
+      "당장 사업 시작하고 싶어요",
+      new Date("2026-07-19T09:00:00+09:00"),
+    );
+
+    expect(tarot.lead.name).toBeTruthy();
+    expect(tarot.choice.aLabel).toBe("지금 바로 밀기");
+    expect(tarot.choice.bLabel).toBe("작게 시험하기");
+    expect(tarot.reflection).toHaveLength(3);
   });
 });
 

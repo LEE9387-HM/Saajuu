@@ -38,6 +38,9 @@
       </header>
 
       <section class="hero" aria-labelledby="page-title">
+        <div class="hero__media" aria-hidden="true">
+          <img src="./generated/hero-photo.jpg" alt="" />
+        </div>
         <div class="hero__mark" aria-hidden="true">四柱</div>
         <p class="eyebrow">나를 읽는 작은 기록</p>
         <h1 id="page-title">사주 한 장</h1>
@@ -155,17 +158,34 @@
       <section class="free-hub" aria-label="운세 서비스">
         <div class="hub-grid">
           <article id="year-flow" class="hub-card">
+            <figure class="hub-card__image">
+              <img src="./generated/year-flow-photo.jpg" alt="" />
+            </figure>
             <p class="eyebrow">올해의 흐름</p>
             <h3>연간·월간 운세</h3>
-            <p>올해의 큰 흐름과 지금 집중할 시기를 월별로 살펴보세요.</p>
-            <ul>
-              <li>올해의 핵심 흐름</li>
-              <li>상반기와 하반기 리듬</li>
-              <li>현재 달에 확인할 행동</li>
-            </ul>
+            <p id="year-flow-summary">올해의 큰 흐름과 지금 집중할 시기를 월별로 살펴보세요.</p>
+            <section class="year-flow-panel" aria-label="연간 흐름 요약">
+              <div class="year-flow-panel__hero">
+                <p class="eyebrow" id="year-flow-eyebrow">올해 흐름</p>
+                <h4 id="year-flow-title">입력한 사주를 바탕으로 올해 리듬을 정리합니다.</h4>
+                <div class="year-flow-panel__evidence" id="year-flow-evidence"></div>
+              </div>
+              <div class="year-flow-panel__current">
+                <span id="year-current-label">이번 달 집중 포인트</span>
+                <strong id="year-current-score">--</strong>
+                <p id="year-current-focus">사주 정보를 입력하면 이번 달에 집중할 행동이 정리됩니다.</p>
+                <em id="year-current-action">작게 검증할 일 하나를 먼저 정해보세요.</em>
+              </div>
+            </section>
+            <div class="year-flow-halves" id="year-flow-halves"></div>
+            <div class="year-flow-months" id="year-flow-months"></div>
+            <p class="hub-card__note" id="year-flow-note">월별 점수는 방향을 잡기 위한 참고용 요약입니다.</p>
           </article>
 
           <article id="relationship" class="hub-card">
+            <figure class="hub-card__image">
+              <img src="./generated/relationship-photo.jpg" alt="" />
+            </figure>
             <p class="eyebrow">인연</p>
             <h3>두 사람의 관계 흐름</h3>
             <p>상대 정보를 저장하지 않고 두 사람의 강점, 충돌 지점과 대화 포인트를 살펴봅니다.</p>
@@ -289,14 +309,42 @@
           </article>
 
           <article id="tarot" class="hub-card">
+            <figure class="hub-card__image">
+              <img src="./generated/tarot-photo.jpg" alt="" />
+            </figure>
             <p class="eyebrow">타로·테스트</p>
             <h3>오늘 마음에 필요한 한 장</h3>
-            <p>결정을 서두르기보다 지금 마음을 비춰볼 질문을 가볍게 골라보세요.</p>
-            <ul>
-              <li>오늘의 한 장</li>
-              <li>A/B 선택 비교</li>
-              <li>관계·직장 스트레스 테스트</li>
-            </ul>
+            <p id="tarot-summary">결정을 서두르기보다 지금 마음을 비춰볼 질문을 가볍게 골라보세요.</p>
+            <section class="tarot-panel" aria-label="오늘의 한 장">
+              <div class="tarot-panel__lead">
+                <span class="eyebrow" id="tarot-eyebrow">오늘의 한 장</span>
+                <h4 id="tarot-title">사주 정보를 입력하면 오늘의 카드가 열립니다.</h4>
+                <div class="tarot-card">
+                  <strong id="tarot-card-name">카드 준비 중</strong>
+                  <span id="tarot-card-keyword">질문 정리</span>
+                  <p id="tarot-card-message">입력한 고민과 사주 흐름을 바탕으로 오늘 필요한 질문을 보여줍니다.</p>
+                  <em id="tarot-card-action">먼저 지금 가장 급한 고민 한 줄을 적어보세요.</em>
+                </div>
+              </div>
+              <div class="tarot-panel__choice">
+                <span class="eyebrow">A/B 선택</span>
+                <p id="tarot-choice-prompt">지금의 선택을 바로 결론내리기보다 두 방향을 비교해보세요.</p>
+                <div class="tarot-choice-grid">
+                  <article>
+                    <strong id="tarot-choice-a-label">지금 바로 밀기</strong>
+                    <p id="tarot-choice-a-copy">속도보다 리스크 점검이 먼저입니다.</p>
+                  </article>
+                  <article>
+                    <strong id="tarot-choice-b-label">작게 시험하기</strong>
+                    <p id="tarot-choice-b-copy">작은 검증 뒤에 넓히는 편이 안정적입니다.</p>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <div class="tarot-reflection">
+              <span class="eyebrow">정리 질문</span>
+              <ul id="tarot-reflection-list"></ul>
+            </div>
           </article>
 
           <article id="consult" class="hub-card hub-card--consult">
@@ -350,7 +398,15 @@
               <p id="trial-session-note" class="auth-panel__note" role="status"></p>
               <div id="trial-chat" class="trial-chat" hidden>
                 <div class="trial-chat__head">
-                  <strong id="trial-chat-status">상담 준비 중</strong>
+                  <div class="trial-chat__persona">
+                    <span class="trial-chat__persona-avatar" aria-hidden="true">
+                      <img id="trial-chat-persona-image" src="./generated/persona-miseon.jpg" alt="" loading="lazy" />
+                    </span>
+                    <div class="trial-chat__persona-copy">
+                      <strong id="trial-chat-status">상담 준비 중</strong>
+                      <em id="trial-chat-persona-name">미선 이모와 대화를 준비하고 있어요</em>
+                    </div>
+                  </div>
                   <span id="trial-chat-remaining">남은 턴 0회</span>
                 </div>
                 <div id="trial-stage-strip" class="trial-stage-strip" hidden></div>

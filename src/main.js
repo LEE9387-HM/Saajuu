@@ -10,7 +10,9 @@ import {
   buildNameReading,
   buildDetailedReading,
   buildPersonalizedBriefing,
+  buildTarotOverview,
   buildTopicReading,
+  buildYearlyOverview,
   calculateChart,
   ELEMENTS,
   formatInputSummary,
@@ -72,6 +74,11 @@ const TRIAL_STAGES = [
   { number: 2, label: "조건 좁히기", description: "사실과 걱정, 준비 상태를 나누는 단계" },
   { number: 3, label: "행동 정리", description: "선택지와 바로 할 행동을 정리하는 단계" },
 ];
+const PERSONA_IMAGE_MAP = {
+  miseon: "./generated/persona-miseon.jpg",
+  junho: "./generated/persona-junho.jpg",
+  seongu: "./generated/persona-seongu.jpg",
+};
 const portoneStoreId = import.meta.env?.VITE_PORTONE_STORE_ID ?? "";
 const portoneChannelKey = import.meta.env?.VITE_PORTONE_CHANNEL_KEY ?? "";
 
@@ -160,6 +167,8 @@ const trialSessionStart = document.querySelector("#trial-session-start");
 const trialSessionNote = document.querySelector("#trial-session-note");
 const trialChat = document.querySelector("#trial-chat");
 const trialChatStatus = document.querySelector("#trial-chat-status");
+const trialChatPersonaImage = document.querySelector("#trial-chat-persona-image");
+const trialChatPersonaName = document.querySelector("#trial-chat-persona-name");
 const trialChatRemaining = document.querySelector("#trial-chat-remaining");
 const trialStageStrip = document.querySelector("#trial-stage-strip");
 const trialGuidance = document.querySelector("#trial-guidance");
@@ -279,6 +288,7 @@ for (const tone of TONE_OPTIONS) {
 }
 
 renderConsultationCatalog();
+renderSelectedPersonaSurfaces();
 initAuthPanel();
 
 authPanelTabs.forEach((button) => {
@@ -318,8 +328,8 @@ personaCards?.addEventListener("click", (event) => {
   if (!persona) return;
   track("persona_select");
   if (trialPersona) trialPersona.value = persona.id;
-  premiumInterestLabel.textContent = `${persona.name} 상담 관심 등록`;
-  premiumInterestNote.textContent = `${persona.name} 스타일로 상담이 열리면 알려드릴게요.`;
+  selectedPersonaId = persona.id;
+  renderSelectedPersonaSurfaces();
 });
 
 personaSwitcher?.addEventListener("click", (event) => {
@@ -328,6 +338,7 @@ personaSwitcher?.addEventListener("click", (event) => {
   selectedPersonaId = target.dataset.personaTab ?? "miseon";
   if (trialPersona) trialPersona.value = selectedPersonaId;
   renderPersonaChoice();
+  renderSelectedPersonaSurfaces();
 });
 
 modeCards?.addEventListener("click", (event) => {
@@ -352,8 +363,17 @@ modeSwitcher?.addEventListener("click", (event) => {
   renderModeChoice();
 });
 
+trialPersona?.addEventListener("change", () => {
+  selectedPersonaId = trialPersona.value || "miseon";
+  renderSelectedPersonaSurfaces();
+});
+
 function relationLabel(value) {
   return RELATIONSHIP_LABELS[value] ?? "인연";
+}
+
+function getPersonaById(personaId) {
+  return CONSULTATION_PERSONAS.find((item) => item.id === personaId) ?? CONSULTATION_PERSONAS[0];
 }
 
 function topicLabel(value) {
@@ -827,10 +847,29 @@ function renderTrialChatMessages() {
   trialChatLog.scrollTop = trialChatLog.scrollHeight;
 }
 
+function renderSelectedPersonaSurfaces() {
+  const persona = getPersonaById(trialPersona?.value ?? selectedPersonaId ?? "miseon");
+  selectedPersonaId = persona.id;
+
+  if (trialChatPersonaImage) {
+    trialChatPersonaImage.src = PERSONA_IMAGE_MAP[persona.id] ?? PERSONA_IMAGE_MAP.miseon;
+  }
+  if (trialChatPersonaName) {
+    trialChatPersonaName.textContent = `${persona.name}와 대화를 이어가고 있어요`;
+  }
+  if (premiumInterestLabel) {
+    premiumInterestLabel.textContent = `${persona.name} 상담으로 이어가기`;
+  }
+  if (premiumInterestNote) {
+    premiumInterestNote.textContent = `${persona.name} 스타일로 현재 고민을 더 깊게 정리할 수 있게 준비합니다.`;
+  }
+}
+
 function updateTrialChatUi() {
   if (!trialChat || !trialMessageSend || !trialChatStatus || !trialChatRemaining) return;
 
   const hasSession = Boolean(activeConsultationSession);
+  renderSelectedPersonaSurfaces();
   trialChat.hidden = !hasSession;
   if (trialNextStep) trialNextStep.hidden = true;
   if (trialStageStrip) trialStageStrip.hidden = !hasSession;
@@ -847,6 +886,7 @@ function updateTrialChatUi() {
   const isActive = activeConsultationSession.status === "active" && remainingTurns > 0;
   const currentStageNumber = isActive ? Math.min(usedTurns + 1, TRIAL_STAGES.length) : TRIAL_STAGES.length;
   const currentStage = trialStageMeta(currentStageNumber);
+  const persona = getPersonaById(trialPersona?.value ?? selectedPersonaId ?? "miseon");
 
   if (trialStageStrip) {
     trialStageStrip.innerHTML = TRIAL_STAGES.map((stage) => {
@@ -872,6 +912,15 @@ function updateTrialChatUi() {
   if (trialNextStep && !isActive) {
     trialNextStep.hidden = false;
     trialNextStep.innerHTML = `
+      <div class="trial-next-step__persona">
+        <span class="trial-next-step__persona-avatar" aria-hidden="true">
+          <img src="${escapeHtml(PERSONA_IMAGE_MAP[persona.id] ?? "")}" alt="" loading="lazy" />
+        </span>
+        <div>
+          <span>${escapeHtml(persona.name)}</span>
+          <strong>${escapeHtml(persona.role)}</strong>
+        </div>
+      </div>
       <strong>무료 체험이 끝났습니다</strong>
       <p>다음 단계는 기본 상담권과 프로 상담으로 이어집니다. 기본 상담은 10턴 대화와 짧은 요약, 프로 상담은 더 긴 문맥과 선택지별 행동 계획을 제공하는 구조로 준비합니다.</p>
       <div class="trial-next-step__chips">
@@ -1738,6 +1787,29 @@ detailToggle.addEventListener("click", () => {
 const dailySection = document.querySelector("#daily");
 const emptyDaily = document.querySelector("#empty-daily");
 const saveCardButton = document.querySelector("#save-card");
+const yearFlowSummary = document.querySelector("#year-flow-summary");
+const yearFlowEyebrow = document.querySelector("#year-flow-eyebrow");
+const yearFlowTitle = document.querySelector("#year-flow-title");
+const yearFlowEvidence = document.querySelector("#year-flow-evidence");
+const yearCurrentLabel = document.querySelector("#year-current-label");
+const yearCurrentScore = document.querySelector("#year-current-score");
+const yearCurrentFocus = document.querySelector("#year-current-focus");
+const yearCurrentAction = document.querySelector("#year-current-action");
+const yearFlowHalves = document.querySelector("#year-flow-halves");
+const yearFlowMonths = document.querySelector("#year-flow-months");
+const tarotSummary = document.querySelector("#tarot-summary");
+const tarotEyebrow = document.querySelector("#tarot-eyebrow");
+const tarotTitle = document.querySelector("#tarot-title");
+const tarotCardName = document.querySelector("#tarot-card-name");
+const tarotCardKeyword = document.querySelector("#tarot-card-keyword");
+const tarotCardMessage = document.querySelector("#tarot-card-message");
+const tarotCardAction = document.querySelector("#tarot-card-action");
+const tarotChoicePrompt = document.querySelector("#tarot-choice-prompt");
+const tarotChoiceALabel = document.querySelector("#tarot-choice-a-label");
+const tarotChoiceACopy = document.querySelector("#tarot-choice-a-copy");
+const tarotChoiceBLabel = document.querySelector("#tarot-choice-b-label");
+const tarotChoiceBCopy = document.querySelector("#tarot-choice-b-copy");
+const tarotReflectionList = document.querySelector("#tarot-reflection-list");
 let lastResult = null;
 
 function renderDaily(chart, now = new Date()) {
@@ -1786,6 +1858,70 @@ function renderDaily(chart, now = new Date()) {
   if (emptyDaily) emptyDaily.hidden = true;
   track("daily-view");
   return daily;
+}
+
+function renderYearFlow(chart, input, now = new Date()) {
+  const overview = buildYearlyOverview(chart, input.topic, now);
+  if (yearFlowSummary) yearFlowSummary.textContent = overview.summary;
+  if (yearFlowEyebrow) yearFlowEyebrow.textContent = overview.eyebrow;
+  if (yearFlowTitle) yearFlowTitle.textContent = overview.title;
+  if (yearFlowEvidence) {
+    yearFlowEvidence.innerHTML = overview.evidence
+      .map((item) => `<em>${escapeHtml(item)}</em>`)
+      .join("");
+  }
+  if (yearCurrentLabel) yearCurrentLabel.textContent = overview.currentMonth.label;
+  if (yearCurrentScore) yearCurrentScore.textContent = `${overview.currentMonth.score}점`;
+  if (yearCurrentFocus) yearCurrentFocus.textContent = overview.currentMonth.focus;
+  if (yearCurrentAction) yearCurrentAction.textContent = overview.currentMonth.action;
+  if (yearFlowHalves) {
+    yearFlowHalves.innerHTML = overview.halfYear
+      .map(
+        (half) => `
+          <article class="year-half-card">
+            <span>${escapeHtml(half.label)}</span>
+            <strong>${half.score}점</strong>
+            <p>${escapeHtml(half.copy)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
+  if (yearFlowMonths) {
+    yearFlowMonths.innerHTML = overview.monthScores
+      .map(
+        (month) => `
+          <article class="year-month-chip" data-score-band="${month.score >= 72 ? "strong" : month.score >= 60 ? "steady" : "careful"}">
+            <span>${escapeHtml(month.label)}</span>
+            <strong>${month.score}</strong>
+            <em>${escapeHtml(month.focus)}</em>
+          </article>
+        `,
+      )
+      .join("");
+  }
+}
+
+function renderTarot(chart, input, now = new Date()) {
+  const tarot = buildTarotOverview(chart, input.topic, input.concern, now);
+  if (tarotSummary) {
+    tarotSummary.textContent =
+      input.concern?.trim()
+        ? `입력한 고민을 바탕으로 오늘의 카드와 선택 질문을 정리했어요.`
+        : "지금 마음을 비춰볼 질문과 오늘의 한 장을 같이 정리해보세요.";
+  }
+  if (tarotEyebrow) tarotEyebrow.textContent = tarot.eyebrow;
+  if (tarotTitle) tarotTitle.textContent = tarot.title;
+  if (tarotCardName) tarotCardName.textContent = tarot.lead.name;
+  if (tarotCardKeyword) tarotCardKeyword.textContent = tarot.lead.keyword;
+  if (tarotCardMessage) tarotCardMessage.textContent = tarot.lead.message;
+  if (tarotCardAction) tarotCardAction.textContent = tarot.lead.action;
+  if (tarotChoicePrompt) tarotChoicePrompt.textContent = tarot.choice.prompt;
+  if (tarotChoiceALabel) tarotChoiceALabel.textContent = tarot.choice.aLabel;
+  if (tarotChoiceACopy) tarotChoiceACopy.textContent = tarot.choice.aCopy;
+  if (tarotChoiceBLabel) tarotChoiceBLabel.textContent = tarot.choice.bLabel;
+  if (tarotChoiceBCopy) tarotChoiceBCopy.textContent = tarot.choice.bCopy;
+  if (tarotReflectionList) tarotReflectionList.innerHTML = renderList(tarot.reflection);
 }
 
 function refreshDailyIfStale() {
@@ -2403,7 +2539,9 @@ function renderPersonaChoice() {
     personaCards.innerHTML = `
         <article class="persona-card" data-persona="${escapeHtml(persona.id)}">
           <div class="persona-card__top">
-            <span class="persona-avatar" aria-hidden="true">${escapeHtml(persona.initial)}</span>
+            <span class="persona-avatar" aria-hidden="true">
+              <img src="${escapeHtml(PERSONA_IMAGE_MAP[persona.id] ?? "")}" alt="" loading="lazy" />
+            </span>
             <div>
               <h4>${escapeHtml(persona.name)}</h4>
               <p>${escapeHtml(persona.role)}</p>
@@ -2467,6 +2605,8 @@ function updatePersonaRecommendation(topic) {
 
 function renderResult(chart, input) {
   document.querySelector("#result-date").textContent = formatInputSummary(input);
+  renderYearFlow(chart, input, new Date());
+  renderTarot(chart, input, new Date());
 
   document.querySelector("#pillars").innerHTML = chart.pillars
     .map(

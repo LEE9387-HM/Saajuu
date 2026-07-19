@@ -109,15 +109,43 @@ main {
 
 .hero {
   position: relative;
-  padding: 70px 0 46px;
+  overflow: hidden;
+  padding: 88px 28px 64px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #f6f1e8;
   text-align: center;
+  min-height: 420px;
+  display: grid;
+  align-content: center;
+}
+
+.hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.hero__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(21 42 56 / 18%), rgb(21 42 56 / 42%)),
+    linear-gradient(180deg, rgb(251 248 240 / 6%), rgb(251 248 240 / 14%));
+}
+
+.hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.88) contrast(0.96);
 }
 
 .hero__mark {
   position: absolute;
   top: 48px;
   left: 50%;
-  color: rgb(217 95 77 / 8%);
+  color: rgb(251 248 240 / 12%);
   font-family: "Gowun Batang", serif;
   font-size: clamp(7rem, 18vw, 12rem);
   font-weight: 700;
@@ -151,7 +179,7 @@ h3 {
 h1 {
   position: relative;
   margin-bottom: 18px;
-  color: var(--ink);
+  color: #fffaf0;
   font-size: 5rem;
   line-height: 1;
   letter-spacing: 0;
@@ -160,10 +188,15 @@ h1 {
 .hero__copy {
   position: relative;
   margin-bottom: 0;
-  color: #5d6c72;
+  color: rgb(255 250 240 / 92%);
   font-family: "Gowun Batang", serif;
   font-size: 1.05rem;
   line-height: 1.9;
+}
+
+.hero .eyebrow {
+  position: relative;
+  color: rgb(255 233 197 / 92%);
 }
 
 .app-nav {
@@ -483,6 +516,22 @@ button:hover {
   scroll-margin-top: 96px;
 }
 
+.hub-card__image {
+  margin: 0 0 18px;
+  aspect-ratio: 16 / 8.2;
+  overflow: hidden;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #f6f1e8;
+}
+
+.hub-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.92) contrast(0.97);
+}
+
 .hub-card--consult,
 .hub-card:nth-child(5) {
   grid-column: span 3;
@@ -515,6 +564,170 @@ button:hover {
   padding-top: 12px;
   border-top: 1px solid rgb(221 214 199 / 80%);
   font-size: 0.78rem;
+}
+
+.year-flow-panel,
+.tarot-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.9fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.year-flow-panel__hero,
+.year-flow-panel__current,
+.tarot-panel__lead,
+.tarot-panel__choice {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffaf0;
+}
+
+.year-flow-panel__hero h4,
+.tarot-panel__lead h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.08rem;
+  line-height: 1.45;
+}
+
+.year-flow-panel__evidence,
+.year-flow-months,
+.year-flow-halves,
+.tarot-choice-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.year-flow-panel__evidence {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.year-flow-panel__evidence em,
+.year-month-chip,
+.year-half-card,
+.tarot-choice-grid article,
+.tarot-card,
+.tarot-reflection {
+  padding: 12px 14px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffdf8;
+}
+
+.year-flow-panel__current span,
+.year-half-card span,
+.year-month-chip span,
+.tarot-card span,
+.tarot-reflection span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.year-flow-panel__current strong,
+.year-half-card strong,
+.year-month-chip strong,
+.tarot-card strong,
+.tarot-choice-grid strong {
+  color: var(--ink);
+  font-size: 1.15rem;
+}
+
+.year-flow-panel__current em,
+.year-month-chip em,
+.tarot-card em {
+  color: #6b756b;
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.year-flow-halves {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.year-flow-months {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.year-month-chip {
+  display: grid;
+  gap: 4px;
+}
+
+.year-month-chip[data-score-band="strong"] {
+  border-color: rgb(63 125 92 / 35%);
+  background: #f4fbf5;
+}
+
+.year-month-chip[data-score-band="steady"] {
+  background: #fffaf0;
+}
+
+.year-month-chip[data-score-band="careful"] {
+  border-color: rgb(192 90 68 / 28%);
+  background: #fff5f2;
+}
+
+.tarot-card {
+  display: grid;
+  gap: 8px;
+}
+
+.tarot-choice-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tarot-choice-grid article,
+.year-half-card,
+.tarot-reflection {
+  display: grid;
+  gap: 8px;
+}
+
+.tarot-reflection {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.tarot-reflection ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 960px) {
+  .hero {
+    min-height: 360px;
+    padding: 74px 20px 52px;
+  }
+
+  .year-flow-panel,
+  .tarot-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .year-flow-months {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: 320px;
+    padding: 68px 16px 44px;
+  }
+
+  .year-flow-halves,
+  .tarot-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .year-flow-months {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .profile-admin-card,
@@ -1110,8 +1323,46 @@ button:hover {
   font-size: 0.82rem;
 }
 
+.trial-chat__persona {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.trial-chat__persona-avatar,
+.trial-next-step__persona-avatar {
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #efe7da;
+  flex: 0 0 auto;
+}
+
+.trial-chat__persona-avatar img,
+.trial-next-step__persona-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.trial-chat__persona-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
 .trial-chat__head strong {
   font-size: 0.88rem;
+}
+
+.trial-chat__persona-copy em {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: normal;
 }
 
 .trial-chat__remaining,
@@ -1286,6 +1537,25 @@ button:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.trial-next-step__persona {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.trial-next-step__persona div {
+  display: grid;
+  gap: 2px;
+}
+
+.trial-next-step__persona span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .trial-next-step__chips span {
@@ -1519,15 +1789,20 @@ button:hover {
 }
 
 .persona-avatar {
-  display: grid;
+  display: block;
   width: 44px;
   height: 44px;
-  place-items: center;
+  overflow: hidden;
   border-radius: 50%;
-  background: var(--ink);
-  color: #fffdf8;
-  font-family: "Gowun Batang", serif;
-  font-weight: 700;
+  background: #efe7da;
+  border: 1px solid rgb(221 214 199 / 80%);
+}
+
+.persona-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .persona-card h4,
