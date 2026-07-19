@@ -369,10 +369,46 @@ modeSwitcher?.addEventListener("click", (event) => {
   renderModeChoice();
 });
 
+commercePanel?.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target.closest("[data-commerce-action]") : null;
+  if (!(target instanceof HTMLButtonElement)) return;
+
+  const action = target.dataset.commerceAction;
+  const personaId = target.dataset.personaId ?? "";
+  const productId = target.dataset.productId ?? "";
+
+  if (action === "resume-consult") {
+    prepareConsultationEntry({ personaId, productId, focusMode: false });
+    return;
+  }
+
+  if (action === "prepare-order") {
+    prepareConsultationEntry({ personaId, productId, focusMode: true });
+  }
+});
+
 trialPersona?.addEventListener("change", () => {
   selectedPersonaId = trialPersona.value || "miseon";
   renderSelectedPersonaSurfaces();
 });
+
+function prepareConsultationEntry({ personaId, productId, focusMode = false } = {}) {
+  if (personaId) {
+    const persona = getPersonaById(personaId);
+    selectedPersonaId = persona.id;
+    if (trialPersona) trialPersona.value = persona.id;
+  }
+
+  if (productId) {
+    selectedModeId = modeIdForProduct(productId);
+    renderModeChoice();
+  }
+
+  renderPersonaChoice();
+  renderSelectedPersonaSurfaces();
+  setConsultTab(focusMode ? "mode" : "start");
+  openHubSection("consult");
+}
 
 function relationLabel(value) {
   return RELATIONSHIP_LABELS[value] ?? "인연";
@@ -833,6 +869,10 @@ function personaLookupMap(personas = []) {
   return new Map(personas.map((persona) => [persona.id, persona]));
 }
 
+function modeIdForProduct(productId) {
+  return String(productId ?? "").startsWith("pro_") ? "pro" : "basic";
+}
+
 function orderStatusLabel(status) {
   return (
     {
@@ -943,20 +983,153 @@ function renderCommerceOverview(session, overview) {
     : '<p class="commerce-list__empty">아직 최근 주문 내역이 없습니다.</p>';
 }
 
+function renderCommerceOverviewV2(session, overview) {
+  activeCommerceOverview = overview ?? null;
+  if (!commercePanel || !entitlementList || !orderHistoryList) return;
+
+  if (!session) {
+    commercePanel.hidden = true;
+    entitlementList.innerHTML = "";
+    orderHistoryList.innerHTML = "";
+    return;
+  }
+
+  commercePanel.hidden = false;
+  const products = productLookupMap(overview?.products ?? []);
+  const personas = personaLookupMap(overview?.personas ?? []);
+  const entitlements = overview?.entitlements ?? [];
+  const orders = overview?.orders ?? [];
+
+  if (commerceNote) {
+    commerceNote.textContent =
+      entitlements.length || orders.length
+        ? "무료 체험 이후 결제한 상담권과 최근 주문 상태를 여기에서 바로 확인하고 이어갈 수 있어요."
+        : "아직 발급된 상담 이용권이나 최근 주문이 없습니다. 무료 3턴 이후 여기로 이어집니다.";
+  }
+
+  entitlementList.innerHTML = entitlements.length
+    ? entitlements
+        .map((item) => {
+          const product = products.get(item.product_id);
+          const linkedOrder = orders.find((order) => order.id === item.order_id);
+          const linkedMetadata =
+            typeof linkedOrder?.metadata === "object" && linkedOrder?.metadata ? linkedOrder.metadata : {};
+          const personaId = String(linkedMetadata.persona_id ?? "").trim();
+          const persona = personas.get(personaId);
+          const personaImage = PERSONA_IMAGE_MAP[personaId] ?? "";
+          const remainingTurns = Math.max(Number(item.total_turns ?? 0) - Number(item.used_turns ?? 0), 0);
+
+          return `
+            <article class="commerce-entry">
+              <div class="commerce-entry__head">
+                <div>
+                  <span>${escapeHtml(entitlementStatusLabel(item.status))}</span>
+                  <strong>${escapeHtml(product?.name ?? "상담 이용권")}</strong>
+                </div>
+                <em>${remainingTurns}턴 남음</em>
+              </div>
+              ${
+                persona
+                  ? `
+                    <div class="commerce-entry__persona">
+                      <span class="commerce-entry__avatar" aria-hidden="true">
+                        <img src="${escapeHtml(personaImage)}" alt="" loading="lazy" />
+                      </span>
+                      <div>
+                        <strong>${escapeHtml(persona.display_name)}</strong>
+                        <span>${escapeHtml(persona.role)}</span>
+                      </div>
+                    </div>
+                  `
+                  : ""
+              }
+              <p>총 ${Number(item.total_turns ?? 0)}턴 중 ${Number(item.used_turns ?? 0)}턴을 사용했어요.</p>
+              <small>${item.expires_at ? `${escapeHtml(formatDateTime(item.expires_at))}까지 사용 가능` : "만료 정보 없음"}</small>
+              <div class="commerce-entry__actions">
+                <button
+                  type="button"
+                  class="auth-button"
+                  data-commerce-action="resume-consult"
+                  data-product-id="${escapeHtml(item.product_id ?? "")}"
+                  data-persona-id="${escapeHtml(personaId)}"
+                >
+                  상담 이어가기
+                </button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")
+    : '<p class="commerce-list__empty">아직 발급된 상담 이용권이 없습니다.</p>';
+
+  orderHistoryList.innerHTML = orders.length
+    ? orders
+        .map((item) => {
+          const product = products.get(item.product_id);
+          const metadata = typeof item.metadata === "object" && item.metadata ? item.metadata : {};
+          const personaId = String(metadata.persona_id ?? "").trim();
+          const persona = personas.get(personaId);
+          const personaImage = PERSONA_IMAGE_MAP[personaId] ?? "";
+          const paidAt = item.paid_at ? formatDateTime(item.paid_at) : formatDateTime(item.created_at);
+          const isPaid = String(item.status ?? "").toLowerCase() === "paid";
+
+          return `
+            <article class="commerce-entry">
+              <div class="commerce-entry__head">
+                <div>
+                  <span>${escapeHtml(orderStatusLabel(item.status))}</span>
+                  <strong>${escapeHtml(product?.name ?? "상담 주문")}</strong>
+                </div>
+                <em>${Number(item.amount_krw ?? 0).toLocaleString("ko-KR")}원</em>
+              </div>
+              ${
+                persona
+                  ? `
+                    <div class="commerce-entry__persona">
+                      <span class="commerce-entry__avatar" aria-hidden="true">
+                        <img src="${escapeHtml(personaImage)}" alt="" loading="lazy" />
+                      </span>
+                      <div>
+                        <strong>${escapeHtml(persona.display_name)}</strong>
+                        <span>${escapeHtml(persona.role)}</span>
+                      </div>
+                    </div>
+                  `
+                  : ""
+              }
+              <p>${escapeHtml(paidAt)} · 주문번호 ${escapeHtml(String(item.provider_order_id ?? item.id ?? "").slice(0, 18))}</p>
+              <div class="commerce-entry__actions">
+                <button
+                  type="button"
+                  class="auth-button ${isPaid ? "" : "auth-button--ghost"}"
+                  data-commerce-action="${isPaid ? "resume-consult" : "prepare-order"}"
+                  data-product-id="${escapeHtml(item.product_id ?? "")}"
+                  data-persona-id="${escapeHtml(personaId)}"
+                >
+                  ${isPaid ? "상담 이어가기" : "같은 상담권 다시 준비"}
+                </button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")
+    : '<p class="commerce-list__empty">아직 최근 주문 내역이 없습니다.</p>';
+}
+
 async function refreshCommercePanel(session) {
   if (!session) {
-    renderCommerceOverview(null, null);
+    renderCommerceOverviewV2(null, null);
     return;
   }
 
   const { data, error } = await getCommerceOverview(session);
   if (error) {
-    renderCommerceOverview(session, { products: [], personas: [], orders: [], entitlements: [] });
+    renderCommerceOverviewV2(session, { products: [], personas: [], orders: [], entitlements: [] });
     if (commerceNote) commerceNote.textContent = "이용권과 주문 내역을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.";
     return;
   }
 
-  renderCommerceOverview(session, data);
+  renderCommerceOverviewV2(session, data);
 }
 
 function updateTrialSessionState() {
