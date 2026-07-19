@@ -24,6 +24,12 @@ type Product = {
   description: string | null;
 };
 
+type Persona = {
+  id: string;
+  display_name: string;
+  role: string;
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -59,7 +65,7 @@ Deno.serve(async (request) => {
   const currentUser = userData.user;
   if (userError || !currentUser) return json({ error: "Authentication required" }, 401);
 
-  let payload: { productId?: string };
+  let payload: { productId?: string; personaId?: string };
   try {
     payload = await request.json();
   } catch {
@@ -68,6 +74,7 @@ Deno.serve(async (request) => {
 
   const productId = typeof payload.productId === "string" ? payload.productId.trim() : "";
   if (!paidProducts.has(productId)) return json({ error: "Invalid paid consultation product" }, 400);
+  const personaId = typeof payload.personaId === "string" ? payload.personaId.trim() : "";
 
   const consentTypes = requiredConsents.map((consent) => consent.type);
   const { data: consentRows, error: consentError } = await adminClient
@@ -103,6 +110,22 @@ Deno.serve(async (request) => {
 
   if (productError || !product) return json({ error: productError?.message ?? "Product not found" }, 500);
 
+  let persona: Persona | null = null;
+  if (personaId) {
+    const { data: personaData, error: personaError } = await adminClient
+      .from("persona_catalog")
+      .select("id, display_name, role")
+      .eq("id", personaId)
+      .eq("is_active", true)
+      .single<Persona>();
+
+    if (personaError || !personaData) {
+      return json({ error: personaError?.message ?? "Persona not found" }, 400);
+    }
+
+    persona = personaData;
+  }
+
   const providerOrderId = createProviderOrderId();
   const { data: order, error: orderError } = await adminClient
     .from("orders")
@@ -117,6 +140,9 @@ Deno.serve(async (request) => {
         checkout_status: "ready",
         product_mode: product.mode,
         requested_from: "web",
+        persona_id: persona?.id ?? null,
+        persona_name: persona?.display_name ?? null,
+        persona_role: persona?.role ?? null,
       },
     })
     .select("id, product_id, provider, provider_order_id, amount_krw, status, created_at")

@@ -271,6 +271,49 @@ export async function createConsultationOrder(session, payload) {
   return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
 
+export async function getCommerceOverview(session) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return {
+      data: { orders: [], entitlements: [], products: [], personas: [] },
+      error: null,
+    };
+  }
+
+  const [ordersResult, entitlementsResult, productsResult, personasResult] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("id, product_id, provider_order_id, amount_krw, status, paid_at, created_at, metadata")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("entitlements")
+      .select("id, product_id, order_id, status, total_turns, used_turns, expires_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("products")
+      .select("id, name, mode, turn_limit, valid_for, description")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("persona_catalog")
+      .select("id, display_name, role")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  return {
+    data: {
+      orders: ordersResult.data ?? [],
+      entitlements: entitlementsResult.data ?? [],
+      products: productsResult.data ?? [],
+      personas: personasResult.data ?? [],
+    },
+    error: ordersResult.error ?? entitlementsResult.error ?? productsResult.error ?? personasResult.error ?? null,
+  };
+}
+
 export async function completePortonePayment(session, payload) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) {

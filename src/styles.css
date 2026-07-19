@@ -956,6 +956,135 @@ button:hover {
   font: inherit;
 }
 
+.commerce-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffaf0;
+}
+
+.commerce-panel__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.commerce-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.commerce-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #ffffff;
+}
+
+.commerce-card__head h5 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.commerce-list {
+  display: grid;
+  gap: 10px;
+}
+
+.commerce-list__empty {
+  color: #6d7b81;
+  font-size: 0.82rem;
+}
+
+.commerce-entry {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffdf8;
+}
+
+.commerce-entry__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.commerce-entry__head div {
+  display: grid;
+  gap: 4px;
+}
+
+.commerce-entry__head span,
+.commerce-entry__persona span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.commerce-entry__head strong,
+.commerce-entry__persona strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.commerce-entry__head em {
+  color: var(--jade);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.commerce-entry p,
+.commerce-entry small {
+  margin: 0;
+  color: #53646b;
+  line-height: 1.55;
+}
+
+.commerce-entry__persona {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.commerce-entry__persona div {
+  display: grid;
+  gap: 2px;
+}
+
+.commerce-entry__avatar {
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #efe7da;
+  flex: 0 0 auto;
+}
+
+.commerce-entry__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .commerce-panel__head,
+  .commerce-panel__grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+}
+
 .admin-panel {
   display: grid;
   gap: 18px;

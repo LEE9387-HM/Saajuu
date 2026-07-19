@@ -31,6 +31,7 @@ import {
   createConsultationOrder,
   createConsultationSession,
   createRelationshipInvite,
+  getCommerceOverview,
   getAccountProfile,
   getAdminDashboard,
   getRelationshipInviteTokenFromHash,
@@ -147,6 +148,10 @@ const adminProfiles = document.querySelector("#admin-profiles");
 const adminSessions = document.querySelector("#admin-sessions");
 const adminOrders = document.querySelector("#admin-orders");
 const adminSafety = document.querySelector("#admin-safety");
+const commercePanel = document.querySelector("#commerce-panel");
+const commerceNote = document.querySelector("#commerce-note");
+const entitlementList = document.querySelector("#entitlement-list");
+const orderHistoryList = document.querySelector("#order-history-list");
 const consentForm = document.querySelector("#consent-form");
 const consentNote = document.querySelector("#consent-note");
 const relationshipAccountPanel = document.querySelector("#relationship-account-panel");
@@ -201,6 +206,7 @@ let selectedModeId = "trial";
 let profileModalMode = "create";
 let activeAccountProfile = null;
 let activeAdminDashboard = null;
+let activeCommerceOverview = null;
 
 function getAuthProviderLabel(user) {
   const provider = String(
@@ -387,6 +393,17 @@ function toneLabel(value) {
 function formatShortDate(value) {
   if (!value) return "";
   return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function trialStageMeta(number) {
@@ -806,6 +823,140 @@ function renderRelationshipPanelState(session, links = [], options = {}) {
       `;
     }
   }
+}
+
+function productLookupMap(products = []) {
+  return new Map(products.map((product) => [product.id, product]));
+}
+
+function personaLookupMap(personas = []) {
+  return new Map(personas.map((persona) => [persona.id, persona]));
+}
+
+function orderStatusLabel(status) {
+  return (
+    {
+      pending: "결제 대기",
+      paid: "결제 완료",
+      failed: "결제 실패",
+      canceled: "주문 취소",
+      refunded: "환불 완료",
+    }[String(status ?? "").toLowerCase()] ?? "상태 확인 필요"
+  );
+}
+
+function entitlementStatusLabel(status) {
+  return (
+    {
+      active: "사용 가능",
+      expired: "기간 만료",
+      consumed: "모두 사용",
+      revoked: "회수됨",
+    }[String(status ?? "").toLowerCase()] ?? "상태 확인 필요"
+  );
+}
+
+function renderCommerceOverview(session, overview) {
+  activeCommerceOverview = overview ?? null;
+  if (!commercePanel || !entitlementList || !orderHistoryList) return;
+
+  if (!session) {
+    commercePanel.hidden = true;
+    entitlementList.innerHTML = "";
+    orderHistoryList.innerHTML = "";
+    return;
+  }
+
+  commercePanel.hidden = false;
+  const products = productLookupMap(overview?.products ?? []);
+  const personas = personaLookupMap(overview?.personas ?? []);
+  const entitlements = overview?.entitlements ?? [];
+  const orders = overview?.orders ?? [];
+
+  if (commerceNote) {
+    commerceNote.textContent =
+      entitlements.length || orders.length
+        ? "무료 체험 이후 결제한 상담권과 최근 주문 상태를 이곳에서 이어서 확인할 수 있어요."
+        : "아직 발급된 상담 이용권이나 최근 주문이 없습니다. 무료 3턴 이후 여기로 이어집니다.";
+  }
+
+  entitlementList.innerHTML = entitlements.length
+    ? entitlements
+        .map((item) => {
+          const product = products.get(item.product_id);
+          const remainingTurns = Math.max(Number(item.total_turns ?? 0) - Number(item.used_turns ?? 0), 0);
+          return `
+            <article class="commerce-entry">
+              <div class="commerce-entry__head">
+                <div>
+                  <span>${escapeHtml(entitlementStatusLabel(item.status))}</span>
+                  <strong>${escapeHtml(product?.name ?? "상담 이용권")}</strong>
+                </div>
+                <em>${remainingTurns}턴 남음</em>
+              </div>
+              <p>총 ${Number(item.total_turns ?? 0)}턴 중 ${Number(item.used_turns ?? 0)}턴 사용했어요.</p>
+              <small>${item.expires_at ? `${escapeHtml(formatDateTime(item.expires_at))}까지 사용 가능` : "만료 정보 없음"}</small>
+            </article>
+          `;
+        })
+        .join("")
+    : '<p class="commerce-list__empty">아직 발급된 상담 이용권이 없습니다.</p>';
+
+  orderHistoryList.innerHTML = orders.length
+    ? orders
+        .map((item) => {
+          const product = products.get(item.product_id);
+          const metadata = typeof item.metadata === "object" && item.metadata ? item.metadata : {};
+          const personaId = String(metadata.persona_id ?? "").trim();
+          const persona = personas.get(personaId);
+          const personaImage = PERSONA_IMAGE_MAP[personaId] ?? "";
+          const paidAt = item.paid_at ? formatDateTime(item.paid_at) : formatDateTime(item.created_at);
+          return `
+            <article class="commerce-entry">
+              <div class="commerce-entry__head">
+                <div>
+                  <span>${escapeHtml(orderStatusLabel(item.status))}</span>
+                  <strong>${escapeHtml(product?.name ?? "상담 주문")}</strong>
+                </div>
+                <em>${Number(item.amount_krw ?? 0).toLocaleString("ko-KR")}원</em>
+              </div>
+              ${
+                persona
+                  ? `
+                    <div class="commerce-entry__persona">
+                      <span class="commerce-entry__avatar" aria-hidden="true">
+                        <img src="${escapeHtml(personaImage)}" alt="" loading="lazy" />
+                      </span>
+                      <div>
+                        <strong>${escapeHtml(persona.display_name)}</strong>
+                        <span>${escapeHtml(persona.role)}</span>
+                      </div>
+                    </div>
+                  `
+                  : ""
+              }
+              <p>${escapeHtml(paidAt)} · 주문번호 ${escapeHtml(String(item.provider_order_id ?? item.id ?? "").slice(0, 18))}</p>
+            </article>
+          `;
+        })
+        .join("")
+    : '<p class="commerce-list__empty">아직 최근 주문 내역이 없습니다.</p>';
+}
+
+async function refreshCommercePanel(session) {
+  if (!session) {
+    renderCommerceOverview(null, null);
+    return;
+  }
+
+  const { data, error } = await getCommerceOverview(session);
+  if (error) {
+    renderCommerceOverview(session, { products: [], personas: [], orders: [], entitlements: [] });
+    if (commerceNote) commerceNote.textContent = "이용권과 주문 내역을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.";
+    return;
+  }
+
+  renderCommerceOverview(session, data);
 }
 
 function updateTrialSessionState() {
@@ -1274,6 +1425,7 @@ async function initAuthPanel() {
   } else {
     await syncProfile(session);
     await refreshAdminDashboard(session);
+    await refreshCommercePanel(session);
     updateAuthUi(session);
     await updateConsentUi(session);
     await refreshRelationshipPanel(session);
@@ -1282,6 +1434,7 @@ async function initAuthPanel() {
   onAuthStateChange(async (nextSession) => {
     await syncProfile(nextSession);
     await refreshAdminDashboard(nextSession);
+    await refreshCommercePanel(nextSession);
     updateAuthUi(nextSession);
     await updateConsentUi(nextSession);
     await refreshRelationshipPanel(nextSession);
@@ -1702,7 +1855,10 @@ async function initAuthPanel() {
 
     button.disabled = true;
     setNote("상담권 주문 정보를 서버에 준비하고 있습니다.");
-    const { data, error: orderError } = await createConsultationOrder(activeSession, { productId });
+    const { data, error: orderError } = await createConsultationOrder(activeSession, {
+      productId,
+      personaId: selectedPersonaId,
+    });
 
     if (orderError) {
       button.disabled = false;
@@ -1753,6 +1909,7 @@ async function initAuthPanel() {
       const turns = completeData?.entitlement?.total_turns ?? data?.product?.turn_limit ?? "";
       setNote(`${productName} 결제가 확인됐습니다. 상담 ${turns}턴 이용권이 발급됐습니다.`);
       track("payment_complete");
+      await refreshCommercePanel(activeSession);
       return;
     }
 
