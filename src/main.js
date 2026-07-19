@@ -1068,15 +1068,15 @@ async function initAuthPanel() {
   if (!authStatus) return;
 
   if (!isSupabaseConfigured()) {
-    authStatus.textContent = "Supabase ?? URL? publishable/anon key? ?????.";
-    authNote.textContent = ".env? VITE_SUPABASE_URL? VITE_SUPABASE_PUBLISHABLE_KEY? ??? ? ?? ?????.";
+    authStatus.textContent = "Supabase URL 또는 anon key 설정이 필요합니다.";
+    authNote.textContent = ".env에 VITE_SUPABASE_URL과 VITE_SUPABASE_PUBLISHABLE_KEY를 먼저 입력해 주세요.";
     authButtons.forEach((button) => {
       button.disabled = true;
     });
     setEmailAuthBusy(true);
-    if (adminStatus) adminStatus.textContent = "Supabase ??? ?? ??? ??? ??? ? ????.";
+    if (adminStatus) adminStatus.textContent = "Supabase 설정 전에는 관리자 데이터를 불러올 수 없습니다.";
     if (relationshipInviteNote && getRelationshipInviteTokenFromHash()) {
-      relationshipInviteNote.textContent = "?? ??? ???? Supabase ??? ?? ??? ? ????.";
+      relationshipInviteNote.textContent = "초대 수락 전에 Supabase 설정을 먼저 완료해 주세요.";
     }
     return;
   }
@@ -1090,12 +1090,12 @@ async function initAuthPanel() {
     const { profile } = await getAccountProfile(session);
     activeAccountProfile = profile;
     if (synced) {
-      authNote.textContent = "?? ???? ??????. ?? ??? ?? ?? ??? ?? ???? ?????.";
+      authNote.textContent = "계정 정보를 동기화했습니다. 이제 인연 연결과 상담 기록을 이어서 사용할 수 있어요.";
       track("auth_profile_sync");
       return;
     }
     if (syncError) {
-      authNote.textContent = "???? ??????. ??? ??? Supabase DB ?????? ?? ? ??????.";
+      authNote.textContent = "프로필 동기화에 실패했습니다. Supabase DB 권한과 테이블 구성을 확인해 주세요.";
     }
   };
 
@@ -1114,7 +1114,7 @@ async function initAuthPanel() {
     const { completed, acceptedTypes, error: consentError } = await getRequiredConsentStatus(session);
     if (consentError) {
       hasRequiredConsents = false;
-      consentNote.textContent = "?? ??? ?? DB ?? ?? ? ?? ?????.";
+      consentNote.textContent = "필수 동의 상태를 불러오지 못했습니다.";
       updateTrialSessionState();
       return;
     }
@@ -1126,8 +1126,8 @@ async function initAuthPanel() {
     });
 
     consentNote.textContent = completed
-      ? "?? ??? ???? ????. ?? ?? ??? ??? ? ????."
-      : "?? ??? ?? ??? ?? ?? ??? ??? ???.";
+      ? "필수 동의가 저장되어 있습니다. 바로 상담 체험을 이어갈 수 있어요."
+      : "상담 체험 전 필요한 동의를 먼저 완료해 주세요.";
     updateTrialSessionState();
   };
 
@@ -1135,14 +1135,14 @@ async function initAuthPanel() {
     const email = session?.user?.email;
     const roleSuffix =
       session && activeAccountProfile?.role === "admin"
-        ? " (???)"
+        ? " (관리자)"
         : activeAdminDashboard
-          ? " (?? ?? ??)"
+          ? " (관리 데이터 확인 가능)"
           : "";
 
     authStatus.textContent = email
-      ? `${email} ???? ????? ????.${roleSuffix}`
-      : "????? ?? ??? ?? ??? ??? ? ????.";
+      ? `${email} 계정으로 로그인되어 있습니다.${roleSuffix}`
+      : "로그인하면 상담 기록과 인연 연결을 이어서 관리할 수 있어요.";
     authButtons.forEach((button) => {
       button.hidden = Boolean(session);
       button.disabled = false;
@@ -1157,9 +1157,9 @@ async function initAuthPanel() {
 
     if (!session) {
       const googleBrowserWarning = getOAuthBrowserWarning("google");
-      authNote.textContent = googleBrowserWarning?.note ?? "????? ?? ??? ?? ??? ??? ? ???.";
+      authNote.textContent = googleBrowserWarning?.note ?? "소셜 로그인 또는 이메일 로그인으로 계속 진행할 수 있어요.";
       if (emailAuthNote) {
-        emailAuthNote.textContent = "?? ??? ??? ?? ??? ?? ??? ??? ? ???.";
+        emailAuthNote.textContent = "이메일 계정을 만들면 상담 기록과 인연 연결을 같은 계정으로 이어갈 수 있어요.";
       }
       updateTrialSessionState();
       return;
@@ -1168,15 +1168,15 @@ async function initAuthPanel() {
     if (emailAuthNote) {
       const displayName = activeAccountProfile?.displayName?.trim();
       emailAuthNote.textContent = displayName
-        ? `${displayName} ???? ??? ???? ????.`
-        : "? ???? ?? ??? ?? ??? ???? ???.";
+        ? `${displayName} 이름으로 계정이 연결되어 있습니다.`
+        : "계정이 연결되었습니다. 마이 페이지에서 표시 이름을 정리할 수 있어요.";
     }
     updateTrialSessionState();
   };
 
   const { session, error } = await getCurrentSession();
   if (error) {
-    authStatus.textContent = "??? ??? ???? ?????.";
+    authStatus.textContent = "로그인 상태를 확인하지 못했습니다.";
     authNote.textContent = error.message;
   } else {
     await syncProfile(session);
@@ -1203,12 +1203,12 @@ async function initAuthPanel() {
     const displayName = signupDisplayNameInput instanceof HTMLInputElement ? signupDisplayNameInput.value.trim() : "";
 
     if (!email || !password) {
-      if (emailAuthNote) emailAuthNote.textContent = "???? ????? ?? ??? ???.";
+      if (emailAuthNote) emailAuthNote.textContent = "이메일과 비밀번호를 모두 입력해 주세요.";
       return;
     }
 
     setEmailAuthBusy(true);
-    if (emailAuthNote) emailAuthNote.textContent = "??? ??? ??? ????.";
+    if (emailAuthNote) emailAuthNote.textContent = "이메일 계정을 만드는 중입니다.";
     const { data, error: signUpError } = await signUpWithPassword({ email, password, displayName });
     setEmailAuthBusy(false);
 
@@ -1221,8 +1221,8 @@ async function initAuthPanel() {
     if (signupPasswordInput instanceof HTMLInputElement) signupPasswordInput.value = "";
     if (emailAuthNote) {
       emailAuthNote.textContent = data?.session
-        ? "??? ??? ?? ????????."
-        : "???????. ?? ????? ?? ??? ??? ? ???? ???.";
+        ? "가입과 동시에 로그인되었습니다."
+        : "가입이 완료되었습니다. 받은 메일에서 인증 후 로그인해 주세요.";
     }
   });
 
@@ -1233,12 +1233,12 @@ async function initAuthPanel() {
     const email = loginEmailInput.value.trim();
     const password = loginPasswordInput.value;
     if (!email || !password) {
-      if (emailAuthNote) emailAuthNote.textContent = "???? ????? ?? ??? ???.";
+      if (emailAuthNote) emailAuthNote.textContent = "이메일과 비밀번호를 모두 입력해 주세요.";
       return;
     }
 
     setEmailAuthBusy(true);
-    if (emailAuthNote) emailAuthNote.textContent = "??? ???? ????? ????.";
+    if (emailAuthNote) emailAuthNote.textContent = "이메일 로그인을 진행하고 있습니다.";
     const { error: signInError } = await signInWithPassword({ email, password });
     setEmailAuthBusy(false);
 
@@ -1249,7 +1249,7 @@ async function initAuthPanel() {
 
     track("auth_email_login");
     if (loginPasswordInput instanceof HTMLInputElement) loginPasswordInput.value = "";
-    if (emailAuthNote) emailAuthNote.textContent = "??? ?? ???? ???????.";
+    if (emailAuthNote) emailAuthNote.textContent = "이메일 로그인에 성공했습니다.";
   });
 
   authButtons.forEach((button) => {
@@ -1264,11 +1264,11 @@ async function initAuthPanel() {
         return;
       }
       track(`auth_${provider}_start`);
-      authStatus.textContent = `${button.textContent.trim()} ???? ?????.`;
+      authStatus.textContent = `${button.textContent.trim()} 로그인을 진행하고 있습니다.`;
       button.disabled = true;
       const { error: signInError } = await signInWithOAuthProvider(provider);
       if (signInError) {
-        authStatus.textContent = "???? ???? ?????.";
+        authStatus.textContent = "소셜 로그인에 실패했습니다.";
         authNote.textContent = signInError.message;
         button.disabled = false;
       }
@@ -1277,10 +1277,10 @@ async function initAuthPanel() {
 
   authSignout?.addEventListener("click", async () => {
     track("auth_signout");
-    authStatus.textContent = "???? ????.";
+    authStatus.textContent = "로그아웃하는 중입니다.";
     const { error: signOutError } = await signOut();
     if (signOutError) {
-      authStatus.textContent = "?????? ?????.";
+      authStatus.textContent = "로그아웃에 실패했습니다.";
       authNote.textContent = signOutError.message;
     }
   });
@@ -1288,7 +1288,7 @@ async function initAuthPanel() {
   consentForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!activeSession) {
-      consentNote.textContent = "??? ? ??? ??? ? ????.";
+      consentNote.textContent = "로그인 후 다시 시도해 주세요.";
       return;
     }
 
@@ -1297,21 +1297,21 @@ async function initAuthPanel() {
       return input instanceof HTMLInputElement && input.checked;
     });
     if (!allChecked) {
-      consentNote.textContent = "?? ??? ?? ??? ???.";
+      consentNote.textContent = "필수 항목에 모두 동의해 주세요.";
       return;
     }
 
-    consentNote.textContent = "?? ??? ???? ????.";
+    consentNote.textContent = "필수 동의를 저장하고 있습니다.";
     const { recorded, error: consentSaveError } = await recordRequiredConsents(activeSession);
     if (recorded) {
       track("required_consents_saved");
       hasRequiredConsents = true;
       updateTrialSessionState();
-      consentNote.textContent = "?? ??? ??????. ?? ???? ?? ?? ??? ??? ? ????.";
+      consentNote.textContent = "필수 동의가 저장되었습니다. 이제 무료 상담을 시작할 수 있어요.";
       return;
     }
 
-    consentNote.textContent = consentSaveError?.message ?? "??? ???? ?????.";
+    consentNote.textContent = consentSaveError?.message ?? "필수 동의 저장에 실패했습니다.";
   });
 
 
