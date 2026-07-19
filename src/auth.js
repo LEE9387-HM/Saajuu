@@ -334,6 +334,19 @@ export async function signInWithPassword({ email, password }) {
   return { data: data ?? null, error };
 }
 
+export async function requestPasswordReset(email) {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { data: null, error: new Error("Supabase 설정이 없습니다.") };
+  }
+
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+  return { data: data ?? null, error };
+}
+
 export async function signInWithOAuthProvider(provider) {
   const supabase = getSupabaseClient();
   if (!supabase) {

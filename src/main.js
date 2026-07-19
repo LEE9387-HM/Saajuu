@@ -38,6 +38,7 @@ import {
   getRequiredConsentStatus,
   isSupabaseConfigured,
   onAuthStateChange,
+  requestPasswordReset,
   recordRequiredConsents,
   REQUIRED_CONSENTS,
   sendConsultationMessage,
@@ -116,8 +117,11 @@ const modeSwitcher = document.querySelector("#mode-switcher");
 const personaRecommendation = document.querySelector("#persona-recommendation");
 const authStatus = document.querySelector("#auth-status");
 const authNote = document.querySelector("#auth-note");
+const authProviderNote = document.querySelector("#auth-provider-note");
 const authButtons = [...document.querySelectorAll("[data-auth-provider]")];
 const authJumpButtons = [...document.querySelectorAll("[data-auth-jump]")];
+const authPanelTabs = [...document.querySelectorAll("[data-auth-panel-tab]")];
+const authPanels = [...document.querySelectorAll("[data-auth-panel]")];
 const authSignout = document.querySelector("#auth-signout");
 const emailSignupForm = document.querySelector("#email-signup-form");
 const emailLoginForm = document.querySelector("#email-login-form");
@@ -126,6 +130,7 @@ const signupEmailInput = document.querySelector("#signup-email");
 const signupPasswordInput = document.querySelector("#signup-password");
 const loginEmailInput = document.querySelector("#login-email");
 const loginPasswordInput = document.querySelector("#login-password");
+const passwordResetRequestButton = document.querySelector("#password-reset-request");
 const emailAuthNote = document.querySelector("#email-auth-note");
 const adminNavLink = document.querySelector("#admin-nav-link");
 const adminStatus = document.querySelector("#admin-status");
@@ -187,6 +192,31 @@ let selectedModeId = "trial";
 let profileModalMode = "create";
 let activeAccountProfile = null;
 let activeAdminDashboard = null;
+
+function getAuthProviderLabel(user) {
+  const provider = String(
+    user?.app_metadata?.provider ??
+      user?.identities?.[0]?.provider ??
+      ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (provider === "google") return "구글 로그인";
+  if (provider === "kakao") return "카카오 로그인";
+  if (provider === "email") return "이메일 계정";
+  return "계정 로그인";
+}
+
+function setAuthPanelTab(tabId) {
+  authPanelTabs.forEach((button) => {
+    const isActive = button.dataset.authPanelTab === tabId;
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  authPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.authPanel !== tabId;
+  });
+}
 
 function setResultTab(tabId) {
   const nameAvailable = !document.querySelector("#name-reading")?.hidden;
@@ -251,18 +281,24 @@ for (const tone of TONE_OPTIONS) {
 renderConsultationCatalog();
 initAuthPanel();
 
+authPanelTabs.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextTab = button.dataset.authPanelTab ?? "signup";
+    setAuthPanelTab(nextTab);
+    const focusTarget = nextTab === "login" ? loginEmailInput : signupDisplayNameInput ?? signupEmailInput;
+    window.setTimeout(() => focusTarget?.focus(), 120);
+  });
+});
+
 authJumpButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    const target =
-      button.dataset.authJump === "login"
-        ? emailLoginForm
-        : emailSignupForm;
+    const nextTab = button.dataset.authJump === "login" ? "login" : "signup";
+    setAuthPanelTab(nextTab);
+    const target = nextTab === "login" ? emailLoginForm : emailSignupForm;
     if (!(target instanceof HTMLElement)) return;
     target.scrollIntoView({ behavior: "smooth", block: "start" });
     const focusTarget =
-      button.dataset.authJump === "login"
-        ? loginEmailInput
-        : signupDisplayNameInput ?? signupEmailInput;
+      nextTab === "login" ? loginEmailInput : signupDisplayNameInput ?? signupEmailInput;
     window.setTimeout(() => focusTarget?.focus(), 180);
   });
 });
@@ -1133,6 +1169,7 @@ async function initAuthPanel() {
 
   const updateAuthUi = (session) => {
     const email = session?.user?.email;
+    const providerLabel = getAuthProviderLabel(session?.user);
     const roleSuffix =
       session && activeAccountProfile?.role === "admin"
         ? " (관리자)"
@@ -1142,7 +1179,7 @@ async function initAuthPanel() {
 
     authStatus.textContent = email
       ? `${email} 계정으로 로그인되어 있습니다.${roleSuffix}`
-      : "로그인하면 상담 기록과 인연 연결을 이어서 관리할 수 있어요.";
+      : "로그인하면 저장한 정보와 상담 흐름을 이어서 관리할 수 있어요.";
     authButtons.forEach((button) => {
       button.hidden = Boolean(session);
       button.disabled = false;
@@ -1154,22 +1191,29 @@ async function initAuthPanel() {
     if (authSignout) authSignout.hidden = !session;
     if (emailSignupForm) emailSignupForm.hidden = Boolean(session);
     if (emailLoginForm) emailLoginForm.hidden = Boolean(session);
+    if (!session) setAuthPanelTab("signup");
 
     if (!session) {
       const googleBrowserWarning = getOAuthBrowserWarning("google");
-      authNote.textContent = googleBrowserWarning?.note ?? "소셜 로그인 또는 이메일 로그인으로 계속 진행할 수 있어요.";
+      authNote.textContent = googleBrowserWarning?.note ?? "간편 로그인 또는 이메일 계정으로 이어서 사용할 수 있어요.";
+      if (authProviderNote) {
+        authProviderNote.textContent = "처음이면 이메일로 가입하고, 이미 만든 계정이 있으면 같은 방식으로 다시 로그인해 주세요.";
+      }
       if (emailAuthNote) {
-        emailAuthNote.textContent = "이메일 계정을 만들면 상담 기록과 인연 연결을 같은 계정으로 이어갈 수 있어요.";
+        emailAuthNote.textContent = "이메일 계정을 만들면 비밀번호로 직접 로그인할 수 있어요.";
       }
       updateTrialSessionState();
       return;
     }
 
+    if (authProviderNote) {
+      authProviderNote.textContent = `현재 연결된 로그인 방식: ${providerLabel}`;
+    }
     if (emailAuthNote) {
       const displayName = activeAccountProfile?.displayName?.trim();
       emailAuthNote.textContent = displayName
         ? `${displayName} 이름으로 계정이 연결되어 있습니다.`
-        : "계정이 연결되었습니다. 마이 페이지에서 표시 이름을 정리할 수 있어요.";
+        : `${providerLabel}으로 연결된 계정입니다. 마이 페이지에서 표시 이름을 정리할 수 있어요.`;
     }
     updateTrialSessionState();
   };
@@ -1250,6 +1294,26 @@ async function initAuthPanel() {
     track("auth_email_login");
     if (loginPasswordInput instanceof HTMLInputElement) loginPasswordInput.value = "";
     if (emailAuthNote) emailAuthNote.textContent = "이메일 로그인에 성공했습니다.";
+  });
+
+  passwordResetRequestButton?.addEventListener("click", async () => {
+    const email = loginEmailInput instanceof HTMLInputElement ? loginEmailInput.value.trim() : "";
+    if (!email) {
+      if (emailAuthNote) emailAuthNote.textContent = "비밀번호를 재설정할 이메일 주소를 먼저 입력해 주세요.";
+      return;
+    }
+
+    setEmailAuthBusy(true);
+    if (emailAuthNote) emailAuthNote.textContent = "비밀번호 재설정 메일을 보내고 있습니다.";
+    const { error: resetError } = await requestPasswordReset(email);
+    setEmailAuthBusy(false);
+
+    if (resetError) {
+      if (emailAuthNote) emailAuthNote.textContent = resetError.message;
+      return;
+    }
+
+    if (emailAuthNote) emailAuthNote.textContent = "비밀번호 재설정 메일을 보냈습니다. 받은 편지함을 확인해 주세요.";
   });
 
   authButtons.forEach((button) => {

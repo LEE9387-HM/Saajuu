@@ -607,6 +607,21 @@ button:hover {
   font-weight: 700;
 }
 
+.auth-benefits {
+  margin: 12px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffdf8;
+}
+
+.auth-benefits__list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #53646b;
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
 .auth-panel__actions {
   display: flex;
   flex-wrap: wrap;
@@ -660,6 +675,10 @@ button:hover {
   font-size: 0.78rem;
 }
 
+.auth-panel__note--quiet {
+  color: #6b756b;
+}
+
 .auth-panel--compact {
   margin-top: 0;
 }
@@ -668,6 +687,15 @@ button:hover {
   display: grid;
   gap: 12px;
   margin-top: 14px;
+}
+
+.auth-credentials__switcher {
+  margin: 0;
+}
+
+.auth-credentials__stack {
+  display: grid;
+  gap: 12px;
 }
 
 .auth-credentials__grid {
@@ -689,6 +717,12 @@ button:hover {
   color: var(--ink);
   font-size: 1rem;
   line-height: 1.45;
+}
+
+.auth-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .auth-form label {
