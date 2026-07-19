@@ -408,29 +408,29 @@
                   카카오로 시작
                 </button>
                 <button type="button" class="auth-button auth-button--google" data-auth-provider="google">
-                  Google로 시작
+                  구글로 시작
                 </button>
                 <button type="button" class="auth-button auth-button--ghost" id="auth-signout" hidden>
                   로그아웃
                 </button>
               </div>
               <p id="auth-note" class="auth-panel__note">
-                로그인하면 무료 상담과 인연 연결을 이용할 수 있어요.
+                로그인하면 무료 상담과 인연 연결을 이어서 사용할 수 있어요.
               </p>
-              <div class="auth-panel__secondary-actions" aria-label="email account actions">
+              <div class="auth-panel__secondary-actions" aria-label="이메일 계정 시작">
                 <button type="button" class="auth-button auth-button--ghost" data-auth-jump="signup">
-                  Email Sign up
+                  이메일로 가입
                 </button>
                 <button type="button" class="auth-button auth-button--ghost" data-auth-jump="login">
-                  Email Log in
+                  이메일로 로그인
                 </button>
               </div>
             </div>
             <div class="auth-credentials" aria-label="이메일 계정 가입과 로그인">
               <div class="auth-credentials__grid">
                 <form id="email-signup-form" class="auth-form">
-                  <p class="eyebrow">자체 가입</p>
-                  <h4>이메일로 계정 만들기</h4>
+                  <p class="eyebrow">이메일 가입</p>
+                  <h4>이메일 계정 만들기</h4>
                   <label>
                     <span>표시 이름</span>
                     <input type="text" id="signup-display-name" autocomplete="nickname" maxlength="40" placeholder="상담 기록에 보여줄 이름" />
@@ -441,12 +441,12 @@
                   </label>
                   <label>
                     <span>비밀번호</span>
-                    <input type="password" id="signup-password" autocomplete="new-password" minlength="8" required placeholder="8자 이상" />
+                    <input type="password" id="signup-password" autocomplete="new-password" minlength="8" required placeholder="8자 이상으로 입력" />
                   </label>
-                  <button type="submit" class="auth-button auth-button--ghost">이메일로 가입</button>
+                  <button type="submit" class="auth-button auth-button--ghost">이메일로 가입하기</button>
                 </form>
                 <form id="email-login-form" class="auth-form">
-                  <p class="eyebrow">자체 로그인</p>
+                  <p class="eyebrow">이메일 로그인</p>
                   <h4>이메일과 비밀번호로 로그인</h4>
                   <label>
                     <span>이메일</span>
@@ -456,7 +456,7 @@
                     <span>비밀번호</span>
                     <input type="password" id="login-password" autocomplete="current-password" required placeholder="비밀번호 입력" />
                   </label>
-                  <button type="submit" class="auth-button auth-button--ghost">이메일 로그인</button>
+                  <button type="submit" class="auth-button auth-button--ghost">이메일로 로그인하기</button>
                 </form>
               </div>
               <p id="email-auth-note" class="auth-panel__note" role="status">소셜 로그인 없이도 상담 기록과 인연 연결을 이어갈 수 있어요.</p>
