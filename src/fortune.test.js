@@ -186,8 +186,26 @@ describe("buildTopicReading", () => {
     const reading = buildTopicReading(chart, "business", "지금 사업을 시작해도 될까요?");
 
     expect(reading.title).toContain("지금 사업을 시작해도 될까요?");
-    expect(reading.copy).toContain("확인됐고");
+    expect(reading.copy).toContain("결정 기준");
     expect(reading.questions[0]).toContain("지금 사업을 시작해도 될까요?");
+  });
+
+  it("narrows concern follow-up questions by the user's intent", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    const relationship = buildTopicReading(chart, "relationship", "그 사람 마음이 아직 있을까요?");
+    const money = buildTopicReading(chart, "business", "동업 계약과 투자 비용이 걱정돼요");
+
+    expect(relationship.copy).toContain("상대 신호 확인");
+    expect(relationship.questions[0]).toContain("실제 행동으로 보여준 신호");
+    expect(money.copy).toContain("돈과 리스크");
+    expect(money.questions[0]).toContain("숫자로 확인할 수 있는 지표");
   });
 
   it("creates a topic-specific reading with counseling prompts", () => {
@@ -390,8 +408,10 @@ describe("buildPersonalizedBriefing", () => {
     expect(TONE_OPTIONS.map((tone) => tone.value)).toEqual(["balanced", "direct", "warm"]);
     expect(briefing.title).toContain("김사주");
     expect(briefing.copy).toContain("결혼을 확신해도 될지 고민돼요");
+    expect(briefing.copy).toContain("결정 기준");
     expect(briefing.notes).toHaveLength(3);
     expect(briefing.session.questions).toHaveLength(3);
+    expect(briefing.session.questions[0]).toContain("오늘 당장 결정하지 못하게");
     expect(briefing.evidence).toContain("주제 결혼운");
   });
 });

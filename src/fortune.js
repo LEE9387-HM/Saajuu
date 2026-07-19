@@ -306,6 +306,77 @@ const TONE_META = {
   },
 };
 
+const CONCERN_FOCUS_RULES = [
+  {
+    id: "decision",
+    label: "결정 기준",
+    pattern: /(해야|할까요|될까요|괜찮|맞을까요|확신|결정|선택|시작|이직|결혼|창업)/,
+    lens: "지금은 운이 좋다 나쁘다보다 결정을 미루게 하는 조건과 감정적으로 이미 기울어진 쪽을 분리해야 합니다.",
+    questions: (concern) => [
+      `“${concern}”에서 오늘 당장 결정하지 못하게 붙잡는 조건은 무엇인가요?`,
+      "이 선택을 했을 때 잃을 수 있는 것과 얻을 수 있는 것을 각각 하나씩 적는다면 무엇인가요?",
+    ],
+  },
+  {
+    id: "relationship-signal",
+    label: "상대 신호 확인",
+    pattern: /(상대|그 사람|연락|재회|마음|썸|애인|남자친구|여자친구|배우자|파트너)/,
+    lens: "상대의 속마음을 단정하기보다 이미 보인 행동, 아직 확인하지 못한 말, 내가 반복해서 해석하는 장면을 나눠야 합니다.",
+    questions: (concern) => [
+      `“${concern}”에서 상대가 실제 행동으로 보여준 신호는 무엇인가요?`,
+      "아직 직접 묻지 않았지만 혼자 결론 내리고 있는 부분은 무엇인가요?",
+    ],
+  },
+  {
+    id: "money-risk",
+    label: "돈과 리스크",
+    pattern: /(돈|수익|매출|투자|비용|대출|사업|창업|동업|계약|월급|연봉)/,
+    lens: "돈이 걸린 고민은 기대감과 현금흐름을 분리해서 봐야 합니다. 먼저 작게 검증할 수 있는 단위가 있는지 확인하세요.",
+    questions: (concern) => [
+      `“${concern}”에서 가장 빨리 숫자로 확인할 수 있는 지표는 무엇인가요?`,
+      "실패해도 감당 가능한 비용과 절대 넘기면 안 되는 비용은 각각 어디까지인가요?",
+    ],
+  },
+  {
+    id: "timing",
+    label: "시기 조율",
+    pattern: /(언제|시기|올해|이번 달|다음 달|내년|타이밍|흐름|기다려|지금)/,
+    lens: "시기 질문은 한 번에 맞히기보다 30일 안에 확인할 신호를 정할수록 현실적인 답이 됩니다.",
+    questions: (concern) => [
+      `“${concern}”을 30일 안에 확인한다면 어떤 변화가 보여야 하나요?`,
+      "지금 움직일 조건과 조금 더 기다릴 조건을 나눈다면 각각 무엇인가요?",
+    ],
+  },
+];
+
+function buildConcernFocus(meta, concern) {
+  if (!concern) {
+    return {
+      label: "기본 상담 질문",
+      lens: "",
+      questions: meta.questions,
+    };
+  }
+
+  const matchedRule = CONCERN_FOCUS_RULES.find((rule) => rule.pattern.test(concern));
+  const fallback = {
+    label: "고민 구조화",
+    lens:
+      "먼저 고민을 하나의 결론으로 밀어붙이지 말고, 반복되는 장면과 아직 확인하지 못한 조건으로 나누는 편이 좋습니다.",
+    questions: () => [
+      `“${concern}”에서 지금 가장 답답한 장면은 무엇인가요?`,
+      "이 고민과 관련해 이미 확인된 사실은 무엇이고, 아직 추측인 부분은 무엇인가요?",
+    ],
+  };
+  const rule = matchedRule ?? fallback;
+
+  return {
+    label: rule.label,
+    lens: rule.lens,
+    questions: [...rule.questions(concern), meta.questions[0]],
+  };
+}
+
 const RELATIONSHIP_LABEL = {
   crush: "썸",
   lover: "연인",
@@ -839,12 +910,13 @@ export function buildPersonalizedBriefing(chart, input = {}) {
   const tone = TONE_META[input.tone] ?? TONE_META.balanced;
   const name = analyzeName(input.name);
   const concern = normalizeFreeText(input.concern);
+  const concernFocus = buildConcernFocus(topicMeta, concern);
   const subject = name ? `${name.cleanName}님` : "이 사주";
   const nameLine = name
     ? `이름에서는 ${name.strongest.label} 기운이 먼저 잡히므로, 사주의 ${context.balance.strongest.label} 흐름과 함께 실제 말투와 선택 방식으로 드러날 수 있습니다.`
     : "이름을 넣으면 한글 성명학 보조 해석까지 함께 연결할 수 있습니다.";
   const concernLine = concern
-    ? `적어주신 고민은 "${concern}"입니다. 이 문장은 ${topicMeta.eyebrow} 관점에서 바로 결론을 내기보다, 반복되는 장면과 확인해야 할 조건으로 나눠 읽는 편이 좋습니다.`
+    ? `적어주신 고민은 "${concern}"입니다. 이 문장은 ${topicMeta.eyebrow} 관점에서 ${concernFocus.label}에 가까우니, ${concernFocus.lens}`
     : "구체적인 고민을 한 줄로 적으면, 같은 사주라도 상담 질문과 행동 제안이 더 개인적으로 정리됩니다.";
 
   return {
@@ -868,13 +940,21 @@ export function buildPersonalizedBriefing(chart, input = {}) {
     session: {
       opening: `${subject}, 지금은 ${topicMeta.eyebrow}의 답을 맞히기보다 왜 같은 감정이 반복되는지부터 함께 좁혀보면 좋겠습니다.`,
       avoid: tone.caution,
-      questions: [
-        topicMeta.questions[0],
-        name
-          ? `${name.cleanName}이라는 이름으로 불릴 때 가장 자주 맡게 되는 역할은 무엇인가요?`
-          : "내 이름이나 별명으로 불릴 때 자주 기대받는 역할은 무엇인가요?",
-        `${context.balance.strongest.label} 기운을 잘 쓰면서도 ${context.balance.weakest.label} 기운을 보완할 생활 습관은 무엇인가요?`,
-      ],
+      questions: concern
+        ? [
+            concernFocus.questions[0],
+            concernFocus.questions[1],
+            name
+              ? `${name.cleanName}이라는 이름으로 불릴 때 이 고민에서 자주 맡게 되는 역할은 무엇인가요?`
+              : `${context.balance.strongest.label} 기운을 잘 쓰면서도 ${context.balance.weakest.label} 기운을 보완할 생활 습관은 무엇인가요?`,
+          ]
+        : [
+            topicMeta.questions[0],
+            name
+              ? `${name.cleanName}이라는 이름으로 불릴 때 가장 자주 맡게 되는 역할은 무엇인가요?`
+              : "내 이름이나 별명으로 불릴 때 자주 기대받는 역할은 무엇인가요?",
+            `${context.balance.strongest.label} 기운을 잘 쓰면서도 ${context.balance.weakest.label} 기운을 보완할 생활 습관은 무엇인가요?`,
+          ],
     },
     evidence: [
       `주제 ${topicMeta.eyebrow}`,
@@ -938,17 +1018,11 @@ export function buildTopicReading(chart, topic = "relationship", concern = "") {
   const context = getReadingContext(chart);
   const meta = TOPIC_META[topic] ?? TOPIC_META.relationship;
   const normalizedConcern = normalizeFreeText(concern);
+  const concernFocus = buildConcernFocus(meta, normalizedConcern);
   const concernTitle = normalizedConcern ? `“${normalizedConcern}” 질문부터 풀어볼게요` : meta.title(context);
   const concernCopy = normalizedConcern
-    ? `${meta.copy(context)} 지금 적어주신 질문에서는 운의 좋고 나쁨보다 “무엇이 이미 확인됐고, 무엇을 아직 추측하고 있는지”를 나누는 일이 먼저입니다.`
+    ? `${meta.copy(context)} 지금 적어주신 질문은 ${concernFocus.label}에 가까우므로, ${concernFocus.lens}`
     : meta.copy(context);
-  const concernQuestions = normalizedConcern
-    ? [
-        `“${normalizedConcern}”에서 가장 바꾸고 싶은 장면은 무엇인가요?`,
-        "이 고민과 관련해 이미 확인된 사실은 무엇이고, 아직 추측인 부분은 무엇인가요?",
-        meta.questions[0],
-      ]
-    : meta.questions;
 
   return {
     eyebrow: meta.eyebrow,
@@ -957,7 +1031,7 @@ export function buildTopicReading(chart, topic = "relationship", concern = "") {
     copy: concernCopy,
     point: meta.point,
     checklist: meta.checklist,
-    questions: concernQuestions,
+    questions: concernFocus.questions,
     evidence: [
       `일간 ${context.dayPillar.stem}`,
       `${context.balance.strongest.element} ${context.balance.strongest.count}`,
