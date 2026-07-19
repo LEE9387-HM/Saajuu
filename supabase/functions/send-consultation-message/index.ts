@@ -319,7 +319,7 @@ Deno.serve(async (request) => {
 
   const { data: session, error: sessionError } = await adminClient
     .from("consultation_sessions")
-    .select("id, user_id, persona_id, topic, mode, status, turn_limit, used_turns, expires_at, concern_id, metadata")
+    .select("id, user_id, persona_id, topic, mode, status, turn_limit, used_turns, expires_at, concern_id, entitlement_id, metadata")
     .eq("id", sessionId)
     .eq("user_id", currentUser.id)
     .maybeSingle();
@@ -518,6 +518,30 @@ Deno.serve(async (request) => {
     .eq("id", session.id)
     .eq("user_id", currentUser.id);
   if (sessionUpdateError) return json({ error: sessionUpdateError.message }, 500);
+
+  if (session.entitlement_id) {
+    const { data: entitlement, error: entitlementError } = await adminClient
+      .from("entitlements")
+      .select("id, total_turns, used_turns, status")
+      .eq("id", session.entitlement_id)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+
+    if (entitlementError) return json({ error: entitlementError.message }, 500);
+    if (entitlement) {
+      const nextEntitlementUsedTurns = Math.min(Number(entitlement.used_turns ?? 0) + 1, Number(entitlement.total_turns ?? 0));
+      const nextEntitlementStatus = nextEntitlementUsedTurns >= Number(entitlement.total_turns ?? 0) ? "consumed" : "active";
+      const { error: entitlementUpdateError } = await adminClient
+        .from("entitlements")
+        .update({
+          used_turns: nextEntitlementUsedTurns,
+          status: nextEntitlementStatus,
+        })
+        .eq("id", entitlement.id)
+        .eq("user_id", currentUser.id);
+      if (entitlementUpdateError) return json({ error: entitlementUpdateError.message }, 500);
+    }
+  }
 
   if (safetyLevel !== "none") {
     const { error: safetyError } = await adminClient.from("safety_events").insert({

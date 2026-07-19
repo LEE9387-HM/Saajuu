@@ -1,4 +1,4 @@
-import "./styles.css";
+﻿import "./styles.css";
 import * as PortOne from "@portone/browser-sdk/v2";
 import {
   analyzeName,
@@ -203,6 +203,7 @@ let activeRelationshipLabelEditorId = "";
 let pendingConsultationContext = null;
 let selectedPersonaId = "miseon";
 let selectedModeId = "trial";
+let preferredEntitlementId = "";
 let profileModalMode = "create";
 let activeAccountProfile = null;
 let activeAdminDashboard = null;
@@ -354,6 +355,10 @@ modeCards?.addEventListener("click", (event) => {
   const modeId = button.dataset.mode;
   const mode = CONSULTATION_MODES.find((item) => item.id === modeId);
   if (!mode) return;
+  selectedModeId = mode.id;
+  if (mode.id === "trial") preferredEntitlementId = "";
+  renderModeChoice();
+  updateTrialSessionState();
   track("consultation_mode_select");
   premiumInterestLabel.textContent = `${mode.name} 관심 등록`;
   premiumInterestNote.textContent =
@@ -366,7 +371,9 @@ modeSwitcher?.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-mode-tab]") : null;
   if (!(target instanceof HTMLButtonElement)) return;
   selectedModeId = target.dataset.modeTab ?? "trial";
+  if (selectedModeId === "trial") preferredEntitlementId = "";
   renderModeChoice();
+  updateTrialSessionState();
 });
 
 commercePanel?.addEventListener("click", (event) => {
@@ -376,14 +383,15 @@ commercePanel?.addEventListener("click", (event) => {
   const action = target.dataset.commerceAction;
   const personaId = target.dataset.personaId ?? "";
   const productId = target.dataset.productId ?? "";
+  const entitlementId = target.dataset.entitlementId ?? "";
 
   if (action === "resume-consult") {
-    prepareConsultationEntry({ personaId, productId, focusMode: false });
+    prepareConsultationEntry({ personaId, productId, entitlementId, focusMode: false });
     return;
   }
 
   if (action === "prepare-order") {
-    prepareConsultationEntry({ personaId, productId, focusMode: true });
+    prepareConsultationEntry({ personaId, productId, entitlementId, focusMode: true });
   }
 });
 
@@ -392,7 +400,7 @@ trialPersona?.addEventListener("change", () => {
   renderSelectedPersonaSurfaces();
 });
 
-function prepareConsultationEntry({ personaId, productId, focusMode = false } = {}) {
+function prepareConsultationEntry({ personaId, productId, entitlementId = "", focusMode = false } = {}) {
   if (personaId) {
     const persona = getPersonaById(personaId);
     selectedPersonaId = persona.id;
@@ -403,6 +411,8 @@ function prepareConsultationEntry({ personaId, productId, focusMode = false } = 
     selectedModeId = modeIdForProduct(productId);
     renderModeChoice();
   }
+
+  preferredEntitlementId = entitlementId;
 
   renderPersonaChoice();
   renderSelectedPersonaSurfaces();
@@ -873,6 +883,29 @@ function modeIdForProduct(productId) {
   return String(productId ?? "").startsWith("pro_") ? "pro" : "basic";
 }
 
+function productIdForMode(modeId) {
+  if (modeId === "pro") return "pro_20_turns";
+  if (modeId === "basic") return "basic_10_turns";
+  return "trial_3_turns";
+}
+
+function findActiveEntitlement(modeId, entitlementId = "") {
+  const entitlements = activeCommerceOverview?.entitlements ?? [];
+  const products = productLookupMap(activeCommerceOverview?.products ?? []);
+  const now = Date.now();
+
+  return (
+    entitlements.find((item) => {
+      const matchesExplicit = entitlementId ? item.id === entitlementId : true;
+      const product = products.get(item.product_id);
+      const matchesMode = modeId === "trial" ? item.product_id === "trial_3_turns" : product?.mode === modeId;
+      const remainingTurns = Math.max(Number(item.total_turns ?? 0) - Number(item.used_turns ?? 0), 0);
+      const notExpired = !item.expires_at || new Date(item.expires_at).getTime() > now;
+      return matchesExplicit && matchesMode && item.status === "active" && remainingTurns > 0 && notExpired;
+    }) ?? null
+  );
+}
+
 function orderStatusLabel(status) {
   return (
     {
@@ -1052,6 +1085,7 @@ function renderCommerceOverviewV2(session, overview) {
                   data-commerce-action="resume-consult"
                   data-product-id="${escapeHtml(item.product_id ?? "")}"
                   data-persona-id="${escapeHtml(personaId)}"
+                  data-entitlement-id="${escapeHtml(item.id ?? "")}"
                 >
                   상담 이어가기
                 </button>
@@ -1072,6 +1106,7 @@ function renderCommerceOverviewV2(session, overview) {
           const personaImage = PERSONA_IMAGE_MAP[personaId] ?? "";
           const paidAt = item.paid_at ? formatDateTime(item.paid_at) : formatDateTime(item.created_at);
           const isPaid = String(item.status ?? "").toLowerCase() === "paid";
+          const linkedEntitlement = entitlements.find((entitlement) => entitlement.order_id === item.id);
 
           return `
             <article class="commerce-entry">
@@ -1105,6 +1140,7 @@ function renderCommerceOverviewV2(session, overview) {
                   data-commerce-action="${isPaid ? "resume-consult" : "prepare-order"}"
                   data-product-id="${escapeHtml(item.product_id ?? "")}"
                   data-persona-id="${escapeHtml(personaId)}"
+                  data-entitlement-id="${escapeHtml(linkedEntitlement?.id ?? "")}"
                 >
                   ${isPaid ? "상담 이어가기" : "같은 상담권 다시 준비"}
                 </button>
@@ -1132,13 +1168,34 @@ async function refreshCommercePanel(session) {
   renderCommerceOverviewV2(session, data);
 }
 
+function updateConsultationStartButton() {
+  if (!trialSessionStart) return;
+  const mode = CONSULTATION_MODES.find((item) => item.id === selectedModeId) ?? CONSULTATION_MODES[0];
+  const entitlement = selectedModeId === "trial" ? null : findActiveEntitlement(selectedModeId, preferredEntitlementId);
+
+  if (selectedModeId === "trial") {
+    trialSessionStart.textContent = "이 고민으로 무료 상담 시작";
+    return;
+  }
+
+  trialSessionStart.textContent = entitlement
+    ? `${mode.name} 시작하기`
+    : `${mode.name} 이용권이 필요해요`;
+}
+
 function updateTrialSessionState() {
   if (!trialSessionStart) return;
   trialSessionStart.disabled = false;
+  updateConsultationStartButton();
   if (!activeSession && trialSessionNote) {
     trialSessionNote.textContent = "마이에서 로그인하면 무료 상담 체험을 준비할 수 있습니다.";
   } else if (activeSession && !hasRequiredConsents && trialSessionNote) {
     trialSessionNote.textContent = "마이에서 필수 동의를 저장한 뒤 무료 상담 체험을 시작할 수 있습니다.";
+  } else if (activeSession && hasRequiredConsents && selectedModeId !== "trial" && trialSessionNote) {
+    const entitlement = findActiveEntitlement(selectedModeId, preferredEntitlementId);
+    trialSessionNote.textContent = entitlement
+      ? "선택한 상담권으로 바로 이어서 상담을 시작할 수 있습니다."
+      : "이 모드는 활성 상담권이 있어야 시작할 수 있습니다. 마이 페이지에서 이용권을 확인해 주세요.";
   }
 }
 
@@ -1262,6 +1319,92 @@ function updateTrialChatUi() {
   renderTrialChatMessages();
 }
 
+function updateTrialChatUiV2() {
+  if (!trialChat || !trialMessageSend || !trialChatStatus || !trialChatRemaining) return;
+
+  const hasSession = Boolean(activeConsultationSession);
+  renderSelectedPersonaSurfaces();
+  trialChat.hidden = !hasSession;
+  if (trialNextStep) trialNextStep.hidden = true;
+  if (trialStageStrip) trialStageStrip.hidden = !hasSession;
+  if (!hasSession) {
+    trialMessageSend.disabled = true;
+    if (trialMessage) trialMessage.disabled = true;
+    if (trialStageStrip) trialStageStrip.innerHTML = "";
+    updateTrialGuidanceUi();
+    return;
+  }
+
+  const turnLimit = Number(activeConsultationSession.turn_limit ?? 0);
+  const usedTurns = Number(activeConsultationSession.used_turns ?? 0);
+  const remainingTurns = Math.max(turnLimit - usedTurns, 0);
+  const isActive = activeConsultationSession.status === "active" && remainingTurns > 0;
+  const sessionMode = String(activeConsultationSession.mode ?? selectedModeId ?? "trial");
+  const currentStageNumber = isActive ? Math.min(usedTurns + 1, TRIAL_STAGES.length) : TRIAL_STAGES.length;
+  const currentStage = trialStageMeta(currentStageNumber);
+  const persona = getPersonaById(trialPersona?.value ?? selectedPersonaId ?? "miseon");
+
+  if (trialStageStrip) {
+    trialStageStrip.innerHTML = TRIAL_STAGES.map((stage) => {
+      const state = usedTurns >= stage.number ? "done" : stage.number === currentStageNumber ? "active" : "todo";
+      return `
+        <div class="trial-stage-chip trial-stage-chip--${state}">
+          <span>${stage.number}단계</span>
+          <strong>${escapeHtml(stage.label)}</strong>
+        </div>
+      `;
+    }).join("");
+  }
+
+  trialChatStatus.textContent =
+    activeConsultationSession.status === "completed"
+      ? sessionMode === "trial"
+        ? "무료 3턴 정리를 마쳤어요"
+        : "이번 상담권 대화를 모두 사용했어요"
+      : `지금은 ${currentStage.label} 단계예요`;
+  trialChatRemaining.textContent = activeConsultationSession.status === "completed"
+    ? sessionMode === "trial"
+      ? "무료 3턴 완료"
+      : "이용권 사용 완료"
+    : `${remainingTurns}턴 남음`;
+  trialMessageSend.disabled = !isActive;
+  if (trialMessage) trialMessage.disabled = !isActive;
+
+  if (trialNextStep && !isActive) {
+    const completionTitle = sessionMode === "trial" ? "무료 체험이 끝났어요" : "이번 상담권이 마무리됐어요";
+    const completionBody = sessionMode === "trial"
+      ? "다음 단계는 기본 상담권과 프로 상담으로 이어집니다. 기본 상담은 10턴 대화와 짧은 요약, 프로 상담은 긴 문맥과 선택지 비교까지 준비합니다."
+      : "같은 흐름으로 다시 이어가려면 새 상담권을 준비하면 됩니다. 기본 상담은 빠르게 이어가고, 프로 상담은 더 긴 맥락과 정리까지 포함합니다.";
+
+    trialNextStep.hidden = false;
+    trialNextStep.innerHTML = `
+      <div class="trial-next-step__persona">
+        <span class="trial-next-step__persona-avatar" aria-hidden="true">
+          <img src="${escapeHtml(PERSONA_IMAGE_MAP[persona.id] ?? "")}" alt="" loading="lazy" />
+        </span>
+        <div>
+          <span>${escapeHtml(persona.name)}</span>
+          <strong>${escapeHtml(persona.role)}</strong>
+        </div>
+      </div>
+      <strong>${completionTitle}</strong>
+      <p>${completionBody}</p>
+      <div class="trial-next-step__chips">
+        <span>기본 상담 10턴</span>
+        <span>프로 상담 20턴 + 상세 리포트</span>
+      </div>
+      <div class="trial-next-step__actions">
+        <button type="button" data-order-product="basic_10_turns">기본 상담권 준비</button>
+        <button type="button" data-order-product="pro_20_turns">프로 상담 준비</button>
+      </div>
+      <p id="paid-order-note" class="trial-next-step__note" role="status"></p>
+    `;
+  }
+
+  updateTrialGuidanceUi();
+  renderTrialChatMessages();
+}
+
 function setActiveConsultationSession(session, reused = false) {
   activeConsultationSession = session
     ? {
@@ -1274,7 +1417,7 @@ function setActiveConsultationSession(session, reused = false) {
     : null;
   activeConsultationGuidance = null;
   activeConsultationMessages = reused ? [] : [];
-  updateTrialChatUi();
+  updateTrialChatUiV2();
 }
 
 function appendTrialMessage(role, content) {
@@ -1298,7 +1441,7 @@ async function submitTrialMessage(message) {
   if (messageError) {
     trialSessionNote.textContent = messageError.message;
     activeConsultationMessages = activeConsultationMessages.slice(0, -1);
-    updateTrialChatUi();
+    updateTrialChatUiV2();
     return false;
   }
 
@@ -1321,8 +1464,10 @@ async function submitTrialMessage(message) {
   trialSessionNote.textContent =
     Number(data?.remainingTurns ?? 0) > 0
       ? `답변을 받았습니다. 다음은 ${data?.nextStageLabel ?? "다음 단계"}로 이어집니다.`
-      : "고민 정리를 마쳤습니다. 무료 대화 3회를 모두 사용했습니다.";
-  updateTrialChatUi();
+      : String(activeConsultationSession?.mode ?? selectedModeId ?? "trial") === "trial"
+        ? "고민 정리를 마쳤습니다. 무료 대화 3회를 모두 사용했습니다."
+        : "이번 상담권의 대화를 모두 사용했습니다. 이어서 상담하려면 새 상담권을 준비해 주세요.";
+  updateTrialChatUiV2();
   return true;
 }
 
@@ -1913,7 +2058,7 @@ async function initAuthPanel() {
 
   trialSessionStart?.addEventListener("click", async () => {
     if (!activeSession) {
-      trialSessionNote.textContent = "로그인 후 무료 상담 체험을 시작할 수 있습니다.";
+      trialSessionNote.textContent = "로그인 후 상담을 시작할 수 있습니다.";
       focusMyPageForConsultation();
       return;
     }
@@ -1923,15 +2068,25 @@ async function initAuthPanel() {
       return;
     }
 
+    const sessionMode = selectedModeId === "pro" ? "pro" : selectedModeId === "basic" ? "basic" : "trial";
+    const entitlement = sessionMode === "trial" ? null : findActiveEntitlement(sessionMode, preferredEntitlementId);
+    if (sessionMode !== "trial" && !entitlement) {
+      trialSessionNote.textContent = "이 모드는 활성 상담권이 있어야 시작할 수 있습니다. 마이 페이지에서 이용권을 확인해 주세요.";
+      setConsultTab("mode");
+      return;
+    }
+
     trialSessionStart.disabled = true;
-    trialSessionNote.textContent = "상담을 시작하고 있습니다.";
+    trialSessionNote.textContent = sessionMode === "trial" ? "무료 상담을 시작하고 있습니다." : "유료 상담 세션을 준비하고 있습니다.";
     const concern =
       trialConcern?.value?.trim() ||
       document.querySelector("#current-concern")?.value?.trim() ||
       "지금 고민을 사주 흐름과 함께 정리하고 싶어요.";
     const { data, error: sessionError } = await createConsultationSession(activeSession, {
       personaId: trialPersona?.value ?? "miseon",
-      mode: "trial",
+      mode: sessionMode,
+      entitlementId: entitlement?.id ?? null,
+      productId: entitlement?.product_id ?? productIdForMode(sessionMode),
       topic: trialTopic?.value ?? topicSelect.value ?? "relationship",
       concernSummary: concern,
       contextMeta:
@@ -1943,27 +2098,31 @@ async function initAuthPanel() {
 
     if (sessionError) {
       trialSessionNote.textContent =
-        sessionError.code === "trial_used"
+        sessionMode === "trial" && sessionError.code === "trial_used"
           ? "무료 3턴 체험을 이미 사용했습니다. 다음 단계는 기본 상담권과 프로 상담으로 이어집니다."
           : sessionError.message;
-      if (sessionError.code === "trial_used") {
+      if (sessionMode === "trial" && sessionError.code === "trial_used") {
         activeConsultationSession = {
           status: "completed",
+          mode: "trial",
           turn_limit: 3,
           used_turns: 3,
         };
       }
       updateTrialSessionState();
-      updateTrialChatUi();
+      updateTrialChatUiV2();
       return;
     }
 
     const session = data?.session;
+    preferredEntitlementId = sessionMode === "trial" ? "" : String(session?.entitlement_id ?? entitlement?.id ?? "");
     setActiveConsultationSession(session, Boolean(data?.reused));
-    track("trial_started");
+    track(sessionMode === "trial" ? "trial_started" : "paid_session_started");
     trialSessionNote.textContent = data?.reused
       ? `이어서 이야기할 수 있어요. 다음은 ${trialStageMeta(Number(session?.used_turns ?? 0) + 1).label} 단계입니다.`
-      : "적어주신 고민을 읽고 있어요.";
+      : sessionMode === "trial"
+        ? "적어주신 고민을 듣고 있어요."
+        : "선택한 상담권으로 바로 대화를 이어갑니다.";
     if (!data?.reused) pendingConsultationContext = null;
     updateTrialSessionState();
     if (!data?.reused && concern) await submitTrialMessage(concern);
@@ -1975,7 +2134,9 @@ async function initAuthPanel() {
       return;
     }
     if (!activeConsultationSession?.id) {
-      trialSessionNote.textContent = "먼저 위에 고민을 적고 무료 상담을 시작해 주세요.";
+      trialSessionNote.textContent = selectedModeId === "trial"
+        ? "먼저 위에 고민을 적고 무료 상담을 시작해 주세요."
+        : "먼저 상담 세션을 시작한 뒤 메시지를 보내 주세요.";
       return;
     }
 
@@ -2083,6 +2244,15 @@ async function initAuthPanel() {
       setNote(`${productName} 결제가 확인됐습니다. 상담 ${turns}턴 이용권이 발급됐습니다.`);
       track("payment_complete");
       await refreshCommercePanel(activeSession);
+      preferredEntitlementId = String(completeData?.entitlement?.id ?? "");
+      selectedModeId = modeIdForProduct(productId);
+      updateTrialSessionState();
+      prepareConsultationEntry({
+        personaId: selectedPersonaId,
+        productId,
+        entitlementId: preferredEntitlementId,
+        focusMode: false,
+      });
       return;
     }
 
@@ -3082,3 +3252,4 @@ function renderResult(chart, input) {
 
   return guidance;
 }
+
