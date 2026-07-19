@@ -613,6 +613,13 @@ button:hover {
   gap: 8px;
 }
 
+.auth-panel__secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .auth-button {
   width: auto;
   min-height: 42px;

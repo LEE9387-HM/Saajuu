@@ -117,6 +117,7 @@ const personaRecommendation = document.querySelector("#persona-recommendation");
 const authStatus = document.querySelector("#auth-status");
 const authNote = document.querySelector("#auth-note");
 const authButtons = [...document.querySelectorAll("[data-auth-provider]")];
+const authJumpButtons = [...document.querySelectorAll("[data-auth-jump]")];
 const authSignout = document.querySelector("#auth-signout");
 const emailSignupForm = document.querySelector("#email-signup-form");
 const emailLoginForm = document.querySelector("#email-login-form");
@@ -249,6 +250,22 @@ for (const tone of TONE_OPTIONS) {
 
 renderConsultationCatalog();
 initAuthPanel();
+
+authJumpButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const target =
+      button.dataset.authJump === "login"
+        ? emailLoginForm
+        : emailSignupForm;
+    if (!(target instanceof HTMLElement)) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    const focusTarget =
+      button.dataset.authJump === "login"
+        ? loginEmailInput
+        : signupDisplayNameInput ?? signupEmailInput;
+    window.setTimeout(() => focusTarget?.focus(), 180);
+  });
+});
 
 topicSelect.addEventListener("change", () => {
   updatePersonaRecommendation(topicSelect.value);
@@ -1127,6 +1144,10 @@ async function initAuthPanel() {
       ? `${email} ???? ????? ????.${roleSuffix}`
       : "????? ?? ??? ?? ??? ??? ? ????.";
     authButtons.forEach((button) => {
+      button.hidden = Boolean(session);
+      button.disabled = false;
+    });
+    authJumpButtons.forEach((button) => {
       button.hidden = Boolean(session);
       button.disabled = false;
     });
