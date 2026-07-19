@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.35.0 - 2026-07-19
+
+- `docs/07_2026_AI_SERVICE_LANDSCAPE.md`를 추가해 Flamme, Maia, Arya, The Pattern, Co-Star, Aistro, Rosebud 등 2026년 현재 유사 서비스의 구조를 검토하고 Saajuu에 바로 반영할 제품 원칙만 정리
+- `AGENTS.md`와 `docs/monetization-plan.md`에 새 시장 분석 문서를 필수 참고 자료로 연결
+- `docs/06_IMPLEMENTATION_ROADMAP.md`를 갱신해 무료 3턴의 누적 기억, 인연 관계 카드 리텐션, 탭/카드형 정보 구조, 생활 언어 중심 해석을 우선 과제로 고정
+- `LOOP_LOG.md`에 2회차 개선 루프를 추가해 이번 시장 조사와 후속 문서 반영 범위를 기록
+
 ## 0.5.34.0 - 2026-07-20
 
 - `LOOP.md`와 `LOOP_LOG.md`를 추가해 Saajuu를 목표 선택, 수락 기준, 검증, 기록 중심의 제어된 개선 루프로 운영할 수 있게 정리

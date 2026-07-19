@@ -1,5 +1,12 @@
 # Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.35.0 2026 AI 서비스 지형 반영 (2026-07-19)
+
+- `docs/07_2026_AI_SERVICE_LANDSCAPE.md`를 추가해 Flamme, Maia, Arya, The Pattern, Co-Star, Aistro, Rosebud 등 현재 유사 서비스의 제품 구조를 비교하고, Saajuu에 바로 반영할 항목과 버릴 항목을 분리했습니다.
+- 핵심 결론은 기능 수 경쟁이 아니라 `기억이 이어지는 무료 3턴 상담`, `인연 연결 뒤 재방문 가능한 관계 카드`, `긴 스크롤보다 탭/카드형 구조`, `생활 언어 중심 해석`, `광고보다 상담/리포트 중심 수익화`를 우선순위로 고정하는 것입니다.
+- `AGENTS.md`, `docs/monetization-plan.md`, `docs/06_IMPLEMENTATION_ROADMAP.md`, `LOOP_LOG.md`를 함께 갱신해 이후 작업자가 같은 시장 기준에서 다음 구현을 이어가도록 정리했습니다.
+- 검증: `npm test`, `npm run build`
+
 ## v0.5.34.0 제어된 개선 루프 + 고민 의도별 상담 질문 (2026-07-20)
 
 - `LOOP.md`를 추가해 Saajuu를 무한 자동 실행이 아니라 목표 선택, 수락 기준, 검증, 기록, 중단 조건을 갖춘 제어된 개선 루프로 운영하도록 정의했습니다.

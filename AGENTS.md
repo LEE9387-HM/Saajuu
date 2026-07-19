@@ -14,6 +14,7 @@
    - [docs/04_CONSULTATION_FUNNEL.md](./docs/04_CONSULTATION_FUNNEL.md)
    - [docs/05_ARCHITECTURE_PRIVACY_PAYMENT.md](./docs/05_ARCHITECTURE_PRIVACY_PAYMENT.md)
    - [docs/06_IMPLEMENTATION_ROADMAP.md](./docs/06_IMPLEMENTATION_ROADMAP.md)
+   - [docs/07_2026_AI_SERVICE_LANDSCAPE.md](./docs/07_2026_AI_SERVICE_LANDSCAPE.md)
 4. UI/스타일 작업이면 [DESIGN.md](./DESIGN.md)의 색 토큰·타이포·카피 규칙을 따른다.
 5. 새 작업이 [TODOS.md](./TODOS.md)에 적힌 보류 항목(PWA·SEO 페이지·다중 프로필)에
    해당하면, 착수 조건이 실제로 충족됐는지 사용자에게 먼저 확인한다. 코드가 없어서
