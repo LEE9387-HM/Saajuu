@@ -140,6 +140,39 @@ function stageMeta(turnNumber: number) {
   };
 }
 
+function buildSessionSummaryPayload(params: {
+  concernSummary: string;
+  userMessage: string;
+  assistantText: string;
+  stageInfo: ReturnType<typeof stageMeta>;
+  topic: string;
+}) {
+  const concernSummary = normalizeText(params.concernSummary, 240);
+  const userMessage = normalizeText(params.userMessage, 240);
+  const assistantText = normalizeText(params.assistantText, 420);
+  const stageLabel = params.stageInfo.stageLabel;
+  const topicLabel = topicLabels[params.topic] ?? "현재 고민";
+  const summaryParts = [
+    concernSummary ? `${topicLabel} 고민 요약: ${concernSummary}` : "",
+    userMessage ? `이번 턴에서 사용자가 더 구체화한 내용: ${userMessage}` : "",
+    assistantText ? `현재까지 정리된 방향: ${assistantText}` : "",
+  ].filter(Boolean);
+
+  return {
+    summary: summaryParts.join("\n\n"),
+    options: [
+      `${stageLabel} 기준으로 지금 가장 중요한 사실과 마음을 한 문장으로 다시 적어보세요.`,
+      params.stageInfo.nextStageLabel
+        ? `다음은 ${params.stageInfo.nextStageLabel}로 넘어갈 준비를 하면 됩니다.`
+        : "이제 바로 실행할 한 가지 행동으로 옮겨가면 됩니다.",
+    ],
+    action_plan: [
+      params.stageInfo.focusPrompt,
+      topicGuidance[params.topic] ?? "지금 바로 검증할 수 있는 작은 행동 하나를 정해보세요.",
+    ],
+  };
+}
+
 async function callGemini(apiKey: string, model: string, prompt: string) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const response = await fetch(endpoint, {
@@ -542,6 +575,26 @@ Deno.serve(async (request) => {
       if (entitlementUpdateError) return json({ error: entitlementUpdateError.message }, 500);
     }
   }
+
+  const summaryPayload = buildSessionSummaryPayload({
+    concernSummary: concern?.concern_summary ?? "",
+    userMessage,
+    assistantText,
+    stageInfo,
+    topic: session.topic,
+  });
+
+  const { error: summaryUpsertError } = await adminClient.from("session_summaries").upsert(
+    {
+      session_id: session.id,
+      user_id: currentUser.id,
+      summary: summaryPayload.summary,
+      options: summaryPayload.options,
+      action_plan: summaryPayload.action_plan,
+    },
+    { onConflict: "session_id" },
+  );
+  if (summaryUpsertError) return json({ error: summaryUpsertError.message }, 500);
 
   if (safetyLevel !== "none") {
     const { error: safetyError } = await adminClient.from("safety_events").insert({

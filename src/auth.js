@@ -356,6 +356,21 @@ export async function getConsultationMessages(session, sessionId) {
   return { messages: data ?? [], error };
 }
 
+export async function getConsultationSummary(session, sessionId) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user || !sessionId) {
+    return { summary: null, error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("session_summaries")
+    .select("summary, options, action_plan, updated_at")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  return { summary: data ?? null, error };
+}
+
 export function onAuthStateChange(callback) {
   const supabase = getSupabaseClient();
   if (!supabase) return () => {};

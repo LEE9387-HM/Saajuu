@@ -35,6 +35,7 @@ import {
   getAccountProfile,
   getAdminDashboard,
   getConsultationMessages,
+  getConsultationSummary,
   getRelationshipInviteTokenFromHash,
   getRelationshipLinks,
   getCurrentSession,
@@ -1237,20 +1238,57 @@ function replaceConsultationMessages(messages) {
   renderTrialChatMessages();
 }
 
-async function hydrateConsultationMessages(sessionId) {
+function normalizeConsultationGuidance(summaryRecord, fallbackStage) {
+  if (!summaryRecord || typeof summaryRecord !== "object") return null;
+  const options = Array.isArray(summaryRecord.options) ? summaryRecord.options.filter((item) => typeof item === "string") : [];
+  const actionPlan = Array.isArray(summaryRecord.action_plan)
+    ? summaryRecord.action_plan.filter((item) => typeof item === "string")
+    : [];
+  return {
+    stage: Number(fallbackStage ?? 1),
+    stageLabel: trialStageMeta(Number(fallbackStage ?? 1)).label,
+    nextStageLabel: Number(fallbackStage ?? 1) >= TRIAL_STAGES.length ? "" : trialStageMeta(Number(fallbackStage ?? 1) + 1).label,
+    focusPrompt:
+      actionPlan[0] ??
+      options[0] ??
+      (typeof summaryRecord.summary === "string" ? summaryRecord.summary : "") ??
+      "",
+    summary: typeof summaryRecord.summary === "string" ? summaryRecord.summary : "",
+    options,
+    actionPlan,
+  };
+}
+
+async function hydrateConsultationSnapshot(sessionRecord) {
+  const sessionId = sessionRecord?.id;
   if (!activeSession || !sessionId) {
     replaceConsultationMessages([]);
-    return { loaded: false, error: null };
+    activeConsultationGuidance = null;
+    return { loaded: false, errors: [] };
   }
 
-  const { messages, error } = await getConsultationMessages(activeSession, sessionId);
-  if (error) {
+  const [messagesResult, summaryResult] = await Promise.all([
+    getConsultationMessages(activeSession, sessionId),
+    getConsultationSummary(activeSession, sessionId),
+  ]);
+
+  if (messagesResult.error) {
     replaceConsultationMessages([]);
-    return { loaded: false, error };
+  } else {
+    replaceConsultationMessages(messagesResult.messages);
   }
 
-  replaceConsultationMessages(messages);
-  return { loaded: true, error: null };
+  activeConsultationGuidance = summaryResult.error
+    ? null
+    : normalizeConsultationGuidance(
+        summaryResult.summary,
+        Number(sessionRecord.current_stage ?? Number(sessionRecord.used_turns ?? 0) + 1),
+      );
+
+  return {
+    loaded: !messagesResult.error && !summaryResult.error,
+    errors: [messagesResult.error, summaryResult.error].filter(Boolean),
+  };
 }
 
 function renderSelectedPersonaSurfaces() {
@@ -2144,12 +2182,13 @@ async function initAuthPanel() {
     setActiveConsultationSession(session, Boolean(data?.reused));
     let historyLoadFailed = false;
     if (data?.reused && session?.id) {
-      const { error: historyError } = await hydrateConsultationMessages(session.id);
-      if (historyError) {
+      const snapshotResult = await hydrateConsultationSnapshot(session);
+      if (snapshotResult.errors.length) {
         historyLoadFailed = true;
       }
     } else {
       replaceConsultationMessages([]);
+      activeConsultationGuidance = null;
     }
     track(sessionMode === "trial" ? "trial_started" : "paid_session_started");
     trialSessionNote.textContent = historyLoadFailed
