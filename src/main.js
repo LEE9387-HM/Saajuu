@@ -146,6 +146,8 @@ const adminNavLink = document.querySelector("#admin-nav-link");
 const adminStatus = document.querySelector("#admin-status");
 const adminPanel = document.querySelector("#admin-panel");
 const adminStats = document.querySelector("#admin-stats");
+const adminSessionFilters = [...document.querySelectorAll("[data-admin-session-filter]")];
+const adminSafetyFilters = [...document.querySelectorAll("[data-admin-safety-filter]")];
 const adminProfiles = document.querySelector("#admin-profiles");
 const adminSessions = document.querySelector("#admin-sessions");
 const adminEntitlements = document.querySelector("#admin-entitlements");
@@ -211,6 +213,8 @@ let profileModalMode = "create";
 let activeAccountProfile = null;
 let activeAdminDashboard = null;
 let activeCommerceOverview = null;
+let adminSessionFilter = "all";
+let adminSafetyFilter = "all";
 
 function getAuthProviderLabel(user) {
   const provider = String(
@@ -1605,10 +1609,19 @@ function renderAdminList(target, items, formatter) {
         <article class="admin-list__item">
           <strong class="admin-list__title">${escapeHtml(formatted.title)}</strong>
           <p class="admin-list__meta">${escapeHtml(formatted.meta)}</p>
+          ${formatted.detail ? `<p class="admin-list__detail">${escapeHtml(formatted.detail)}</p>` : ""}
         </article>
       `;
     })
     .join("");
+}
+
+function syncAdminFilterButtons(buttons, activeValue) {
+  buttons.forEach((button) => {
+    const isActive = button.dataset.adminFilterValue === activeValue;
+    button.dataset.active = isActive ? "true" : "false";
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
 }
 
 function renderAdminDashboard(dashboard) {
@@ -1628,6 +1641,8 @@ function renderAdminDashboard(dashboard) {
   }
 
   adminStatus.textContent = `${dashboard.currentAdmin.displayName} 계정으로 운영 현황을 확인하고 있습니다.`;
+  syncAdminFilterButtons(adminSessionFilters, adminSessionFilter);
+  syncAdminFilterButtons(adminSafetyFilters, adminSafetyFilter);
   adminStats.innerHTML = [
     ["사용자", dashboard.stats.totalUsers],
     ["연결 인연", dashboard.stats.activeRelationships],
@@ -1648,13 +1663,23 @@ function renderAdminDashboard(dashboard) {
     )
     .join("");
 
+  const filteredSessions = (dashboard.recentSessions ?? []).filter((item) => {
+    if (adminSessionFilter === "all") return true;
+    return item.status === adminSessionFilter;
+  });
+  const filteredSafetyEvents = (dashboard.recentSafetyEvents ?? []).filter((item) => {
+    if (adminSafetyFilter === "all") return true;
+    return item.level === adminSafetyFilter;
+  });
+
   renderAdminList(adminProfiles, dashboard.recentProfiles, (item) => ({
     title: `${item.displayName} · ${item.role}`,
     meta: `가입 ${formatShortDate(item.createdAt)}`,
   }));
-  renderAdminList(adminSessions, dashboard.recentSessions, (item) => ({
+  renderAdminList(adminSessions, filteredSessions, (item) => ({
     title: `${item.userLabel} · ${item.topic} · ${item.mode}`,
     meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · 남은 ${Math.max(Number(item.turnLimit) - Number(item.usedTurns), 0)}턴 · ${formatShortDate(item.createdAt)}`,
+    detail: item.summarySnippet ?? "",
   }));
   renderAdminList(adminEntitlements, dashboard.recentEntitlements, (item) => ({
     title: `${item.userLabel} · ${item.productId}`,
@@ -1664,7 +1689,7 @@ function renderAdminDashboard(dashboard) {
     title: `${item.userLabel} · ${item.productId}`,
     meta: `${item.status} · ${Number(item.amountKrw).toLocaleString("ko-KR")}원 · ${formatShortDate(item.createdAt)}`,
   }));
-  renderAdminList(adminSafety, dashboard.recentSafetyEvents, (item) => ({
+  renderAdminList(adminSafety, filteredSafetyEvents, (item) => ({
     title: `${item.userLabel} · ${item.level}`,
     meta: `${item.category} / ${item.action} · ${formatShortDate(item.createdAt)}`,
   }));
@@ -1688,6 +1713,24 @@ async function refreshAdminDashboard(session) {
 
   renderAdminDashboard(data);
 }
+
+adminSessionFilters.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextValue = button.dataset.adminFilterValue?.trim() || "all";
+    if (adminSessionFilter === nextValue) return;
+    adminSessionFilter = nextValue;
+    if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+  });
+});
+
+adminSafetyFilters.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextValue = button.dataset.adminFilterValue?.trim() || "all";
+    if (adminSafetyFilter === nextValue) return;
+    adminSafetyFilter = nextValue;
+    if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+  });
+});
 
 async function initAuthPanel() {
   if (!authStatus) return;

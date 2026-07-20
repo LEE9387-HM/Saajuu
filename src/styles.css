@@ -1146,6 +1146,28 @@ button:hover {
   margin-top: 2px;
 }
 
+.admin-card__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-filter-chip {
+  border: 1px solid rgb(221 214 199 / 90%);
+  background: #fffaf0;
+  color: #5a676d;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  line-height: 1;
+}
+
+.admin-filter-chip[data-active="true"] {
+  border-color: var(--jade);
+  background: rgba(86, 124, 111, 0.12);
+  color: var(--ink);
+}
+
 .admin-list {
   display: grid;
   gap: 10px;
@@ -1176,6 +1198,12 @@ button:hover {
 .admin-list__meta {
   color: #6d7b81;
   font-size: 0.78rem;
+}
+
+.admin-list__detail {
+  color: #425359;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .consent-form {

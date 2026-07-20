@@ -607,6 +607,11 @@
                   <div class="admin-card__head">
                     <p class="eyebrow">최근 상담</p>
                     <h4>세션 흐름</h4>
+                    <div class="admin-card__filters" role="group" aria-label="상담 세션 필터">
+                      <button type="button" class="admin-filter-chip" data-admin-session-filter data-admin-filter-value="all" aria-pressed="true">전체</button>
+                      <button type="button" class="admin-filter-chip" data-admin-session-filter data-admin-filter-value="active" aria-pressed="false">활성</button>
+                      <button type="button" class="admin-filter-chip" data-admin-session-filter data-admin-filter-value="completed" aria-pressed="false">완료</button>
+                    </div>
                   </div>
                   <div id="admin-sessions" class="admin-list"></div>
                 </section>
@@ -628,6 +633,12 @@
                   <div class="admin-card__head">
                     <p class="eyebrow">안전 이벤트</p>
                     <h4>검토 필요 항목</h4>
+                    <div class="admin-card__filters" role="group" aria-label="안전 이벤트 필터">
+                      <button type="button" class="admin-filter-chip" data-admin-safety-filter data-admin-filter-value="all" aria-pressed="true">전체</button>
+                      <button type="button" class="admin-filter-chip" data-admin-safety-filter data-admin-filter-value="crisis" aria-pressed="false">위기</button>
+                      <button type="button" class="admin-filter-chip" data-admin-safety-filter data-admin-filter-value="blocked" aria-pressed="false">차단</button>
+                      <button type="button" class="admin-filter-chip" data-admin-safety-filter data-admin-filter-value="caution" aria-pressed="false">주의</button>
+                    </div>
                   </div>
                   <div id="admin-safety" class="admin-list"></div>
                 </section>

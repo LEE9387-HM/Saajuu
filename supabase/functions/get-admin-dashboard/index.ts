@@ -31,6 +31,13 @@ function compactUserId(value: string) {
   return `${value.slice(0, 8)}…`;
 }
 
+function compactText(value: unknown, maxLength = 96) {
+  const normalized = String(value ?? "").trim().replace(/\s+/g, " ");
+  if (!normalized) return "";
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).trim()}…`;
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -162,6 +169,19 @@ Deno.serve(async (request) => {
     });
   }
 
+  const sessionSummaryMap = new Map<string, string>();
+  const recentSessionIds = (recentSessionsResult.data ?? []).map((item) => item.id).filter(Boolean);
+  if (recentSessionIds.length) {
+    const { data: sessionSummaries, error: sessionSummariesError } = await adminClient
+      .from("session_summaries")
+      .select("session_id, summary")
+      .in("session_id", recentSessionIds);
+    if (sessionSummariesError) return json({ error: sessionSummariesError.message }, 500);
+    (sessionSummaries ?? []).forEach((item) => {
+      sessionSummaryMap.set(item.session_id, compactText(item.summary));
+    });
+  }
+
   return json({
     currentAdmin: {
       email: currentUser.email ?? "",
@@ -194,6 +214,7 @@ Deno.serve(async (request) => {
       status: item.status,
       usedTurns: item.used_turns,
       turnLimit: item.turn_limit,
+      summarySnippet: sessionSummaryMap.get(item.id) ?? "",
       createdAt: item.created_at,
     })),
     recentEntitlements: (recentEntitlementsResult.data ?? []).map((item) => ({

@@ -1,5 +1,12 @@
 ﻿# Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.46.0 관리자 필터 + 상담 요약 미리보기 (2026-07-20)
+
+- 관리자 화면의 `최근 상담` 카드에 `전체 / 활성 / 완료` 필터를 추가했습니다.
+- 관리자 화면의 `안전 이벤트` 카드에 `전체 / 위기 / 차단 / 주의` 필터를 추가했습니다.
+- `get-admin-dashboard` Edge Function이 최근 세션에 연결된 `session_summaries`를 함께 읽어오도록 확장해, 세션 카드에 상담 요약 한 줄을 같이 보여주게 했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## v0.5.45.0 관리자 운영 카드 보강 (2026-07-20)
 
 - 관리자 화면에 `활성 세션`, `활성 상담권`, `소진 상담권` 통계를 추가했습니다.
