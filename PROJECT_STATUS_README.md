@@ -1,5 +1,12 @@
 ﻿# Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.47.0 관리자 필터 상태 유지 + 마지막 메시지 미리보기 (2026-07-20)
+
+- 관리자 화면의 세션/안전 이벤트 필터 상태를 `sessionStorage`에 저장해, 새로고침이나 재방문 뒤에도 마지막으로 보던 필터를 유지하게 했습니다.
+- 최근 상담 세션 카드에 상담 요약 한 줄과 마지막 사용자 메시지 한 줄을 같이 보여줘, 운영자가 현재 맥락을 더 빠르게 읽을 수 있게 했습니다.
+- `get-admin-dashboard` Edge Function이 최근 세션의 마지막 사용자 메시지를 함께 읽어오도록 확장했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## v0.5.46.0 관리자 필터 + 상담 요약 미리보기 (2026-07-20)
 
 - 관리자 화면의 `최근 상담` 카드에 `전체 / 활성 / 완료` 필터를 추가했습니다.

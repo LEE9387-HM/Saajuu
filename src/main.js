@@ -216,6 +216,9 @@ let activeCommerceOverview = null;
 let adminSessionFilter = "all";
 let adminSafetyFilter = "all";
 
+const ADMIN_SESSION_FILTER_KEY = "saajuu.admin.sessionFilter";
+const ADMIN_SAFETY_FILTER_KEY = "saajuu.admin.safetyFilter";
+
 function getAuthProviderLabel(user) {
   const provider = String(
     user?.app_metadata?.provider ??
@@ -1624,6 +1627,37 @@ function syncAdminFilterButtons(buttons, activeValue) {
   });
 }
 
+function loadAdminFilterState() {
+  try {
+    const savedSessionFilter = window.sessionStorage.getItem(ADMIN_SESSION_FILTER_KEY)?.trim();
+    const savedSafetyFilter = window.sessionStorage.getItem(ADMIN_SAFETY_FILTER_KEY)?.trim();
+    if (savedSessionFilter) adminSessionFilter = savedSessionFilter;
+    if (savedSafetyFilter) adminSafetyFilter = savedSafetyFilter;
+  } catch {
+    // Ignore storage access issues and fall back to defaults.
+  }
+}
+
+function saveAdminFilterState() {
+  try {
+    window.sessionStorage.setItem(ADMIN_SESSION_FILTER_KEY, adminSessionFilter);
+    window.sessionStorage.setItem(ADMIN_SAFETY_FILTER_KEY, adminSafetyFilter);
+  } catch {
+    // Ignore storage access issues and keep filters in memory only.
+  }
+}
+
+function buildAdminSessionDetail(item) {
+  const summary = String(item.summarySnippet ?? "").trim();
+  const lastUserMessage = String(item.lastUserMessageSnippet ?? "").trim();
+  if (summary && lastUserMessage) {
+    return `요약: ${summary}\n마지막 사용자 메시지: ${lastUserMessage}`;
+  }
+  if (summary) return `요약: ${summary}`;
+  if (lastUserMessage) return `마지막 사용자 메시지: ${lastUserMessage}`;
+  return "";
+}
+
 function renderAdminDashboard(dashboard) {
   activeAdminDashboard = dashboard ?? null;
   if (!adminNavLink || !adminStatus || !adminPanel || !adminStats) return;
@@ -1679,7 +1713,7 @@ function renderAdminDashboard(dashboard) {
   renderAdminList(adminSessions, filteredSessions, (item) => ({
     title: `${item.userLabel} · ${item.topic} · ${item.mode}`,
     meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · 남은 ${Math.max(Number(item.turnLimit) - Number(item.usedTurns), 0)}턴 · ${formatShortDate(item.createdAt)}`,
-    detail: item.summarySnippet ?? "",
+    detail: buildAdminSessionDetail(item),
   }));
   renderAdminList(adminEntitlements, dashboard.recentEntitlements, (item) => ({
     title: `${item.userLabel} · ${item.productId}`,
@@ -1719,6 +1753,7 @@ adminSessionFilters.forEach((button) => {
     const nextValue = button.dataset.adminFilterValue?.trim() || "all";
     if (adminSessionFilter === nextValue) return;
     adminSessionFilter = nextValue;
+    saveAdminFilterState();
     if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
   });
 });
@@ -1728,9 +1763,12 @@ adminSafetyFilters.forEach((button) => {
     const nextValue = button.dataset.adminFilterValue?.trim() || "all";
     if (adminSafetyFilter === nextValue) return;
     adminSafetyFilter = nextValue;
+    saveAdminFilterState();
     if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
   });
 });
+
+loadAdminFilterState();
 
 async function initAuthPanel() {
   if (!authStatus) return;

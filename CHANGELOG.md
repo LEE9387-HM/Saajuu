@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.47.0 - 2026-07-20
+
+- 관리자 화면의 세션/안전 이벤트 필터 상태를 `sessionStorage`에 저장해, 화면을 다시 열어도 마지막으로 보던 필터가 유지되게 했습니다.
+- 최근 상담 세션 카드에 저장된 상담 요약뿐 아니라 마지막 사용자 메시지 미리보기까지 함께 보여주도록 보강했습니다.
+- `get-admin-dashboard` Edge Function이 최근 세션별 마지막 사용자 메시지를 함께 내려주도록 확장했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## 0.5.46.0 - 2026-07-20
 
 - 관리자 화면의 `최근 상담` 카드에 `전체 / 활성 / 완료` 필터를 추가했습니다.

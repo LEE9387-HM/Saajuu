@@ -170,6 +170,7 @@ Deno.serve(async (request) => {
   }
 
   const sessionSummaryMap = new Map<string, string>();
+  const sessionLastUserMessageMap = new Map<string, string>();
   const recentSessionIds = (recentSessionsResult.data ?? []).map((item) => item.id).filter(Boolean);
   if (recentSessionIds.length) {
     const { data: sessionSummaries, error: sessionSummariesError } = await adminClient
@@ -179,6 +180,19 @@ Deno.serve(async (request) => {
     if (sessionSummariesError) return json({ error: sessionSummariesError.message }, 500);
     (sessionSummaries ?? []).forEach((item) => {
       sessionSummaryMap.set(item.session_id, compactText(item.summary));
+    });
+
+    const { data: recentUserMessages, error: recentUserMessagesError } = await adminClient
+      .from("consultation_messages")
+      .select("session_id, role, content, created_at")
+      .eq("role", "user")
+      .in("session_id", recentSessionIds)
+      .order("created_at", { ascending: false });
+    if (recentUserMessagesError) return json({ error: recentUserMessagesError.message }, 500);
+    (recentUserMessages ?? []).forEach((item) => {
+      if (!sessionLastUserMessageMap.has(item.session_id)) {
+        sessionLastUserMessageMap.set(item.session_id, compactText(item.content, 72));
+      }
     });
   }
 
@@ -215,6 +229,7 @@ Deno.serve(async (request) => {
       usedTurns: item.used_turns,
       turnLimit: item.turn_limit,
       summarySnippet: sessionSummaryMap.get(item.id) ?? "",
+      lastUserMessageSnippet: sessionLastUserMessageMap.get(item.id) ?? "",
       createdAt: item.created_at,
     })),
     recentEntitlements: (recentEntitlementsResult.data ?? []).map((item) => ({
