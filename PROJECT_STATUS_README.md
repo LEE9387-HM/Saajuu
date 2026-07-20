@@ -1,5 +1,13 @@
 ﻿# Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.50.0 관리자 상담권 지급/회수 + 주문 복구 액션 추가 (2026-07-20)
+
+- 관리자 화면의 최근 사용자 카드에 `기본 지급 / 프로 지급` 버튼을 추가해, 운영자가 최근 가입 계정에 상담권을 수동 발급할 수 있게 했습니다.
+- 최근 상담권 카드에는 `회수` 액션을 추가해 활성 상담권을 즉시 `revoked` 상태로 전환할 수 있게 했습니다.
+- 최근 주문 카드에는 `결제 재확인 / 상담권 복구` 액션을 추가해, PortOne 결제를 다시 검증하거나 `paid` 주문에 누락된 상담권을 복구할 수 있게 했습니다.
+- `admin-manage-commerce` Edge Function을 추가하고 `get-admin-dashboard`에 주문-상담권 연결 상태를 같이 내려주도록 확장했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`, `npx supabase functions deploy admin-manage-commerce --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## v0.5.49.0 관리자 검색/상세 모달/안전 확인 처리 확장 (2026-07-20)
 
 - 관리자 화면 상단에 세션 검색 입력을 추가해 최근 상담 목록을 사용자·주제·요약·마지막 메시지 기준으로 바로 좁혀 볼 수 있게 했습니다.

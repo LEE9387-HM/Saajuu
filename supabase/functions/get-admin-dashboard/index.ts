@@ -158,7 +158,7 @@ Deno.serve(async (request) => {
       .limit(entitlementLimit),
     adminClient
       .from("orders")
-      .select("id, user_id, product_id, amount_krw, status, created_at")
+      .select("id, user_id, product_id, provider_order_id, provider_payment_id, amount_krw, status, created_at")
       .order("created_at", { ascending: false })
       .limit(orderLimit),
     adminClient
@@ -225,6 +225,26 @@ Deno.serve(async (request) => {
   const sessionLastUserMessageMap = new Map<string, string>();
   const sessionLastAssistantMessageMap = new Map<string, string>();
   const recentSessionIds = (recentSessionsResult.data ?? []).map((item) => item.id).filter(Boolean);
+  const entitlementByOrderId = new Map<string, { id: string; status: string; usedTurns: number; totalTurns: number }>();
+
+  const recentOrderIds = (recentOrdersResult.data ?? []).map((item) => item.id).filter(Boolean);
+  if (recentOrderIds.length) {
+    const { data: linkedEntitlements, error: linkedEntitlementsError } = await adminClient
+      .from("entitlements")
+      .select("id, order_id, status, used_turns, total_turns")
+      .in("order_id", recentOrderIds);
+    if (linkedEntitlementsError) return json({ error: linkedEntitlementsError.message }, 500);
+    (linkedEntitlements ?? []).forEach((item) => {
+      if (item.order_id) {
+        entitlementByOrderId.set(item.order_id, {
+          id: item.id,
+          status: item.status,
+          usedTurns: item.used_turns,
+          totalTurns: item.total_turns,
+        });
+      }
+    });
+  }
 
   if (recentSessionIds.length) {
     const { data: sessionSummaries, error: sessionSummariesError } = await adminClient
@@ -400,8 +420,11 @@ Deno.serve(async (request) => {
       userId: item.user_id,
       userLabel: profileNameMap.get(item.user_id) ?? compactUserId(item.user_id),
       productId: item.product_id,
+      providerOrderId: item.provider_order_id,
+      providerPaymentId: item.provider_payment_id,
       amountKrw: item.amount_krw,
       status: item.status,
+      linkedEntitlement: entitlementByOrderId.get(item.id) ?? null,
       createdAt: item.created_at,
     })),
     recentSafetyEvents: (recentSafetyEventsResult.data ?? []).map((item) => ({

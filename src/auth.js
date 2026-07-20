@@ -492,3 +492,16 @@ export async function reviewSafetyEvent(session, safetyEventId) {
 
   return { data: data ?? null, error: await normalizeFunctionError(error) };
 }
+
+export async function manageAdminCommerce(session, payload) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 관리자 화면을 확인할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("admin-manage-commerce", {
+    body: payload,
+  });
+
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
+}

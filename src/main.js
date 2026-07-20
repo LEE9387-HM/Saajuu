@@ -42,6 +42,7 @@ import {
   getOAuthBrowserWarning,
   getRequiredConsentStatus,
   isSupabaseConfigured,
+  manageAdminCommerce,
   onAuthStateChange,
   requestPasswordReset,
   recordRequiredConsents,
@@ -234,11 +235,17 @@ let adminSafetyListLimit = 8;
 let adminActionLogListLimit = 8;
 let activeAdminSessionDetailId = "";
 let activeSafetyReviewId = "";
+let activeAdminCommerceActionId = "";
 
 const ADMIN_SESSION_FILTER_KEY = "saajuu.admin.sessionFilter";
 const ADMIN_SAFETY_FILTER_KEY = "saajuu.admin.safetyFilter";
 const ADMIN_SESSION_SORT_KEY = "saajuu.admin.sessionSort";
 const ADMIN_SESSION_SEARCH_KEY = "saajuu.admin.sessionSearch";
+
+const ADMIN_GRANT_PRODUCTS = [
+  { id: "basic_10_turns", label: "기본 지급" },
+  { id: "pro_20_turns", label: "프로 지급" },
+];
 
 function getAuthProviderLabel(user) {
   const provider = String(
@@ -1693,7 +1700,14 @@ function saveAdminFilterState() {
 
 function formatAdminActionType(value) {
   if (value === "review_safety_event") return "안전 이벤트 확인";
+  if (value === "grant_entitlement") return "상담권 수동 지급";
+  if (value === "revoke_entitlement") return "상담권 회수";
+  if (value === "recover_order") return "주문 복구";
   return String(value ?? "운영 처리");
+}
+
+function isActiveAdminCommerceAction(kind, targetId) {
+  return activeAdminCommerceActionId === `${kind}:${targetId}`;
 }
 
 function buildAdminSessionModal(detail) {
@@ -1882,8 +1896,17 @@ function renderAdminDashboard(dashboard) {
   });
 
   renderAdminList(adminProfiles, dashboard.recentProfiles, (item) => ({
+    id: item.id,
     title: `${item.displayName} · ${item.role}`,
     meta: `가입 ${formatShortDate(item.createdAt)}`,
+    actions: ADMIN_GRANT_PRODUCTS.map((product) => ({
+      kind: "grant-entitlement",
+      label: isActiveAdminCommerceAction(`grant:${product.id}`, item.id)
+        ? `${product.label} 중...`
+        : product.label,
+      targetId: `${item.id}|${product.id}`,
+      disabled: isActiveAdminCommerceAction(`grant:${product.id}`, item.id),
+    })),
   }));
   renderAdminList(adminSessions, sortedSessions, (item) => ({
     id: item.id,
@@ -1894,12 +1917,48 @@ function renderAdminDashboard(dashboard) {
     actions: [{ kind: "session-detail", label: "상세 보기", targetId: item.id }],
   }));
   renderAdminList(adminEntitlements, dashboard.recentEntitlements, (item) => ({
+    id: item.id,
     title: `${item.userLabel} · ${item.productId}`,
     meta: `${item.status} · ${Math.max(Number(item.totalTurns) - Number(item.usedTurns), 0)}/${item.totalTurns}턴 남음 · 만료 ${formatShortDate(item.expiresAt ?? item.createdAt)}`,
+    actions:
+      item.status === "active"
+        ? [
+            {
+              kind: "revoke-entitlement",
+              label: isActiveAdminCommerceAction("revoke", item.id) ? "회수 중..." : "회수",
+              targetId: item.id,
+              disabled: isActiveAdminCommerceAction("revoke", item.id),
+            },
+          ]
+        : [{ type: "badge", label: entitlementStatusLabel(item.status), variant: "done" }],
   }));
   renderAdminList(adminOrders, dashboard.recentOrders, (item) => ({
+    id: item.id,
     title: `${item.userLabel} · ${item.productId}`,
     meta: `${item.status} · ${Number(item.amountKrw).toLocaleString("ko-KR")}원 · ${formatShortDate(item.createdAt)}`,
+    detail: item.linkedEntitlement
+      ? `상담권 연결: ${item.linkedEntitlement.id} · ${item.linkedEntitlement.status} · ${item.linkedEntitlement.usedTurns}/${item.linkedEntitlement.totalTurns}턴`
+      : "아직 연결된 상담권이 없습니다.",
+    actions:
+      item.status === "paid" && !item.linkedEntitlement
+        ? [
+            {
+              kind: "recover-order",
+              label: isActiveAdminCommerceAction("recover", item.id) ? "복구 중..." : "상담권 복구",
+              targetId: item.id,
+              disabled: isActiveAdminCommerceAction("recover", item.id),
+            },
+          ]
+        : item.status !== "paid"
+          ? [
+              {
+                kind: "recover-order",
+                label: isActiveAdminCommerceAction("recover", item.id) ? "재확인 중..." : "결제 재확인",
+                targetId: item.id,
+                disabled: isActiveAdminCommerceAction("recover", item.id),
+              },
+            ]
+          : [{ type: "badge", label: "결제 완료", variant: "done" }],
   }));
   renderAdminList(adminSafety, filteredSafetyEvents, (item) => ({
     id: item.id,
@@ -1958,6 +2017,21 @@ async function refreshAdminDashboard(session, overrides = {}) {
   }
 
   renderAdminDashboard(data);
+}
+
+async function runAdminCommerceAction({ kind, targetId, payload, successMessage }) {
+  if (!activeSession || !targetId || activeAdminCommerceActionId) return;
+  activeAdminCommerceActionId = `${kind}:${targetId}`;
+  if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+  const { error } = await manageAdminCommerce(activeSession, payload);
+  activeAdminCommerceActionId = "";
+  if (error) {
+    authNote.textContent = error.message ?? "관리자 상거래 작업을 처리하지 못했습니다.";
+    if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+    return;
+  }
+  authNote.textContent = successMessage;
+  await refreshAdminDashboard(activeSession);
 }
 
 adminSessionFilters.forEach((button) => {
@@ -2050,6 +2124,60 @@ adminSafety?.addEventListener("click", async (event) => {
   }
   authNote.textContent = "안전 이벤트를 확인 처리하고 운영 이력에 기록했습니다.";
   await refreshAdminDashboard(activeSession);
+});
+
+adminProfiles?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-action='grant-entitlement']");
+  const rawTarget = button?.dataset.adminTargetId?.trim() || "";
+  if (!rawTarget) return;
+  const [userId, productId] = rawTarget.split("|");
+  if (!userId || !productId) return;
+
+  await runAdminCommerceAction({
+    kind: `grant:${productId}`,
+    targetId: userId,
+    payload: {
+      action: "grant_entitlement",
+      userId,
+      productId,
+      note: "admin_manual_grant",
+    },
+    successMessage: `관리자 화면에서 ${productId} 상담권을 수동 지급했습니다.`,
+  });
+});
+
+adminEntitlements?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-action='revoke-entitlement']");
+  const entitlementId = button?.dataset.adminTargetId?.trim() || "";
+  if (!entitlementId) return;
+
+  await runAdminCommerceAction({
+    kind: "revoke",
+    targetId: entitlementId,
+    payload: {
+      action: "revoke_entitlement",
+      entitlementId,
+      note: "admin_manual_revoke",
+    },
+    successMessage: "상담권을 회수했습니다.",
+  });
+});
+
+adminOrders?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-action='recover-order']");
+  const orderId = button?.dataset.adminTargetId?.trim() || "";
+  if (!orderId) return;
+
+  await runAdminCommerceAction({
+    kind: "recover",
+    targetId: orderId,
+    payload: {
+      action: "recover_order",
+      orderId,
+      note: "admin_order_recovery",
+    },
+    successMessage: "주문 복구 작업을 완료했습니다.",
+  });
 });
 
 adminSessionModalClose?.addEventListener("click", () => {
