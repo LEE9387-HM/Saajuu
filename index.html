@@ -592,7 +592,13 @@
             <p class="eyebrow">관리</p>
             <h3>운영 대시보드</h3>
             <p>가입, 상담, 결제, 안전 이벤트를 한 화면에서 확인합니다.</p>
-            <div id="admin-status" class="auth-panel__note">관리자 권한을 확인하고 있습니다.</div>
+            <div class="admin-panel__toolbar">
+              <div>
+                <div id="admin-status" class="auth-panel__note">관리자 권한을 확인하고 있습니다.</div>
+                <p id="admin-updated-at" class="admin-panel__updated">최근 갱신 시각을 불러오고 있습니다.</p>
+              </div>
+              <button type="button" id="admin-refresh" class="auth-button auth-button--ghost">운영 현황 새로고침</button>
+            </div>
             <section id="admin-panel" class="admin-panel" hidden>
               <div class="admin-panel__stats" id="admin-stats"></div>
               <div class="admin-panel__grid">
@@ -612,6 +618,14 @@
                       <button type="button" class="admin-filter-chip" data-admin-session-filter data-admin-filter-value="active" aria-pressed="false">활성</button>
                       <button type="button" class="admin-filter-chip" data-admin-session-filter data-admin-filter-value="completed" aria-pressed="false">완료</button>
                     </div>
+                    <label class="admin-sort">
+                      <span>정렬</span>
+                      <select id="admin-session-sort">
+                        <option value="recent">최신순</option>
+                        <option value="remaining">남은 턴 적은 순</option>
+                        <option value="user">사용자 이름순</option>
+                      </select>
+                    </label>
                   </div>
                   <div id="admin-sessions" class="admin-list"></div>
                 </section>

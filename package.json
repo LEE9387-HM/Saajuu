@@ -1,7 +1,7 @@
 {
   "name": "saajuu",
   "private": true,
-  "version": "0.5.47.0",
+  "version": "0.5.48.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

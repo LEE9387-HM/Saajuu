@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.48.0 - 2026-07-20
+
+- 관리자 화면 상단에 `운영 현황 새로고침` 버튼과 `최근 갱신` 시각을 추가했습니다.
+- 최근 상담 카드에 정렬 선택(`최신순 / 남은 턴 적은 순 / 사용자 이름순`)을 추가했습니다.
+- 최근 상담 카드가 상담 요약, 마지막 사용자 메시지, 마지막 AI 답변을 함께 보여주도록 확장했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## 0.5.47.0 - 2026-07-20
 
 - 관리자 화면의 세션/안전 이벤트 필터 상태를 `sessionStorage`에 저장해, 화면을 다시 열어도 마지막으로 보던 필터가 유지되게 했습니다.

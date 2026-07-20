@@ -1,5 +1,13 @@
 ﻿# Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.48.0 관리자 정렬/새로고침/대화 미리보기 확장 (2026-07-20)
+
+- 관리자 화면 상단에 수동 새로고침 버튼과 최근 갱신 시각을 추가했습니다.
+- 최근 상담 카드에 `최신순 / 남은 턴 적은 순 / 사용자 이름순` 정렬을 추가했습니다.
+- 최근 상담 카드가 상담 요약뿐 아니라 마지막 사용자 메시지와 마지막 AI 답변도 함께 보여주도록 확장했습니다.
+- `get-admin-dashboard` Edge Function이 최근 세션별 마지막 사용자/AI 메시지를 함께 내려주도록 보강했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## v0.5.47.0 관리자 필터 상태 유지 + 마지막 메시지 미리보기 (2026-07-20)
 
 - 관리자 화면의 세션/안전 이벤트 필터 상태를 `sessionStorage`에 저장해, 새로고침이나 재방문 뒤에도 마지막으로 보던 필터를 유지하게 했습니다.

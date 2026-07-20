@@ -144,10 +144,13 @@ const passwordResetRequestButton = document.querySelector("#password-reset-reque
 const emailAuthNote = document.querySelector("#email-auth-note");
 const adminNavLink = document.querySelector("#admin-nav-link");
 const adminStatus = document.querySelector("#admin-status");
+const adminUpdatedAt = document.querySelector("#admin-updated-at");
+const adminRefresh = document.querySelector("#admin-refresh");
 const adminPanel = document.querySelector("#admin-panel");
 const adminStats = document.querySelector("#admin-stats");
 const adminSessionFilters = [...document.querySelectorAll("[data-admin-session-filter]")];
 const adminSafetyFilters = [...document.querySelectorAll("[data-admin-safety-filter]")];
+const adminSessionSort = document.querySelector("#admin-session-sort");
 const adminProfiles = document.querySelector("#admin-profiles");
 const adminSessions = document.querySelector("#admin-sessions");
 const adminEntitlements = document.querySelector("#admin-entitlements");
@@ -215,9 +218,11 @@ let activeAdminDashboard = null;
 let activeCommerceOverview = null;
 let adminSessionFilter = "all";
 let adminSafetyFilter = "all";
+let adminSessionSortMode = "recent";
 
 const ADMIN_SESSION_FILTER_KEY = "saajuu.admin.sessionFilter";
 const ADMIN_SAFETY_FILTER_KEY = "saajuu.admin.safetyFilter";
+const ADMIN_SESSION_SORT_KEY = "saajuu.admin.sessionSort";
 
 function getAuthProviderLabel(user) {
   const provider = String(
@@ -1612,7 +1617,7 @@ function renderAdminList(target, items, formatter) {
         <article class="admin-list__item">
           <strong class="admin-list__title">${escapeHtml(formatted.title)}</strong>
           <p class="admin-list__meta">${escapeHtml(formatted.meta)}</p>
-          ${formatted.detail ? `<p class="admin-list__detail">${escapeHtml(formatted.detail)}</p>` : ""}
+          ${formatted.detail ? `<p class="admin-list__detail">${renderAdminDetail(formatted.detail)}</p>` : ""}
         </article>
       `;
     })
@@ -1627,12 +1632,18 @@ function syncAdminFilterButtons(buttons, activeValue) {
   });
 }
 
+function renderAdminDetail(detail) {
+  return escapeHtml(String(detail ?? "")).replaceAll("\n", "<br />");
+}
+
 function loadAdminFilterState() {
   try {
     const savedSessionFilter = window.sessionStorage.getItem(ADMIN_SESSION_FILTER_KEY)?.trim();
     const savedSafetyFilter = window.sessionStorage.getItem(ADMIN_SAFETY_FILTER_KEY)?.trim();
+    const savedSessionSort = window.sessionStorage.getItem(ADMIN_SESSION_SORT_KEY)?.trim();
     if (savedSessionFilter) adminSessionFilter = savedSessionFilter;
     if (savedSafetyFilter) adminSafetyFilter = savedSafetyFilter;
+    if (savedSessionSort) adminSessionSortMode = savedSessionSort;
   } catch {
     // Ignore storage access issues and fall back to defaults.
   }
@@ -1642,6 +1653,7 @@ function saveAdminFilterState() {
   try {
     window.sessionStorage.setItem(ADMIN_SESSION_FILTER_KEY, adminSessionFilter);
     window.sessionStorage.setItem(ADMIN_SAFETY_FILTER_KEY, adminSafetyFilter);
+    window.sessionStorage.setItem(ADMIN_SESSION_SORT_KEY, adminSessionSortMode);
   } catch {
     // Ignore storage access issues and keep filters in memory only.
   }
@@ -1650,12 +1662,33 @@ function saveAdminFilterState() {
 function buildAdminSessionDetail(item) {
   const summary = String(item.summarySnippet ?? "").trim();
   const lastUserMessage = String(item.lastUserMessageSnippet ?? "").trim();
-  if (summary && lastUserMessage) {
-    return `요약: ${summary}\n마지막 사용자 메시지: ${lastUserMessage}`;
+  const lastAssistantMessage = String(item.lastAssistantMessageSnippet ?? "").trim();
+  if (summary && lastUserMessage && lastAssistantMessage) {
+    return `요약: ${summary}\n마지막 사용자 메시지: ${lastUserMessage}\n마지막 AI 답변: ${lastAssistantMessage}`;
   }
+  if (summary && lastUserMessage) return `요약: ${summary}\n마지막 사용자 메시지: ${lastUserMessage}`;
+  if (summary && lastAssistantMessage) return `요약: ${summary}\n마지막 AI 답변: ${lastAssistantMessage}`;
   if (summary) return `요약: ${summary}`;
+  if (lastUserMessage && lastAssistantMessage) {
+    return `마지막 사용자 메시지: ${lastUserMessage}\n마지막 AI 답변: ${lastAssistantMessage}`;
+  }
   if (lastUserMessage) return `마지막 사용자 메시지: ${lastUserMessage}`;
+  if (lastAssistantMessage) return `마지막 AI 답변: ${lastAssistantMessage}`;
   return "";
+}
+
+function formatAdminTimestamp(value) {
+  if (!value) return "최근 갱신 시각을 아직 불러오지 못했습니다.";
+  try {
+    return new Intl.DateTimeFormat("ko-KR", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return "최근 갱신 시각을 아직 불러오지 못했습니다.";
+  }
 }
 
 function renderAdminDashboard(dashboard) {
@@ -1670,13 +1703,20 @@ function renderAdminDashboard(dashboard) {
     adminStatus.textContent = activeSession
       ? "관리자 권한이 있는 계정에서만 운영 화면을 열 수 있습니다."
       : "로그인 후 관리자 권한을 확인할 수 있습니다.";
+    if (adminUpdatedAt) adminUpdatedAt.textContent = "운영 데이터는 관리자 권한 확인 뒤 불러옵니다.";
+    if (adminRefresh) adminRefresh.disabled = !activeSession;
     if (window.location.hash === "#admin") openHubSection("my-page");
     return;
   }
 
   adminStatus.textContent = `${dashboard.currentAdmin.displayName} 계정으로 운영 현황을 확인하고 있습니다.`;
+  if (adminUpdatedAt) adminUpdatedAt.textContent = `최근 갱신: ${formatAdminTimestamp(dashboard.fetchedAt)}`;
+  if (adminRefresh) adminRefresh.disabled = false;
   syncAdminFilterButtons(adminSessionFilters, adminSessionFilter);
   syncAdminFilterButtons(adminSafetyFilters, adminSafetyFilter);
+  if (adminSessionSort instanceof HTMLSelectElement) {
+    adminSessionSort.value = adminSessionSortMode;
+  }
   adminStats.innerHTML = [
     ["사용자", dashboard.stats.totalUsers],
     ["연결 인연", dashboard.stats.activeRelationships],
@@ -1701,6 +1741,18 @@ function renderAdminDashboard(dashboard) {
     if (adminSessionFilter === "all") return true;
     return item.status === adminSessionFilter;
   });
+  const sortedSessions = [...filteredSessions].sort((left, right) => {
+    if (adminSessionSortMode === "remaining") {
+      const leftRemaining = Math.max(Number(left.turnLimit) - Number(left.usedTurns), 0);
+      const rightRemaining = Math.max(Number(right.turnLimit) - Number(right.usedTurns), 0);
+      if (leftRemaining !== rightRemaining) return leftRemaining - rightRemaining;
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    }
+    if (adminSessionSortMode === "user") {
+      return String(left.userLabel).localeCompare(String(right.userLabel), "ko");
+    }
+    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  });
   const filteredSafetyEvents = (dashboard.recentSafetyEvents ?? []).filter((item) => {
     if (adminSafetyFilter === "all") return true;
     return item.level === adminSafetyFilter;
@@ -1710,7 +1762,7 @@ function renderAdminDashboard(dashboard) {
     title: `${item.displayName} · ${item.role}`,
     meta: `가입 ${formatShortDate(item.createdAt)}`,
   }));
-  renderAdminList(adminSessions, filteredSessions, (item) => ({
+  renderAdminList(adminSessions, sortedSessions, (item) => ({
     title: `${item.userLabel} · ${item.topic} · ${item.mode}`,
     meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · 남은 ${Math.max(Number(item.turnLimit) - Number(item.usedTurns), 0)}턴 · ${formatShortDate(item.createdAt)}`,
     detail: buildAdminSessionDetail(item),
@@ -1766,6 +1818,22 @@ adminSafetyFilters.forEach((button) => {
     saveAdminFilterState();
     if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
   });
+});
+
+adminSessionSort?.addEventListener("change", () => {
+  adminSessionSortMode = adminSessionSort.value || "recent";
+  saveAdminFilterState();
+  if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+});
+
+adminRefresh?.addEventListener("click", async () => {
+  if (!activeSession) {
+    renderAdminDashboard(null);
+    return;
+  }
+  adminRefresh.disabled = true;
+  if (adminUpdatedAt) adminUpdatedAt.textContent = "운영 데이터를 다시 불러오고 있습니다.";
+  await refreshAdminDashboard(activeSession);
 });
 
 loadAdminFilterState();

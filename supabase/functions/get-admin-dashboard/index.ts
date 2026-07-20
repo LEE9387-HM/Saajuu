@@ -171,6 +171,7 @@ Deno.serve(async (request) => {
 
   const sessionSummaryMap = new Map<string, string>();
   const sessionLastUserMessageMap = new Map<string, string>();
+  const sessionLastAssistantMessageMap = new Map<string, string>();
   const recentSessionIds = (recentSessionsResult.data ?? []).map((item) => item.id).filter(Boolean);
   if (recentSessionIds.length) {
     const { data: sessionSummaries, error: sessionSummariesError } = await adminClient
@@ -194,9 +195,23 @@ Deno.serve(async (request) => {
         sessionLastUserMessageMap.set(item.session_id, compactText(item.content, 72));
       }
     });
+
+    const { data: recentAssistantMessages, error: recentAssistantMessagesError } = await adminClient
+      .from("consultation_messages")
+      .select("session_id, role, content, created_at")
+      .eq("role", "assistant")
+      .in("session_id", recentSessionIds)
+      .order("created_at", { ascending: false });
+    if (recentAssistantMessagesError) return json({ error: recentAssistantMessagesError.message }, 500);
+    (recentAssistantMessages ?? []).forEach((item) => {
+      if (!sessionLastAssistantMessageMap.has(item.session_id)) {
+        sessionLastAssistantMessageMap.set(item.session_id, compactText(item.content, 72));
+      }
+    });
   }
 
   return json({
+    fetchedAt: new Date().toISOString(),
     currentAdmin: {
       email: currentUser.email ?? "",
       displayName: compactName(profile?.display_name ?? currentUser.email?.split("@")[0]),
@@ -230,6 +245,7 @@ Deno.serve(async (request) => {
       turnLimit: item.turn_limit,
       summarySnippet: sessionSummaryMap.get(item.id) ?? "",
       lastUserMessageSnippet: sessionLastUserMessageMap.get(item.id) ?? "",
+      lastAssistantMessageSnippet: sessionLastAssistantMessageMap.get(item.id) ?? "",
       createdAt: item.created_at,
     })),
     recentEntitlements: (recentEntitlementsResult.data ?? []).map((item) => ({
