@@ -597,7 +597,18 @@
                 <div id="admin-status" class="auth-panel__note">관리자 권한을 확인하고 있습니다.</div>
                 <p id="admin-updated-at" class="admin-panel__updated">최근 갱신 시각을 불러오고 있습니다.</p>
               </div>
-              <button type="button" id="admin-refresh" class="auth-button auth-button--ghost">운영 현황 새로고침</button>
+              <div class="admin-panel__toolbar-actions">
+                <label class="admin-search">
+                  <span>검색</span>
+                  <input
+                    type="search"
+                    id="admin-session-search"
+                    placeholder="사용자, 주제, 요약, 마지막 메시지"
+                    autocomplete="off"
+                  />
+                </label>
+                <button type="button" id="admin-refresh" class="auth-button auth-button--ghost">운영 현황 새로고침</button>
+              </div>
             </div>
             <section id="admin-panel" class="admin-panel" hidden>
               <div class="admin-panel__stats" id="admin-stats"></div>
@@ -628,6 +639,7 @@
                     </label>
                   </div>
                   <div id="admin-sessions" class="admin-list"></div>
+                  <button type="button" id="admin-sessions-more" class="auth-button auth-button--ghost admin-card__more" hidden>상담 더 보기</button>
                 </section>
                 <section class="admin-card">
                   <div class="admin-card__head">
@@ -655,12 +667,37 @@
                     </div>
                   </div>
                   <div id="admin-safety" class="admin-list"></div>
+                  <button type="button" id="admin-safety-more" class="auth-button auth-button--ghost admin-card__more" hidden>안전 이벤트 더 보기</button>
+                </section>
+                <section class="admin-card">
+                  <div class="admin-card__head">
+                    <p class="eyebrow">운영 처리 이력</p>
+                    <h4>관리자 액션 로그</h4>
+                  </div>
+                  <div id="admin-actions" class="admin-list"></div>
+                  <button type="button" id="admin-actions-more" class="auth-button auth-button--ghost admin-card__more" hidden>처리 이력 더 보기</button>
                 </section>
               </div>
             </section>
           </article>
         </div>
       </section>
+
+      <dialog id="admin-session-modal" class="profile-modal" aria-labelledby="admin-session-modal-title">
+        <div class="profile-modal__shell admin-session-modal__shell">
+          <div class="profile-modal__header">
+            <div>
+              <p class="eyebrow">상담 상세</p>
+              <h2 id="admin-session-modal-title">세션 상세 정보</h2>
+              <p id="admin-session-modal-copy">상담 요약, 최근 메시지, 안전 이벤트를 같이 확인합니다.</p>
+            </div>
+            <button type="button" class="profile-modal__close" id="admin-session-modal-close" aria-label="닫기">닫기</button>
+          </div>
+          <div id="admin-session-modal-body" class="admin-session-modal__body">
+            <p class="admin-list__empty">세션을 선택하면 상세 내용이 여기에 표시됩니다.</p>
+          </div>
+        </div>
+      </dialog>
 
       <dialog id="profile-modal" class="profile-modal" aria-labelledby="profile-modal-title">
         <div class="profile-modal__shell">

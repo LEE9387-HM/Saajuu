@@ -38,6 +38,35 @@ function compactText(value: unknown, maxLength = 96) {
   return `${normalized.slice(0, maxLength).trim()}…`;
 }
 
+function clampLimit(value: unknown, fallback = 8, max = 40) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(Math.floor(parsed), max);
+}
+
+function buildSessionSearchTerm(input: {
+  userLabel?: string;
+  topic?: string;
+  mode?: string;
+  status?: string;
+  summarySnippet?: string;
+  lastUserMessageSnippet?: string;
+  lastAssistantMessageSnippet?: string;
+}) {
+  return [
+    input.userLabel,
+    input.topic,
+    input.mode,
+    input.status,
+    input.summarySnippet,
+    input.lastUserMessageSnippet,
+    input.lastAssistantMessageSnippet,
+  ]
+    .map((value) => String(value ?? "").trim().toLowerCase())
+    .filter(Boolean)
+    .join(" ");
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -67,16 +96,24 @@ Deno.serve(async (request) => {
     .select("display_name, role")
     .eq("id", currentUser.id)
     .maybeSingle();
-
   if (profileError) return json({ error: profileError.message }, 500);
 
   const adminEmails = normalizeAdminEmails(Deno.env.get("ADMIN_EMAILS"));
   const isAdmin =
     profile?.role === "admin" || adminEmails.has(String(currentUser.email ?? "").trim().toLowerCase());
-
   if (!isAdmin) {
     return json({ error: "Admin access required", code: "admin_only" }, 403);
   }
+
+  const body = await request.json().catch(() => ({}));
+  const sessionLimit = clampLimit(body?.sessionLimit, 8);
+  const profileLimit = clampLimit(body?.profileLimit, 8);
+  const entitlementLimit = clampLimit(body?.entitlementLimit, 8);
+  const orderLimit = clampLimit(body?.orderLimit, 8);
+  const safetyLimit = clampLimit(body?.safetyLimit, 8);
+  const actionLogLimit = clampLimit(body?.actionLogLimit, 8);
+  const searchQuery = String(body?.searchQuery ?? "").trim().toLowerCase();
+  const detailSessionId = String(body?.detailSessionId ?? "").trim();
 
   const [
     totalUsersResult,
@@ -87,11 +124,13 @@ Deno.serve(async (request) => {
     activeEntitlementsResult,
     consumedEntitlementsResult,
     totalSafetyEventsResult,
+    reviewedSafetyEventsResult,
     recentProfilesResult,
     recentSessionsResult,
     recentEntitlementsResult,
     recentOrdersResult,
     recentSafetyEventsResult,
+    recentActionLogsResult,
   ] = await Promise.all([
     adminClient.from("profiles").select("id", { count: "exact", head: true }),
     adminClient.from("relationship_links").select("id", { count: "exact", head: true }).eq("status", "active"),
@@ -101,31 +140,37 @@ Deno.serve(async (request) => {
     adminClient.from("entitlements").select("id", { count: "exact", head: true }).eq("status", "active"),
     adminClient.from("entitlements").select("id", { count: "exact", head: true }).eq("status", "consumed"),
     adminClient.from("safety_events").select("id", { count: "exact", head: true }),
+    adminClient.from("safety_events").select("id", { count: "exact", head: true }).not("reviewed_at", "is", null),
     adminClient
       .from("profiles")
       .select("id, display_name, role, created_at")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(profileLimit),
     adminClient
       .from("consultation_sessions")
       .select("id, user_id, persona_id, topic, mode, status, used_turns, turn_limit, created_at")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(sessionLimit),
     adminClient
       .from("entitlements")
       .select("id, user_id, product_id, status, total_turns, used_turns, expires_at, created_at")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(entitlementLimit),
     adminClient
       .from("orders")
       .select("id, user_id, product_id, amount_krw, status, created_at")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(orderLimit),
     adminClient
       .from("safety_events")
-      .select("id, user_id, level, category, action, created_at")
+      .select("id, user_id, session_id, level, category, action, reviewed_at, reviewed_by, created_at")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(safetyLimit),
+    adminClient
+      .from("admin_action_logs")
+      .select("id, admin_user_id, action_type, target_type, target_id, metadata, created_at")
+      .order("created_at", { ascending: false })
+      .limit(actionLogLimit),
   ]);
 
   const firstError = [
@@ -137,11 +182,13 @@ Deno.serve(async (request) => {
     activeEntitlementsResult.error,
     consumedEntitlementsResult.error,
     totalSafetyEventsResult.error,
+    reviewedSafetyEventsResult.error,
     recentProfilesResult.error,
     recentSessionsResult.error,
     recentEntitlementsResult.error,
     recentOrdersResult.error,
     recentSafetyEventsResult.error,
+    recentActionLogsResult.error,
   ].find(Boolean);
 
   if (firstError) return json({ error: firstError.message }, 500);
@@ -153,6 +200,8 @@ Deno.serve(async (request) => {
         ...(recentEntitlementsResult.data ?? []).map((item) => item.user_id),
         ...(recentOrdersResult.data ?? []).map((item) => item.user_id),
         ...(recentSafetyEventsResult.data ?? []).map((item) => item.user_id).filter(Boolean),
+        ...(recentSafetyEventsResult.data ?? []).map((item) => item.reviewed_by).filter(Boolean),
+        ...(recentActionLogsResult.data ?? []).map((item) => item.admin_user_id).filter(Boolean),
       ].filter(Boolean),
     ),
   ];
@@ -169,18 +218,27 @@ Deno.serve(async (request) => {
     });
   }
 
-  const sessionSummaryMap = new Map<string, string>();
+  const sessionSummaryMap = new Map<
+    string,
+    { summary: string; options: unknown[]; actionPlan: unknown[]; updatedAt: string | null }
+  >();
   const sessionLastUserMessageMap = new Map<string, string>();
   const sessionLastAssistantMessageMap = new Map<string, string>();
   const recentSessionIds = (recentSessionsResult.data ?? []).map((item) => item.id).filter(Boolean);
+
   if (recentSessionIds.length) {
     const { data: sessionSummaries, error: sessionSummariesError } = await adminClient
       .from("session_summaries")
-      .select("session_id, summary")
+      .select("session_id, summary, options, action_plan, updated_at")
       .in("session_id", recentSessionIds);
     if (sessionSummariesError) return json({ error: sessionSummariesError.message }, 500);
     (sessionSummaries ?? []).forEach((item) => {
-      sessionSummaryMap.set(item.session_id, compactText(item.summary));
+      sessionSummaryMap.set(item.session_id, {
+        summary: compactText(item.summary),
+        options: Array.isArray(item.options) ? item.options : [],
+        actionPlan: Array.isArray(item.action_plan) ? item.action_plan : [],
+        updatedAt: item.updated_at ?? null,
+      });
     });
 
     const { data: recentUserMessages, error: recentUserMessagesError } = await adminClient
@@ -210,6 +268,97 @@ Deno.serve(async (request) => {
     });
   }
 
+  let sessionDetail: Record<string, unknown> | null = null;
+  if (detailSessionId) {
+    const { data: sessionRow, error: sessionRowError } = await adminClient
+      .from("consultation_sessions")
+      .select("id, user_id, persona_id, topic, mode, status, used_turns, turn_limit, metadata, created_at")
+      .eq("id", detailSessionId)
+      .maybeSingle();
+    if (sessionRowError) return json({ error: sessionRowError.message }, 500);
+
+    if (sessionRow) {
+      const [summaryResult, messagesResult, safetyResult] = await Promise.all([
+        adminClient
+          .from("session_summaries")
+          .select("summary, options, action_plan, updated_at")
+          .eq("session_id", detailSessionId)
+          .maybeSingle(),
+        adminClient
+          .from("consultation_messages")
+          .select("role, content, created_at")
+          .eq("session_id", detailSessionId)
+          .order("created_at", { ascending: false })
+          .limit(12),
+        adminClient
+          .from("safety_events")
+          .select("id, level, category, action, reviewed_at, created_at")
+          .eq("session_id", detailSessionId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+      ]);
+
+      const detailError = [summaryResult.error, messagesResult.error, safetyResult.error].find(Boolean);
+      if (detailError) return json({ error: detailError.message }, 500);
+
+      sessionDetail = {
+        id: sessionRow.id,
+        userId: sessionRow.user_id,
+        userLabel: profileNameMap.get(sessionRow.user_id) ?? compactUserId(sessionRow.user_id),
+        personaId: sessionRow.persona_id,
+        topic: sessionRow.topic,
+        mode: sessionRow.mode,
+        status: sessionRow.status,
+        usedTurns: sessionRow.used_turns,
+        turnLimit: sessionRow.turn_limit,
+        createdAt: sessionRow.created_at,
+        metadata: sessionRow.metadata ?? {},
+        summary: summaryResult.data?.summary ?? "",
+        options: Array.isArray(summaryResult.data?.options) ? summaryResult.data?.options : [],
+        actionPlan: Array.isArray(summaryResult.data?.action_plan) ? summaryResult.data?.action_plan : [],
+        summaryUpdatedAt: summaryResult.data?.updated_at ?? null,
+        messages: (messagesResult.data ?? []).map((item) => ({
+          role: item.role,
+          content: item.content,
+          createdAt: item.created_at,
+        })),
+        safetyEvents: (safetyResult.data ?? []).map((item) => ({
+          id: item.id,
+          level: item.level,
+          category: item.category,
+          action: item.action,
+          reviewedAt: item.reviewed_at,
+          createdAt: item.created_at,
+        })),
+      };
+    }
+  }
+
+  let recentSessions = (recentSessionsResult.data ?? []).map((item) => {
+    const summaryInfo = sessionSummaryMap.get(item.id);
+    return {
+      id: item.id,
+      userId: item.user_id,
+      userLabel: profileNameMap.get(item.user_id) ?? compactUserId(item.user_id),
+      personaId: item.persona_id,
+      topic: item.topic,
+      mode: item.mode,
+      status: item.status,
+      usedTurns: item.used_turns,
+      turnLimit: item.turn_limit,
+      summarySnippet: summaryInfo?.summary ?? "",
+      lastUserMessageSnippet: sessionLastUserMessageMap.get(item.id) ?? "",
+      lastAssistantMessageSnippet: sessionLastAssistantMessageMap.get(item.id) ?? "",
+      createdAt: item.created_at,
+    };
+  });
+
+  if (searchQuery) {
+    recentSessions = recentSessions.filter((item) =>
+      buildSessionSearchTerm(item).includes(searchQuery),
+    );
+  }
+
   return json({
     fetchedAt: new Date().toISOString(),
     currentAdmin: {
@@ -226,6 +375,7 @@ Deno.serve(async (request) => {
       activeEntitlements: activeEntitlementsResult.count ?? 0,
       consumedEntitlements: consumedEntitlementsResult.count ?? 0,
       safetyEvents: totalSafetyEventsResult.count ?? 0,
+      reviewedSafetyEvents: reviewedSafetyEventsResult.count ?? 0,
     },
     recentProfiles: (recentProfilesResult.data ?? []).map((item) => ({
       id: item.id,
@@ -233,21 +383,7 @@ Deno.serve(async (request) => {
       role: item.role,
       createdAt: item.created_at,
     })),
-    recentSessions: (recentSessionsResult.data ?? []).map((item) => ({
-      id: item.id,
-      userId: item.user_id,
-      userLabel: profileNameMap.get(item.user_id) ?? compactUserId(item.user_id),
-      personaId: item.persona_id,
-      topic: item.topic,
-      mode: item.mode,
-      status: item.status,
-      usedTurns: item.used_turns,
-      turnLimit: item.turn_limit,
-      summarySnippet: sessionSummaryMap.get(item.id) ?? "",
-      lastUserMessageSnippet: sessionLastUserMessageMap.get(item.id) ?? "",
-      lastAssistantMessageSnippet: sessionLastAssistantMessageMap.get(item.id) ?? "",
-      createdAt: item.created_at,
-    })),
+    recentSessions,
     recentEntitlements: (recentEntitlementsResult.data ?? []).map((item) => ({
       id: item.id,
       userId: item.user_id,
@@ -271,13 +407,31 @@ Deno.serve(async (request) => {
     recentSafetyEvents: (recentSafetyEventsResult.data ?? []).map((item) => ({
       id: item.id,
       userId: item.user_id,
+      sessionId: item.session_id,
       userLabel: item.user_id
         ? profileNameMap.get(item.user_id) ?? compactUserId(item.user_id)
-        : "알 수 없음",
+        : "연결 계정 없음",
       level: item.level,
       category: item.category,
       action: item.action,
+      reviewedAt: item.reviewed_at,
+      reviewedByLabel: item.reviewed_by
+        ? profileNameMap.get(item.reviewed_by) ?? compactUserId(item.reviewed_by)
+        : "",
       createdAt: item.created_at,
     })),
+    recentActionLogs: (recentActionLogsResult.data ?? []).map((item) => ({
+      id: item.id,
+      adminUserId: item.admin_user_id,
+      adminLabel: item.admin_user_id
+        ? profileNameMap.get(item.admin_user_id) ?? compactUserId(item.admin_user_id)
+        : "관리자 계정 없음",
+      actionType: item.action_type,
+      targetType: item.target_type,
+      targetId: item.target_id,
+      metadata: item.metadata ?? {},
+      createdAt: item.created_at,
+    })),
+    sessionDetail,
   });
 });

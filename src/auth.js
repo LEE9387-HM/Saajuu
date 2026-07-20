@@ -467,14 +467,27 @@ export async function getAccountProfile(session) {
   };
 }
 
-export async function getAdminDashboard(session) {
+export async function getAdminDashboard(session, options = {}) {
   const supabase = getSupabaseClient();
   if (!supabase || !session?.user) {
     return { data: null, error: new Error("로그인 후 관리자 화면을 확인할 수 있습니다.") };
   }
 
   const { data, error } = await supabase.functions.invoke("get-admin-dashboard", {
-    body: {},
+    body: options,
+  });
+
+  return { data: data ?? null, error: await normalizeFunctionError(error) };
+}
+
+export async function reviewSafetyEvent(session, safetyEventId) {
+  const supabase = getSupabaseClient();
+  if (!supabase || !session?.user) {
+    return { data: null, error: new Error("로그인 후 관리자 화면을 확인할 수 있습니다.") };
+  }
+
+  const { data, error } = await supabase.functions.invoke("admin-update-safety-event", {
+    body: { safetyEventId },
   });
 
   return { data: data ?? null, error: await normalizeFunctionError(error) };

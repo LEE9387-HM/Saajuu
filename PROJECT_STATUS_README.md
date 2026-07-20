@@ -1,5 +1,13 @@
 ﻿# Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.49.0 관리자 검색/상세 모달/안전 확인 처리 확장 (2026-07-20)
+
+- 관리자 화면 상단에 세션 검색 입력을 추가해 최근 상담 목록을 사용자·주제·요약·마지막 메시지 기준으로 바로 좁혀 볼 수 있게 했습니다.
+- 최근 상담 카드에 `상세 보기` 모달을 추가해 세션 메타데이터, 저장된 상담 요약, 최근 메시지, 연결된 안전 이벤트를 한 화면에서 확인할 수 있게 했습니다.
+- 안전 이벤트에 `확인 처리` 버튼과 `관리자 액션 로그` 카드를 추가했고, Supabase에 `admin_action_logs` 테이블과 `safety_events.reviewed_at/reviewed_by` 필드를 함께 반영했습니다.
+- 최근 상담/안전 이벤트/액션 로그 카드에 `더 보기` 버튼을 추가해 운영자가 긴 목록도 단계적으로 불러오도록 확장했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase db push --linked --include-all --yes`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`, `npx supabase functions deploy admin-update-safety-event --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## v0.5.48.0 관리자 정렬/새로고침/대화 미리보기 확장 (2026-07-20)
 
 - 관리자 화면 상단에 수동 새로고침 버튼과 최근 갱신 시각을 추가했습니다.

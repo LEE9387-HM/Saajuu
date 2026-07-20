@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.49.0 - 2026-07-20
+
+- 관리자 화면 상단에 세션 검색 입력을 추가하고, 최근 상담 목록을 사용자·주제·요약·마지막 메시지 기준으로 바로 좁혀 볼 수 있게 했습니다.
+- 최근 상담 카드에 `상세 보기` 모달을 추가해 세션 메타데이터, 저장된 상담 요약, 최근 메시지, 연결된 안전 이벤트를 한 화면에서 확인할 수 있게 했습니다.
+- 안전 이벤트에 `확인 처리` 액션과 `관리자 액션 로그` 카드를 추가했고, Supabase에 `admin_action_logs` 테이블과 `reviewed_at/reviewed_by` 필드를 함께 반영했습니다.
+- 최근 상담/안전 이벤트/액션 로그 카드에 `더 보기` 버튼을 추가해 운영자가 8건 이상을 단계적으로 불러오도록 확장했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase db push --linked --include-all --yes`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`, `npx supabase functions deploy admin-update-safety-event --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## 0.5.48.0 - 2026-07-20
 
 - 관리자 화면 상단에 `운영 현황 새로고침` 버튼과 `최근 갱신` 시각을 추가했습니다.

@@ -46,6 +46,7 @@ import {
   requestPasswordReset,
   recordRequiredConsents,
   REQUIRED_CONSENTS,
+  reviewSafetyEvent,
   sendConsultationMessage,
   signInWithPassword,
   signInWithOAuthProvider,
@@ -146,6 +147,7 @@ const adminNavLink = document.querySelector("#admin-nav-link");
 const adminStatus = document.querySelector("#admin-status");
 const adminUpdatedAt = document.querySelector("#admin-updated-at");
 const adminRefresh = document.querySelector("#admin-refresh");
+const adminSessionSearch = document.querySelector("#admin-session-search");
 const adminPanel = document.querySelector("#admin-panel");
 const adminStats = document.querySelector("#admin-stats");
 const adminSessionFilters = [...document.querySelectorAll("[data-admin-session-filter]")];
@@ -153,9 +155,16 @@ const adminSafetyFilters = [...document.querySelectorAll("[data-admin-safety-fil
 const adminSessionSort = document.querySelector("#admin-session-sort");
 const adminProfiles = document.querySelector("#admin-profiles");
 const adminSessions = document.querySelector("#admin-sessions");
+const adminSessionsMore = document.querySelector("#admin-sessions-more");
 const adminEntitlements = document.querySelector("#admin-entitlements");
 const adminOrders = document.querySelector("#admin-orders");
 const adminSafety = document.querySelector("#admin-safety");
+const adminSafetyMore = document.querySelector("#admin-safety-more");
+const adminActions = document.querySelector("#admin-actions");
+const adminActionsMore = document.querySelector("#admin-actions-more");
+const adminSessionModal = document.querySelector("#admin-session-modal");
+const adminSessionModalClose = document.querySelector("#admin-session-modal-close");
+const adminSessionModalBody = document.querySelector("#admin-session-modal-body");
 const commercePanel = document.querySelector("#commerce-panel");
 const commerceNote = document.querySelector("#commerce-note");
 const entitlementList = document.querySelector("#entitlement-list");
@@ -219,10 +228,17 @@ let activeCommerceOverview = null;
 let adminSessionFilter = "all";
 let adminSafetyFilter = "all";
 let adminSessionSortMode = "recent";
+let adminSessionSearchQuery = "";
+let adminSessionListLimit = 8;
+let adminSafetyListLimit = 8;
+let adminActionLogListLimit = 8;
+let activeAdminSessionDetailId = "";
+let activeSafetyReviewId = "";
 
 const ADMIN_SESSION_FILTER_KEY = "saajuu.admin.sessionFilter";
 const ADMIN_SAFETY_FILTER_KEY = "saajuu.admin.safetyFilter";
 const ADMIN_SESSION_SORT_KEY = "saajuu.admin.sessionSort";
+const ADMIN_SESSION_SEARCH_KEY = "saajuu.admin.sessionSearch";
 
 function getAuthProviderLabel(user) {
   const provider = String(
@@ -1613,11 +1629,24 @@ function renderAdminList(target, items, formatter) {
   target.innerHTML = items
     .map((item) => {
       const formatted = formatter(item);
+      const actions = Array.isArray(formatted.actions) ? formatted.actions : [];
       return `
-        <article class="admin-list__item">
+        <article class="admin-list__item" ${formatted.clickable ? 'data-clickable="true"' : ""} data-admin-item-id="${escapeHtml(String(formatted.id ?? ""))}">
           <strong class="admin-list__title">${escapeHtml(formatted.title)}</strong>
           <p class="admin-list__meta">${escapeHtml(formatted.meta)}</p>
           ${formatted.detail ? `<p class="admin-list__detail">${renderAdminDetail(formatted.detail)}</p>` : ""}
+          ${
+            actions.length
+              ? `<div class="admin-list__actions">${actions
+                  .map((action) => {
+                    if (action.type === "badge") {
+                      return `<span class="admin-list__badge" data-variant="${escapeHtml(action.variant ?? "")}">${escapeHtml(action.label)}</span>`;
+                    }
+                    return `<button type="button" class="admin-inline-button" data-admin-action="${escapeHtml(action.kind)}" data-admin-target-id="${escapeHtml(String(action.targetId ?? ""))}" ${action.disabled ? "disabled" : ""}>${escapeHtml(action.label)}</button>`;
+                  })
+                  .join("")}</div>`
+              : ""
+          }
         </article>
       `;
     })
@@ -1641,9 +1670,11 @@ function loadAdminFilterState() {
     const savedSessionFilter = window.sessionStorage.getItem(ADMIN_SESSION_FILTER_KEY)?.trim();
     const savedSafetyFilter = window.sessionStorage.getItem(ADMIN_SAFETY_FILTER_KEY)?.trim();
     const savedSessionSort = window.sessionStorage.getItem(ADMIN_SESSION_SORT_KEY)?.trim();
+    const savedSearch = window.sessionStorage.getItem(ADMIN_SESSION_SEARCH_KEY)?.trim();
     if (savedSessionFilter) adminSessionFilter = savedSessionFilter;
     if (savedSafetyFilter) adminSafetyFilter = savedSafetyFilter;
     if (savedSessionSort) adminSessionSortMode = savedSessionSort;
+    if (savedSearch) adminSessionSearchQuery = savedSearch;
   } catch {
     // Ignore storage access issues and fall back to defaults.
   }
@@ -1654,9 +1685,97 @@ function saveAdminFilterState() {
     window.sessionStorage.setItem(ADMIN_SESSION_FILTER_KEY, adminSessionFilter);
     window.sessionStorage.setItem(ADMIN_SAFETY_FILTER_KEY, adminSafetyFilter);
     window.sessionStorage.setItem(ADMIN_SESSION_SORT_KEY, adminSessionSortMode);
+    window.sessionStorage.setItem(ADMIN_SESSION_SEARCH_KEY, adminSessionSearchQuery);
   } catch {
     // Ignore storage access issues and keep filters in memory only.
   }
+}
+
+function formatAdminActionType(value) {
+  if (value === "review_safety_event") return "안전 이벤트 확인";
+  return String(value ?? "운영 처리");
+}
+
+function buildAdminSessionModal(detail) {
+  if (!detail) {
+    return '<p class="admin-list__empty">세션을 선택하면 상세 내용이 여기에 표시됩니다.</p>';
+  }
+
+  const options = Array.isArray(detail.options) ? detail.options : [];
+  const actionPlan = Array.isArray(detail.actionPlan) ? detail.actionPlan : [];
+  const messages = Array.isArray(detail.messages) ? detail.messages : [];
+  const safetyEvents = Array.isArray(detail.safetyEvents) ? detail.safetyEvents : [];
+  const metadata = detail.metadata && typeof detail.metadata === "object" ? detail.metadata : {};
+
+  return `
+    <section class="admin-session-modal__meta">
+      <div class="admin-session-modal__panel">
+        <strong>${escapeHtml(String(detail.userLabel ?? "사용자"))}</strong>
+        <span>${escapeHtml(String(detail.topic ?? "topic"))} · ${escapeHtml(String(detail.mode ?? "mode"))}</span>
+        <span>${escapeHtml(String(detail.status ?? "status"))} · ${escapeHtml(String(detail.usedTurns ?? 0))}/${escapeHtml(String(detail.turnLimit ?? 0))}턴 · ${escapeHtml(formatShortDate(detail.createdAt))}</span>
+      </div>
+      <div class="admin-session-modal__panel">
+        <strong>세션 메타데이터</strong>
+        <span>${escapeHtml(JSON.stringify(metadata, null, 2))}</span>
+      </div>
+    </section>
+    <section class="admin-session-modal__panel">
+      <strong>상담 요약</strong>
+      <p>${escapeHtml(String(detail.summary ?? "요약이 아직 없습니다.")).replaceAll("\n", "<br />")}</p>
+      ${
+        options.length
+          ? `<div><strong>선택지</strong><ul>${options.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("")}</ul></div>`
+          : ""
+      }
+      ${
+        actionPlan.length
+          ? `<div><strong>행동 계획</strong><ul>${actionPlan.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("")}</ul></div>`
+          : ""
+      }
+    </section>
+    <section class="admin-session-modal__panel">
+      <strong>최근 메시지</strong>
+      <div class="admin-session-modal__messages">
+        ${
+          messages.length
+            ? messages
+                .map(
+                  (item) => `
+                    <article class="admin-session-modal__message">
+                      <strong>${escapeHtml(item.role === "assistant" ? "AI" : "사용자")} · ${escapeHtml(formatShortDate(item.createdAt))}</strong>
+                      <p>${escapeHtml(String(item.content ?? "")).replaceAll("\n", "<br />")}</p>
+                    </article>
+                  `,
+                )
+                .join("")
+            : '<p class="admin-list__empty">최근 메시지가 없습니다.</p>'
+        }
+      </div>
+    </section>
+    <section class="admin-session-modal__panel">
+      <strong>안전 이벤트</strong>
+      ${
+        safetyEvents.length
+          ? safetyEvents
+              .map(
+                (item) => `
+                  <div class="admin-session-modal__message">
+                    <strong>${escapeHtml(String(item.level))} · ${escapeHtml(formatShortDate(item.createdAt))}</strong>
+                    <span>${escapeHtml(String(item.category ?? ""))} / ${escapeHtml(String(item.action ?? ""))}</span>
+                    <span>${item.reviewedAt ? `확인 완료 · ${escapeHtml(formatShortDate(item.reviewedAt))}` : "미확인"}</span>
+                  </div>
+                `,
+              )
+              .join("")
+          : '<p class="admin-list__empty">연결된 안전 이벤트가 없습니다.</p>'
+      }
+    </section>
+  `;
+}
+
+function renderAdminSessionModal(detail) {
+  if (!adminSessionModalBody) return;
+  adminSessionModalBody.innerHTML = buildAdminSessionModal(detail);
 }
 
 function buildAdminSessionDetail(item) {
@@ -1712,6 +1831,9 @@ function renderAdminDashboard(dashboard) {
   adminStatus.textContent = `${dashboard.currentAdmin.displayName} 계정으로 운영 현황을 확인하고 있습니다.`;
   if (adminUpdatedAt) adminUpdatedAt.textContent = `최근 갱신: ${formatAdminTimestamp(dashboard.fetchedAt)}`;
   if (adminRefresh) adminRefresh.disabled = false;
+  if (adminSessionSearch instanceof HTMLInputElement) {
+    adminSessionSearch.value = adminSessionSearchQuery;
+  }
   syncAdminFilterButtons(adminSessionFilters, adminSessionFilter);
   syncAdminFilterButtons(adminSafetyFilters, adminSafetyFilter);
   if (adminSessionSort instanceof HTMLSelectElement) {
@@ -1726,6 +1848,7 @@ function renderAdminDashboard(dashboard) {
     ["활성 상담권", dashboard.stats.activeEntitlements],
     ["소진 상담권", dashboard.stats.consumedEntitlements],
     ["안전 이벤트", dashboard.stats.safetyEvents],
+    ["확인 완료", dashboard.stats.reviewedSafetyEvents ?? 0],
   ]
     .map(
       ([label, value]) => `
@@ -1763,9 +1886,12 @@ function renderAdminDashboard(dashboard) {
     meta: `가입 ${formatShortDate(item.createdAt)}`,
   }));
   renderAdminList(adminSessions, sortedSessions, (item) => ({
+    id: item.id,
     title: `${item.userLabel} · ${item.topic} · ${item.mode}`,
     meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · 남은 ${Math.max(Number(item.turnLimit) - Number(item.usedTurns), 0)}턴 · ${formatShortDate(item.createdAt)}`,
     detail: buildAdminSessionDetail(item),
+    clickable: true,
+    actions: [{ kind: "session-detail", label: "상세 보기", targetId: item.id }],
   }));
   renderAdminList(adminEntitlements, dashboard.recentEntitlements, (item) => ({
     title: `${item.userLabel} · ${item.productId}`,
@@ -1776,19 +1902,53 @@ function renderAdminDashboard(dashboard) {
     meta: `${item.status} · ${Number(item.amountKrw).toLocaleString("ko-KR")}원 · ${formatShortDate(item.createdAt)}`,
   }));
   renderAdminList(adminSafety, filteredSafetyEvents, (item) => ({
+    id: item.id,
     title: `${item.userLabel} · ${item.level}`,
     meta: `${item.category} / ${item.action} · ${formatShortDate(item.createdAt)}`,
+    detail: item.reviewedAt
+      ? `확인 완료: ${formatShortDate(item.reviewedAt)} · 처리자 ${item.reviewedByLabel || "운영자"}`
+      : "아직 확인하지 않은 안전 이벤트입니다.",
+    actions: item.reviewedAt
+      ? [{ type: "badge", label: "확인 완료", variant: "done" }]
+      : [
+          {
+            kind: "review-safety",
+            label: activeSafetyReviewId === item.id ? "확인 처리 중..." : "확인 처리",
+            targetId: item.id,
+            disabled: activeSafetyReviewId === item.id,
+          },
+        ],
   }));
+  renderAdminList(adminActions, dashboard.recentActionLogs ?? [], (item) => ({
+    id: item.id,
+    title: `${item.adminLabel} · ${formatAdminActionType(item.actionType)}`,
+    meta: `${item.targetType} · ${formatShortDate(item.createdAt)}`,
+    detail: item.targetId
+      ? `대상: ${item.targetId}\n정보: ${JSON.stringify(item.metadata ?? {}, null, 2)}`
+      : `정보: ${JSON.stringify(item.metadata ?? {}, null, 2)}`,
+  }));
+
+  if (adminSessionsMore) adminSessionsMore.hidden = (dashboard.recentSessions?.length ?? 0) < adminSessionListLimit;
+  if (adminSafetyMore) adminSafetyMore.hidden = (dashboard.recentSafetyEvents?.length ?? 0) < adminSafetyListLimit;
+  if (adminActionsMore) adminActionsMore.hidden = (dashboard.recentActionLogs?.length ?? 0) < adminActionLogListLimit;
+  renderAdminSessionModal(dashboard.sessionDetail ?? null);
 }
 
-async function refreshAdminDashboard(session) {
+async function refreshAdminDashboard(session, overrides = {}) {
   if (!adminNavLink || !adminStatus || !adminPanel) return;
   if (!session) {
     renderAdminDashboard(null);
     return;
   }
 
-  const { data, error } = await getAdminDashboard(session);
+  const { data, error } = await getAdminDashboard(session, {
+    sessionLimit: adminSessionListLimit,
+    safetyLimit: adminSafetyListLimit,
+    actionLogLimit: adminActionLogListLimit,
+    searchQuery: adminSessionSearchQuery,
+    detailSessionId: activeAdminSessionDetailId,
+    ...overrides,
+  });
   if (error) {
     renderAdminDashboard(null);
     if (error.code !== "admin_only") {
@@ -1826,6 +1986,13 @@ adminSessionSort?.addEventListener("change", () => {
   if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
 });
 
+adminSessionSearch?.addEventListener("input", async () => {
+  adminSessionSearchQuery = adminSessionSearch.value.trim();
+  saveAdminFilterState();
+  if (!activeSession) return;
+  await refreshAdminDashboard(activeSession);
+});
+
 adminRefresh?.addEventListener("click", async () => {
   if (!activeSession) {
     renderAdminDashboard(null);
@@ -1834,6 +2001,67 @@ adminRefresh?.addEventListener("click", async () => {
   adminRefresh.disabled = true;
   if (adminUpdatedAt) adminUpdatedAt.textContent = "운영 데이터를 다시 불러오고 있습니다.";
   await refreshAdminDashboard(activeSession);
+});
+
+adminSessionsMore?.addEventListener("click", async () => {
+  if (!activeSession) return;
+  adminSessionListLimit += 8;
+  await refreshAdminDashboard(activeSession);
+});
+
+adminSafetyMore?.addEventListener("click", async () => {
+  if (!activeSession) return;
+  adminSafetyListLimit += 8;
+  await refreshAdminDashboard(activeSession);
+});
+
+adminActionsMore?.addEventListener("click", async () => {
+  if (!activeSession) return;
+  adminActionLogListLimit += 8;
+  await refreshAdminDashboard(activeSession);
+});
+
+adminSessions?.addEventListener("click", async (event) => {
+  const detailButton = event.target.closest("[data-admin-action='session-detail']");
+  const card = event.target.closest("[data-admin-item-id]");
+  const sessionId =
+    detailButton?.dataset.adminTargetId?.trim() || card?.dataset.adminItemId?.trim() || "";
+  if (!sessionId || !activeSession) return;
+
+  activeAdminSessionDetailId = sessionId;
+  renderAdminSessionModal(null);
+  adminSessionModal?.showModal();
+  await refreshAdminDashboard(activeSession);
+});
+
+adminSafety?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-action='review-safety']");
+  const safetyEventId = button?.dataset.adminTargetId?.trim() || "";
+  if (!safetyEventId || !activeSession || activeSafetyReviewId) return;
+
+  activeSafetyReviewId = safetyEventId;
+  if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+  const { error } = await reviewSafetyEvent(activeSession, safetyEventId);
+  activeSafetyReviewId = "";
+  if (error) {
+    authNote.textContent = error.message ?? "안전 이벤트를 확인 처리하지 못했습니다.";
+    if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+    return;
+  }
+  authNote.textContent = "안전 이벤트를 확인 처리하고 운영 이력에 기록했습니다.";
+  await refreshAdminDashboard(activeSession);
+});
+
+adminSessionModalClose?.addEventListener("click", () => {
+  activeAdminSessionDetailId = "";
+  adminSessionModal?.close();
+});
+
+adminSessionModal?.addEventListener("click", (event) => {
+  if (event.target === adminSessionModal) {
+    activeAdminSessionDetailId = "";
+    adminSessionModal.close();
+  }
 });
 
 loadAdminFilterState();
