@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.45.0 - 2026-07-20
+
+- 관리자 화면에 `활성 세션`, `활성 상담권`, `소진 상담권` 통계를 추가해 운영자가 전체 상담/결제 상태를 한눈에 볼 수 있게 했습니다.
+- 관리자 화면에 `최근 상담권` 카드를 추가하고, 상담권별 남은 턴과 만료 시점을 함께 표시하도록 보강했습니다.
+- 최근 상담 세션 목록에도 남은 턴 수를 같이 보여줘서, 어떤 세션이 진행 중인지 운영자가 바로 판단할 수 있게 했습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## 0.5.44.0 - 2026-07-19
 
 - `send-consultation-message`에서 매 턴 뒤 `session_summaries`를 upsert 하도록 연결해, 현재까지 정리된 고민 요약과 다음 행동 프롬프트를 세션 단위로 저장하게 했습니다.

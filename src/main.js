@@ -148,6 +148,7 @@ const adminPanel = document.querySelector("#admin-panel");
 const adminStats = document.querySelector("#admin-stats");
 const adminProfiles = document.querySelector("#admin-profiles");
 const adminSessions = document.querySelector("#admin-sessions");
+const adminEntitlements = document.querySelector("#admin-entitlements");
 const adminOrders = document.querySelector("#admin-orders");
 const adminSafety = document.querySelector("#admin-safety");
 const commercePanel = document.querySelector("#commerce-panel");
@@ -1631,7 +1632,10 @@ function renderAdminDashboard(dashboard) {
     ["사용자", dashboard.stats.totalUsers],
     ["연결 인연", dashboard.stats.activeRelationships],
     ["상담 세션", dashboard.stats.totalConsultationSessions],
+    ["활성 세션", dashboard.stats.activeConsultationSessions],
     ["결제 완료", dashboard.stats.paidOrders],
+    ["활성 상담권", dashboard.stats.activeEntitlements],
+    ["소진 상담권", dashboard.stats.consumedEntitlements],
     ["안전 이벤트", dashboard.stats.safetyEvents],
   ]
     .map(
@@ -1650,7 +1654,11 @@ function renderAdminDashboard(dashboard) {
   }));
   renderAdminList(adminSessions, dashboard.recentSessions, (item) => ({
     title: `${item.userLabel} · ${item.topic} · ${item.mode}`,
-    meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · ${formatShortDate(item.createdAt)}`,
+    meta: `${item.status} · ${item.usedTurns}/${item.turnLimit}턴 · 남은 ${Math.max(Number(item.turnLimit) - Number(item.usedTurns), 0)}턴 · ${formatShortDate(item.createdAt)}`,
+  }));
+  renderAdminList(adminEntitlements, dashboard.recentEntitlements, (item) => ({
+    title: `${item.userLabel} · ${item.productId}`,
+    meta: `${item.status} · ${Math.max(Number(item.totalTurns) - Number(item.usedTurns), 0)}/${item.totalTurns}턴 남음 · 만료 ${formatShortDate(item.expiresAt ?? item.createdAt)}`,
   }));
   renderAdminList(adminOrders, dashboard.recentOrders, (item) => ({
     title: `${item.userLabel} · ${item.productId}`,

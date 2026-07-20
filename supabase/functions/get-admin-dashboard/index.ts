@@ -75,17 +75,24 @@ Deno.serve(async (request) => {
     totalUsersResult,
     totalLinksResult,
     totalSessionsResult,
+    activeSessionsResult,
     totalPaidOrdersResult,
+    activeEntitlementsResult,
+    consumedEntitlementsResult,
     totalSafetyEventsResult,
     recentProfilesResult,
     recentSessionsResult,
+    recentEntitlementsResult,
     recentOrdersResult,
     recentSafetyEventsResult,
   ] = await Promise.all([
     adminClient.from("profiles").select("id", { count: "exact", head: true }),
     adminClient.from("relationship_links").select("id", { count: "exact", head: true }).eq("status", "active"),
     adminClient.from("consultation_sessions").select("id", { count: "exact", head: true }),
+    adminClient.from("consultation_sessions").select("id", { count: "exact", head: true }).eq("status", "active"),
     adminClient.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid"),
+    adminClient.from("entitlements").select("id", { count: "exact", head: true }).eq("status", "active"),
+    adminClient.from("entitlements").select("id", { count: "exact", head: true }).eq("status", "consumed"),
     adminClient.from("safety_events").select("id", { count: "exact", head: true }),
     adminClient
       .from("profiles")
@@ -95,6 +102,11 @@ Deno.serve(async (request) => {
     adminClient
       .from("consultation_sessions")
       .select("id, user_id, persona_id, topic, mode, status, used_turns, turn_limit, created_at")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    adminClient
+      .from("entitlements")
+      .select("id, user_id, product_id, status, total_turns, used_turns, expires_at, created_at")
       .order("created_at", { ascending: false })
       .limit(8),
     adminClient
@@ -113,10 +125,14 @@ Deno.serve(async (request) => {
     totalUsersResult.error,
     totalLinksResult.error,
     totalSessionsResult.error,
+    activeSessionsResult.error,
     totalPaidOrdersResult.error,
+    activeEntitlementsResult.error,
+    consumedEntitlementsResult.error,
     totalSafetyEventsResult.error,
     recentProfilesResult.error,
     recentSessionsResult.error,
+    recentEntitlementsResult.error,
     recentOrdersResult.error,
     recentSafetyEventsResult.error,
   ].find(Boolean);
@@ -127,6 +143,7 @@ Deno.serve(async (request) => {
     ...new Set(
       [
         ...(recentSessionsResult.data ?? []).map((item) => item.user_id),
+        ...(recentEntitlementsResult.data ?? []).map((item) => item.user_id),
         ...(recentOrdersResult.data ?? []).map((item) => item.user_id),
         ...(recentSafetyEventsResult.data ?? []).map((item) => item.user_id).filter(Boolean),
       ].filter(Boolean),
@@ -155,7 +172,10 @@ Deno.serve(async (request) => {
       totalUsers: totalUsersResult.count ?? 0,
       activeRelationships: totalLinksResult.count ?? 0,
       totalConsultationSessions: totalSessionsResult.count ?? 0,
+      activeConsultationSessions: activeSessionsResult.count ?? 0,
       paidOrders: totalPaidOrdersResult.count ?? 0,
+      activeEntitlements: activeEntitlementsResult.count ?? 0,
+      consumedEntitlements: consumedEntitlementsResult.count ?? 0,
       safetyEvents: totalSafetyEventsResult.count ?? 0,
     },
     recentProfiles: (recentProfilesResult.data ?? []).map((item) => ({
@@ -174,6 +194,17 @@ Deno.serve(async (request) => {
       status: item.status,
       usedTurns: item.used_turns,
       turnLimit: item.turn_limit,
+      createdAt: item.created_at,
+    })),
+    recentEntitlements: (recentEntitlementsResult.data ?? []).map((item) => ({
+      id: item.id,
+      userId: item.user_id,
+      userLabel: profileNameMap.get(item.user_id) ?? compactUserId(item.user_id),
+      productId: item.product_id,
+      status: item.status,
+      totalTurns: item.total_turns,
+      usedTurns: item.used_turns,
+      expiresAt: item.expires_at,
       createdAt: item.created_at,
     })),
     recentOrders: (recentOrdersResult.data ?? []).map((item) => ({

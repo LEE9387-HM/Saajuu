@@ -1,5 +1,13 @@
 ﻿# Saajuu 프로젝트 현황 / 핸드오프 문서
 
+## v0.5.45.0 관리자 운영 카드 보강 (2026-07-20)
+
+- 관리자 화면에 `활성 세션`, `활성 상담권`, `소진 상담권` 통계를 추가했습니다.
+- `최근 상담권` 카드를 새로 추가해, 어떤 이용권이 얼마나 남아 있고 언제 만료되는지 운영자가 바로 볼 수 있게 했습니다.
+- `최근 상담` 카드도 남은 턴 수를 함께 표시하도록 바꿔, 세션 진행 상태를 더 직접적으로 읽을 수 있게 했습니다.
+- Supabase `get-admin-dashboard` Edge Function을 함께 확장해 프런트와 서버가 같은 운영 지표를 보도록 맞췄습니다.
+- 검증: `npm test`, `npm run build`, `npx supabase functions deploy get-admin-dashboard --project-ref eizojtispxmlwvhgpmgs --use-api`
+
 ## v0.5.44.0 상담 요약/단계 맥락 복원 (2026-07-19)
 
 - 상담 메시지를 보낼 때마다 `session_summaries`에 현재까지의 고민 요약, 다음 단계 안내, 행동 프롬프트를 upsert 하도록 연결했습니다.
