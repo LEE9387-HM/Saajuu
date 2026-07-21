@@ -598,6 +598,14 @@
                 <p id="admin-updated-at" class="admin-panel__updated">최근 갱신 시각을 불러오고 있습니다.</p>
               </div>
               <div class="admin-panel__toolbar-actions">
+                <label class="admin-sort">
+                  <span>집계 기간</span>
+                  <select id="admin-metrics-window">
+                    <option value="7">최근 7일</option>
+                    <option value="30" selected>최근 30일</option>
+                    <option value="90">최근 90일</option>
+                  </select>
+                </label>
                 <label class="admin-search">
                   <span>검색</span>
                   <input
@@ -695,6 +703,22 @@
           </div>
           <div id="admin-session-modal-body" class="admin-session-modal__body">
             <p class="admin-list__empty">세션을 선택하면 상세 내용이 여기에 표시됩니다.</p>
+          </div>
+        </div>
+      </dialog>
+
+      <dialog id="admin-profile-modal" class="profile-modal" aria-labelledby="admin-profile-modal-title">
+        <div class="profile-modal__shell admin-session-modal__shell">
+          <div class="profile-modal__header">
+            <div>
+              <p class="eyebrow">사용자 상세</p>
+              <h2 id="admin-profile-modal-title">사용자 운영 정보</h2>
+              <p id="admin-profile-modal-copy">상담, 결제, 인연 연결 상태를 한 번에 확인합니다.</p>
+            </div>
+            <button type="button" class="profile-modal__close" id="admin-profile-modal-close" aria-label="닫기">닫기</button>
+          </div>
+          <div id="admin-profile-modal-body" class="admin-session-modal__body">
+            <p class="admin-list__empty">사용자를 선택하면 상세 내용이 여기에 표시됩니다.</p>
           </div>
         </div>
       </dialog>

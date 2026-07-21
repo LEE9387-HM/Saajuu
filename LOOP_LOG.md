@@ -1,5 +1,50 @@
 # Saajuu Loop Log
 
+## 2026-07-21 - Cycle 3
+
+### Selected Work
+
+Extend the admin console with a period-based operational view and a user-level detail modal, without touching blocked roadmap items or destructive commerce actions.
+
+### Acceptance Criteria
+
+- Add a reusable metrics window selector for admin operations.
+- Show recent-period counts for signups, paid orders, consultation starts, and safety events.
+- Add a user detail modal from the recent profiles list.
+- Include relationship, consultation, order, and entitlement context in that modal.
+- Run `npm test` and `npm run build`.
+
+### Result
+
+`done`
+
+### Files Changed
+
+- `index.html`
+- `src/main.js`
+- `src/styles.css`
+- `supabase/functions/get-admin-dashboard/index.ts`
+- `CHANGELOG.md`
+- `VERSION`
+- `package.json`
+- `package-lock.json`
+- `PROJECT_STATUS_README.md`
+- `LOOP_LOG.md`
+
+### Verification
+
+- `npm test` - passed, 6 files and 64 tests.
+- `npm run build` - passed with Vite production build.
+
+### Remaining Risk
+
+- The new admin modal is only locally verified. The Edge Function still needs explicit deployment before the live admin page can use the new response fields.
+- User detail currently exposes the selected profile email only when the selected profile is the currently logged-in admin account. If broader admin email visibility is needed, that requires a deliberate schema or service-role design choice.
+
+### Next Suggested Work
+
+Deploy the updated `get-admin-dashboard` Edge Function, then continue with higher-value admin operations: refund-safe payment exception handling, consultation escalation tooling, and export/report actions.
+
 ## 2026-07-20 - Cycle 1
 
 ### Selected Work

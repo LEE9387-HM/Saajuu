@@ -1112,6 +1112,7 @@ button:hover {
 
 .admin-panel__toolbar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 10px;
 }
@@ -1124,7 +1125,7 @@ button:hover {
 
 .admin-panel__stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1252,6 +1253,7 @@ button:hover {
 
 .admin-list__item[data-clickable="true"]:hover {
   opacity: 0.92;
+  border-color: rgb(77 128 114 / 26%);
 }
 
 .admin-list__item:last-child {

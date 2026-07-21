@@ -44,6 +44,14 @@ function clampLimit(value: unknown, fallback = 8, max = 40) {
   return Math.min(Math.floor(parsed), max);
 }
 
+function clampMetricsWindow(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 30;
+  if (parsed <= 7) return 7;
+  if (parsed >= 90) return 90;
+  return 30;
+}
+
 function buildSessionSearchTerm(input: {
   userLabel?: string;
   topic?: string;
@@ -112,8 +120,11 @@ Deno.serve(async (request) => {
   const orderLimit = clampLimit(body?.orderLimit, 8);
   const safetyLimit = clampLimit(body?.safetyLimit, 8);
   const actionLogLimit = clampLimit(body?.actionLogLimit, 8);
+  const metricsWindowDays = clampMetricsWindow(body?.metricsWindowDays);
   const searchQuery = String(body?.searchQuery ?? "").trim().toLowerCase();
   const detailSessionId = String(body?.detailSessionId ?? "").trim();
+  const detailProfileId = String(body?.detailProfileId ?? "").trim();
+  const metricsWindowCutoff = new Date(Date.now() - metricsWindowDays * 24 * 60 * 60 * 1000).toISOString();
 
   const [
     totalUsersResult,
@@ -125,6 +136,10 @@ Deno.serve(async (request) => {
     consumedEntitlementsResult,
     totalSafetyEventsResult,
     reviewedSafetyEventsResult,
+    windowUsersResult,
+    windowPaidOrdersResult,
+    windowSessionsResult,
+    windowSafetyEventsResult,
     recentProfilesResult,
     recentSessionsResult,
     recentEntitlementsResult,
@@ -141,6 +156,20 @@ Deno.serve(async (request) => {
     adminClient.from("entitlements").select("id", { count: "exact", head: true }).eq("status", "consumed"),
     adminClient.from("safety_events").select("id", { count: "exact", head: true }),
     adminClient.from("safety_events").select("id", { count: "exact", head: true }).not("reviewed_at", "is", null),
+    adminClient.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", metricsWindowCutoff),
+    adminClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "paid")
+      .gte("created_at", metricsWindowCutoff),
+    adminClient
+      .from("consultation_sessions")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", metricsWindowCutoff),
+    adminClient
+      .from("safety_events")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", metricsWindowCutoff),
     adminClient
       .from("profiles")
       .select("id, display_name, role, created_at")
@@ -183,6 +212,10 @@ Deno.serve(async (request) => {
     consumedEntitlementsResult.error,
     totalSafetyEventsResult.error,
     reviewedSafetyEventsResult.error,
+    windowUsersResult.error,
+    windowPaidOrdersResult.error,
+    windowSessionsResult.error,
+    windowSafetyEventsResult.error,
     recentProfilesResult.error,
     recentSessionsResult.error,
     recentEntitlementsResult.error,
@@ -192,6 +225,34 @@ Deno.serve(async (request) => {
   ].find(Boolean);
 
   if (firstError) return json({ error: firstError.message }, 500);
+
+  const recentProfileIds = (recentProfilesResult.data ?? []).map((item) => item.id).filter(Boolean);
+  const recentProfileActivityMap = new Map<string, string | null>();
+  if (recentProfileIds.length) {
+    const [profileSessionRows, profileOrderRows] = await Promise.all([
+      adminClient
+        .from("consultation_sessions")
+        .select("user_id, created_at")
+        .in("user_id", recentProfileIds)
+        .order("created_at", { ascending: false })
+        .limit(recentProfileIds.length * 4),
+      adminClient
+        .from("orders")
+        .select("user_id, created_at")
+        .in("user_id", recentProfileIds)
+        .order("created_at", { ascending: false })
+        .limit(recentProfileIds.length * 4),
+    ]);
+    if (profileSessionRows.error) return json({ error: profileSessionRows.error.message }, 500);
+    if (profileOrderRows.error) return json({ error: profileOrderRows.error.message }, 500);
+
+    [...(profileSessionRows.data ?? []), ...(profileOrderRows.data ?? [])].forEach((item) => {
+      const existing = recentProfileActivityMap.get(item.user_id);
+      if (!existing || new Date(item.created_at).getTime() > new Date(existing).getTime()) {
+        recentProfileActivityMap.set(item.user_id, item.created_at);
+      }
+    });
+  }
 
   const userIds = [
     ...new Set(
@@ -354,6 +415,159 @@ Deno.serve(async (request) => {
     }
   }
 
+  let profileDetail: Record<string, unknown> | null = null;
+  if (detailProfileId) {
+    const { data: detailProfile, error: detailProfileError } = await adminClient
+      .from("profiles")
+      .select("id, display_name, role, created_at")
+      .eq("id", detailProfileId)
+      .maybeSingle();
+    if (detailProfileError) return json({ error: detailProfileError.message }, 500);
+
+    if (detailProfile) {
+      const [
+        relationshipCountResult,
+        activeRelationshipCountResult,
+        sessionCountResult,
+        paidOrderCountResult,
+        activeEntitlementCountResult,
+        relationshipRowsResult,
+        profileSessionsResult,
+        profileOrdersResult,
+        profileEntitlementsResult,
+      ] = await Promise.all([
+        adminClient
+          .from("relationship_links")
+          .select("id", { count: "exact", head: true })
+          .or(`user_a_id.eq.${detailProfileId},user_b_id.eq.${detailProfileId}`),
+        adminClient
+          .from("relationship_links")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active")
+          .or(`user_a_id.eq.${detailProfileId},user_b_id.eq.${detailProfileId}`),
+        adminClient
+          .from("consultation_sessions")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", detailProfileId),
+        adminClient
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", detailProfileId)
+          .eq("status", "paid"),
+        adminClient
+          .from("entitlements")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", detailProfileId)
+          .eq("status", "active"),
+        adminClient
+          .from("relationship_links")
+          .select("id, user_a_id, user_b_id, relationship, status, created_at")
+          .or(`user_a_id.eq.${detailProfileId},user_b_id.eq.${detailProfileId}`)
+          .order("created_at", { ascending: false })
+          .limit(6),
+        adminClient
+          .from("consultation_sessions")
+          .select("id, topic, mode, status, used_turns, turn_limit, created_at")
+          .eq("user_id", detailProfileId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+        adminClient
+          .from("orders")
+          .select("id, product_id, amount_krw, status, created_at")
+          .eq("user_id", detailProfileId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+        adminClient
+          .from("entitlements")
+          .select("id, product_id, status, total_turns, used_turns, expires_at, created_at")
+          .eq("user_id", detailProfileId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+      ]);
+
+      const profileDetailError = [
+        relationshipCountResult.error,
+        activeRelationshipCountResult.error,
+        sessionCountResult.error,
+        paidOrderCountResult.error,
+        activeEntitlementCountResult.error,
+        relationshipRowsResult.error,
+        profileSessionsResult.error,
+        profileOrdersResult.error,
+        profileEntitlementsResult.error,
+      ].find(Boolean);
+      if (profileDetailError) return json({ error: profileDetailError.message }, 500);
+
+      const counterpartIds = [
+        ...new Set(
+          (relationshipRowsResult.data ?? [])
+            .map((item) => (item.user_a_id === detailProfileId ? item.user_b_id : item.user_a_id))
+            .filter(Boolean),
+        ),
+      ];
+      const counterpartMap = new Map<string, string>();
+      if (counterpartIds.length) {
+        const { data: counterpartProfiles, error: counterpartProfilesError } = await adminClient
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", counterpartIds);
+        if (counterpartProfilesError) return json({ error: counterpartProfilesError.message }, 500);
+        (counterpartProfiles ?? []).forEach((item) => {
+          counterpartMap.set(item.id, compactName(item.display_name));
+        });
+      }
+
+      profileDetail = {
+        id: detailProfile.id,
+        displayName: compactName(detailProfile.display_name),
+        email: currentUser.id === detailProfile.id ? currentUser.email ?? "" : "",
+        role: detailProfile.role,
+        createdAt: detailProfile.created_at,
+        relationshipCount: relationshipCountResult.count ?? 0,
+        activeRelationshipCount: activeRelationshipCountResult.count ?? 0,
+        sessionCount: sessionCountResult.count ?? 0,
+        paidOrderCount: paidOrderCountResult.count ?? 0,
+        activeEntitlementCount: activeEntitlementCountResult.count ?? 0,
+        relationships: (relationshipRowsResult.data ?? []).map((item) => {
+          const counterpartId = item.user_a_id === detailProfileId ? item.user_b_id : item.user_a_id;
+          return {
+            id: item.id,
+            counterpartId,
+            counterpartLabel: counterpartMap.get(counterpartId) ?? compactUserId(counterpartId),
+            relationship: item.relationship,
+            status: item.status,
+            createdAt: item.created_at,
+          };
+        }),
+        recentSessions: (profileSessionsResult.data ?? []).map((item) => ({
+          id: item.id,
+          topic: item.topic,
+          mode: item.mode,
+          status: item.status,
+          usedTurns: item.used_turns,
+          turnLimit: item.turn_limit,
+          createdAt: item.created_at,
+        })),
+        recentOrders: (profileOrdersResult.data ?? []).map((item) => ({
+          id: item.id,
+          productId: item.product_id,
+          amountKrw: item.amount_krw,
+          status: item.status,
+          createdAt: item.created_at,
+        })),
+        recentEntitlements: (profileEntitlementsResult.data ?? []).map((item) => ({
+          id: item.id,
+          productId: item.product_id,
+          status: item.status,
+          totalTurns: item.total_turns,
+          usedTurns: item.used_turns,
+          expiresAt: item.expires_at,
+          createdAt: item.created_at,
+        })),
+      };
+    }
+  }
+
   let recentSessions = (recentSessionsResult.data ?? []).map((item) => {
     const summaryInfo = sessionSummaryMap.get(item.id);
     return {
@@ -397,11 +611,19 @@ Deno.serve(async (request) => {
       safetyEvents: totalSafetyEventsResult.count ?? 0,
       reviewedSafetyEvents: reviewedSafetyEventsResult.count ?? 0,
     },
+    windowStats: {
+      days: metricsWindowDays,
+      newUsers: windowUsersResult.count ?? 0,
+      newPaidOrders: windowPaidOrdersResult.count ?? 0,
+      newSessions: windowSessionsResult.count ?? 0,
+      newSafetyEvents: windowSafetyEventsResult.count ?? 0,
+    },
     recentProfiles: (recentProfilesResult.data ?? []).map((item) => ({
       id: item.id,
       displayName: compactName(item.display_name),
       role: item.role,
       createdAt: item.created_at,
+      lastActivityAt: recentProfileActivityMap.get(item.id) ?? null,
     })),
     recentSessions,
     recentEntitlements: (recentEntitlementsResult.data ?? []).map((item) => ({
@@ -456,5 +678,6 @@ Deno.serve(async (request) => {
       createdAt: item.created_at,
     })),
     sessionDetail,
+    profileDetail,
   });
 });

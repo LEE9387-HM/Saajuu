@@ -148,6 +148,7 @@ const adminNavLink = document.querySelector("#admin-nav-link");
 const adminStatus = document.querySelector("#admin-status");
 const adminUpdatedAt = document.querySelector("#admin-updated-at");
 const adminRefresh = document.querySelector("#admin-refresh");
+const adminMetricsWindow = document.querySelector("#admin-metrics-window");
 const adminSessionSearch = document.querySelector("#admin-session-search");
 const adminPanel = document.querySelector("#admin-panel");
 const adminStats = document.querySelector("#admin-stats");
@@ -166,6 +167,9 @@ const adminActionsMore = document.querySelector("#admin-actions-more");
 const adminSessionModal = document.querySelector("#admin-session-modal");
 const adminSessionModalClose = document.querySelector("#admin-session-modal-close");
 const adminSessionModalBody = document.querySelector("#admin-session-modal-body");
+const adminProfileModal = document.querySelector("#admin-profile-modal");
+const adminProfileModalClose = document.querySelector("#admin-profile-modal-close");
+const adminProfileModalBody = document.querySelector("#admin-profile-modal-body");
 const commercePanel = document.querySelector("#commerce-panel");
 const commerceNote = document.querySelector("#commerce-note");
 const entitlementList = document.querySelector("#entitlement-list");
@@ -230,9 +234,11 @@ let adminSessionFilter = "all";
 let adminSafetyFilter = "all";
 let adminSessionSortMode = "recent";
 let adminSessionSearchQuery = "";
+let adminMetricsWindowDays = 30;
 let adminSessionListLimit = 8;
 let adminSafetyListLimit = 8;
 let adminActionLogListLimit = 8;
+let activeAdminProfileDetailId = "";
 let activeAdminSessionDetailId = "";
 let activeSafetyReviewId = "";
 let activeAdminCommerceActionId = "";
@@ -241,6 +247,7 @@ const ADMIN_SESSION_FILTER_KEY = "saajuu.admin.sessionFilter";
 const ADMIN_SAFETY_FILTER_KEY = "saajuu.admin.safetyFilter";
 const ADMIN_SESSION_SORT_KEY = "saajuu.admin.sessionSort";
 const ADMIN_SESSION_SEARCH_KEY = "saajuu.admin.sessionSearch";
+const ADMIN_METRICS_WINDOW_KEY = "saajuu.admin.metricsWindow";
 
 const ADMIN_GRANT_PRODUCTS = [
   { id: "basic_10_turns", label: "기본 지급" },
@@ -1678,10 +1685,14 @@ function loadAdminFilterState() {
     const savedSafetyFilter = window.sessionStorage.getItem(ADMIN_SAFETY_FILTER_KEY)?.trim();
     const savedSessionSort = window.sessionStorage.getItem(ADMIN_SESSION_SORT_KEY)?.trim();
     const savedSearch = window.sessionStorage.getItem(ADMIN_SESSION_SEARCH_KEY)?.trim();
+    const savedMetricsWindow = Number(window.sessionStorage.getItem(ADMIN_METRICS_WINDOW_KEY)?.trim());
     if (savedSessionFilter) adminSessionFilter = savedSessionFilter;
     if (savedSafetyFilter) adminSafetyFilter = savedSafetyFilter;
     if (savedSessionSort) adminSessionSortMode = savedSessionSort;
     if (savedSearch) adminSessionSearchQuery = savedSearch;
+    if (Number.isFinite(savedMetricsWindow) && [7, 30, 90].includes(savedMetricsWindow)) {
+      adminMetricsWindowDays = savedMetricsWindow;
+    }
   } catch {
     // Ignore storage access issues and fall back to defaults.
   }
@@ -1693,6 +1704,7 @@ function saveAdminFilterState() {
     window.sessionStorage.setItem(ADMIN_SAFETY_FILTER_KEY, adminSafetyFilter);
     window.sessionStorage.setItem(ADMIN_SESSION_SORT_KEY, adminSessionSortMode);
     window.sessionStorage.setItem(ADMIN_SESSION_SEARCH_KEY, adminSessionSearchQuery);
+    window.sessionStorage.setItem(ADMIN_METRICS_WINDOW_KEY, String(adminMetricsWindowDays));
   } catch {
     // Ignore storage access issues and keep filters in memory only.
   }
@@ -1792,6 +1804,119 @@ function renderAdminSessionModal(detail) {
   adminSessionModalBody.innerHTML = buildAdminSessionModal(detail);
 }
 
+function formatAdminMetricsLabel(days) {
+  if (days === 7) return "7일";
+  if (days === 90) return "90일";
+  return "30일";
+}
+
+function buildAdminProfileModal(detail) {
+  if (!detail) {
+    return '<p class="admin-list__empty">사용자를 선택하면 상세 내용이 여기에 표시됩니다.</p>';
+  }
+
+  const relationshipItems = Array.isArray(detail.relationships) ? detail.relationships : [];
+  const sessionItems = Array.isArray(detail.recentSessions) ? detail.recentSessions : [];
+  const orderItems = Array.isArray(detail.recentOrders) ? detail.recentOrders : [];
+  const entitlementItems = Array.isArray(detail.recentEntitlements) ? detail.recentEntitlements : [];
+
+  return `
+    <section class="admin-session-modal__meta">
+      <div class="admin-session-modal__panel">
+        <strong>${escapeHtml(String(detail.displayName ?? "사용자"))}</strong>
+        <span>${escapeHtml(String(detail.role ?? "user"))} · 가입 ${escapeHtml(formatShortDate(detail.createdAt))}</span>
+        <span>이메일 ${escapeHtml(String(detail.email ?? "비공개"))}</span>
+      </div>
+      <div class="admin-session-modal__panel">
+        <strong>핵심 수치</strong>
+        <span>연결 인연 ${escapeHtml(String(detail.relationshipCount ?? 0))}건 · 활성 ${escapeHtml(String(detail.activeRelationshipCount ?? 0))}건</span>
+        <span>상담 세션 ${escapeHtml(String(detail.sessionCount ?? 0))}건 · 주문 ${escapeHtml(String(detail.paidOrderCount ?? 0))}건</span>
+        <span>활성 상담권 ${escapeHtml(String(detail.activeEntitlementCount ?? 0))}건</span>
+      </div>
+    </section>
+    <section class="admin-session-modal__panel">
+      <strong>연결된 인연</strong>
+      <div class="admin-session-modal__messages">
+        ${
+          relationshipItems.length
+            ? relationshipItems
+                .map(
+                  (item) => `
+                    <article class="admin-session-modal__message">
+                      <strong>${escapeHtml(String(item.counterpartLabel ?? "상대"))}</strong>
+                      <span>${escapeHtml(String(item.relationship ?? "관계"))} · ${escapeHtml(String(item.status ?? "status"))}</span>
+                      <span>연결 ${escapeHtml(formatShortDate(item.createdAt))}</span>
+                    </article>
+                  `,
+                )
+                .join("")
+            : '<p class="admin-list__empty">연결된 인연이 없습니다.</p>'
+        }
+      </div>
+    </section>
+    <section class="admin-session-modal__panel">
+      <strong>최근 상담</strong>
+      <div class="admin-session-modal__messages">
+        ${
+          sessionItems.length
+            ? sessionItems
+                .map(
+                  (item) => `
+                    <article class="admin-session-modal__message">
+                      <strong>${escapeHtml(String(item.topic ?? "상담"))} · ${escapeHtml(String(item.mode ?? "mode"))}</strong>
+                      <span>${escapeHtml(String(item.status ?? "status"))} · ${escapeHtml(String(item.usedTurns ?? 0))}/${escapeHtml(String(item.turnLimit ?? 0))}턴</span>
+                      <span>${escapeHtml(formatShortDate(item.createdAt))}</span>
+                    </article>
+                  `,
+                )
+                .join("")
+            : '<p class="admin-list__empty">최근 상담 세션이 없습니다.</p>'
+        }
+      </div>
+    </section>
+    <section class="admin-session-modal__panel">
+      <strong>주문 · 상담권</strong>
+      <div class="admin-session-modal__messages">
+        ${
+          orderItems.length
+            ? orderItems
+                .map(
+                  (item) => `
+                    <article class="admin-session-modal__message">
+                      <strong>${escapeHtml(String(item.productId ?? "상품"))}</strong>
+                      <span>${escapeHtml(String(item.status ?? "status"))} · ${escapeHtml(Number(item.amountKrw ?? 0).toLocaleString("ko-KR"))}원</span>
+                      <span>${escapeHtml(formatShortDate(item.createdAt))}</span>
+                    </article>
+                  `,
+                )
+                .join("")
+            : '<p class="admin-list__empty">주문 내역이 없습니다.</p>'
+        }
+        ${
+          entitlementItems.length
+            ? entitlementItems
+                .map(
+                  (item) => `
+                    <article class="admin-session-modal__message">
+                      <strong>${escapeHtml(String(item.productId ?? "상담권"))}</strong>
+                      <span>${escapeHtml(String(item.status ?? "status"))} · 남은 ${escapeHtml(String(Math.max(Number(item.totalTurns) - Number(item.usedTurns), 0)))}턴</span>
+                      <span>만료 ${escapeHtml(formatShortDate(item.expiresAt ?? item.createdAt))}</span>
+                    </article>
+                  `,
+                )
+                .join("")
+            : '<p class="admin-list__empty">상담권이 없습니다.</p>'
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminProfileModal(detail) {
+  if (!adminProfileModalBody) return;
+  adminProfileModalBody.innerHTML = buildAdminProfileModal(detail);
+}
+
 function buildAdminSessionDetail(item) {
   const summary = String(item.summarySnippet ?? "").trim();
   const lastUserMessage = String(item.lastUserMessageSnippet ?? "").trim();
@@ -1845,6 +1970,9 @@ function renderAdminDashboard(dashboard) {
   adminStatus.textContent = `${dashboard.currentAdmin.displayName} 계정으로 운영 현황을 확인하고 있습니다.`;
   if (adminUpdatedAt) adminUpdatedAt.textContent = `최근 갱신: ${formatAdminTimestamp(dashboard.fetchedAt)}`;
   if (adminRefresh) adminRefresh.disabled = false;
+  if (adminMetricsWindow instanceof HTMLSelectElement) {
+    adminMetricsWindow.value = String(adminMetricsWindowDays);
+  }
   if (adminSessionSearch instanceof HTMLInputElement) {
     adminSessionSearch.value = adminSessionSearchQuery;
   }
@@ -1853,6 +1981,8 @@ function renderAdminDashboard(dashboard) {
   if (adminSessionSort instanceof HTMLSelectElement) {
     adminSessionSort.value = adminSessionSortMode;
   }
+  const windowLabel = formatAdminMetricsLabel(adminMetricsWindowDays);
+  const windowStats = dashboard.windowStats ?? {};
   adminStats.innerHTML = [
     ["사용자", dashboard.stats.totalUsers],
     ["연결 인연", dashboard.stats.activeRelationships],
@@ -1863,6 +1993,10 @@ function renderAdminDashboard(dashboard) {
     ["소진 상담권", dashboard.stats.consumedEntitlements],
     ["안전 이벤트", dashboard.stats.safetyEvents],
     ["확인 완료", dashboard.stats.reviewedSafetyEvents ?? 0],
+    [`${windowLabel} 신규 가입`, windowStats.newUsers ?? 0],
+    [`${windowLabel} 유료 주문`, windowStats.newPaidOrders ?? 0],
+    [`${windowLabel} 상담 시작`, windowStats.newSessions ?? 0],
+    [`${windowLabel} 안전 이벤트`, windowStats.newSafetyEvents ?? 0],
   ]
     .map(
       ([label, value]) => `
@@ -1899,6 +2033,8 @@ function renderAdminDashboard(dashboard) {
     id: item.id,
     title: `${item.displayName} · ${item.role}`,
     meta: `가입 ${formatShortDate(item.createdAt)}`,
+    detail: item.lastActivityAt ? `최근 활동 ${formatShortDate(item.lastActivityAt)}` : "",
+    clickable: true,
     actions: ADMIN_GRANT_PRODUCTS.map((product) => ({
       kind: "grant-entitlement",
       label: isActiveAdminCommerceAction(`grant:${product.id}`, item.id)
@@ -1991,6 +2127,7 @@ function renderAdminDashboard(dashboard) {
   if (adminSafetyMore) adminSafetyMore.hidden = (dashboard.recentSafetyEvents?.length ?? 0) < adminSafetyListLimit;
   if (adminActionsMore) adminActionsMore.hidden = (dashboard.recentActionLogs?.length ?? 0) < adminActionLogListLimit;
   renderAdminSessionModal(dashboard.sessionDetail ?? null);
+  renderAdminProfileModal(dashboard.profileDetail ?? null);
 }
 
 async function refreshAdminDashboard(session, overrides = {}) {
@@ -2004,8 +2141,10 @@ async function refreshAdminDashboard(session, overrides = {}) {
     sessionLimit: adminSessionListLimit,
     safetyLimit: adminSafetyListLimit,
     actionLogLimit: adminActionLogListLimit,
+    metricsWindowDays: adminMetricsWindowDays,
     searchQuery: adminSessionSearchQuery,
     detailSessionId: activeAdminSessionDetailId,
+    detailProfileId: activeAdminProfileDetailId,
     ...overrides,
   });
   if (error) {
@@ -2058,6 +2197,14 @@ adminSessionSort?.addEventListener("change", () => {
   adminSessionSortMode = adminSessionSort.value || "recent";
   saveAdminFilterState();
   if (activeAdminDashboard) renderAdminDashboard(activeAdminDashboard);
+});
+
+adminMetricsWindow?.addEventListener("change", async () => {
+  const nextValue = Number(adminMetricsWindow.value || "30");
+  adminMetricsWindowDays = [7, 30, 90].includes(nextValue) ? nextValue : 30;
+  saveAdminFilterState();
+  if (!activeSession) return;
+  await refreshAdminDashboard(activeSession);
 });
 
 adminSessionSearch?.addEventListener("input", async () => {
@@ -2128,22 +2275,33 @@ adminSafety?.addEventListener("click", async (event) => {
 
 adminProfiles?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-admin-action='grant-entitlement']");
-  const rawTarget = button?.dataset.adminTargetId?.trim() || "";
-  if (!rawTarget) return;
-  const [userId, productId] = rawTarget.split("|");
-  if (!userId || !productId) return;
+  if (button) {
+    const rawTarget = button.dataset.adminTargetId?.trim() || "";
+    if (!rawTarget) return;
+    const [userId, productId] = rawTarget.split("|");
+    if (!userId || !productId) return;
 
-  await runAdminCommerceAction({
-    kind: `grant:${productId}`,
-    targetId: userId,
-    payload: {
-      action: "grant_entitlement",
-      userId,
-      productId,
-      note: "admin_manual_grant",
-    },
-    successMessage: `관리자 화면에서 ${productId} 상담권을 수동 지급했습니다.`,
-  });
+    await runAdminCommerceAction({
+      kind: `grant:${productId}`,
+      targetId: userId,
+      payload: {
+        action: "grant_entitlement",
+        userId,
+        productId,
+        note: "admin_manual_grant",
+      },
+      successMessage: `관리자 화면에서 ${productId} 상담권을 수동 지급했습니다.`,
+    });
+    return;
+  }
+
+  const card = event.target.closest("[data-admin-item-id]");
+  const profileId = card?.dataset.adminItemId?.trim() || "";
+  if (!profileId || !activeSession) return;
+  activeAdminProfileDetailId = profileId;
+  renderAdminProfileModal(null);
+  adminProfileModal?.showModal();
+  await refreshAdminDashboard(activeSession);
 });
 
 adminEntitlements?.addEventListener("click", async (event) => {
@@ -2189,6 +2347,18 @@ adminSessionModal?.addEventListener("click", (event) => {
   if (event.target === adminSessionModal) {
     activeAdminSessionDetailId = "";
     adminSessionModal.close();
+  }
+});
+
+adminProfileModalClose?.addEventListener("click", () => {
+  activeAdminProfileDetailId = "";
+  adminProfileModal?.close();
+});
+
+adminProfileModal?.addEventListener("click", (event) => {
+  if (event.target === adminProfileModal) {
+    activeAdminProfileDetailId = "";
+    adminProfileModal.close();
   }
 });
 
