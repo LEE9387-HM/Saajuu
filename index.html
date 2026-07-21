@@ -135,8 +135,8 @@
       <section id="saju" class="calculator" aria-label="사주 계산기">
         <div class="section-heading section-heading--compact calculator__heading">
           <p class="eyebrow">내 사주</p>
-          <h2>입력은 팝업에서, 관리는 따로</h2>
-          <p>개인 사주 정보는 팝업에서 입력하고, 저장된 정보와 계정 연결은 분리된 관리 영역에서 확인할 수 있어요.</p>
+          <h2>개인 사주 정보</h2>
+          <p>생년월일시를 입력하면 오늘과 올해 흐름을 바로 이어서 볼 수 있어요.</p>
         </div>
         <article class="profile-admin-card">
           <div class="profile-admin-card__copy">
@@ -149,7 +149,7 @@
             <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="create">정보 입력</button>
             <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="edit">정보 수정</button>
             <button type="button" class="auth-button auth-button--ghost" data-profile-clear>저장 삭제</button>
-            <a class="auth-button profile-admin-card__link" href="#my-page">로그인 · 동의 관리</a>
+            <a class="auth-button profile-admin-card__link" href="#my-page">계정 확인</a>
           </div>
           <p id="form-error" class="error" role="alert" hidden></p>
         </article>
@@ -325,6 +325,7 @@
                   <p id="tarot-card-message">입력한 고민과 사주 흐름을 바탕으로 오늘 필요한 질문을 보여줍니다.</p>
                   <em id="tarot-card-action">먼저 지금 가장 급한 고민 한 줄을 적어보세요.</em>
                 </div>
+                <div id="tarot-spread-grid" class="tarot-spread-grid" aria-label="타로 3카드 해석"></div>
               </div>
               <div class="tarot-panel__choice">
                 <span class="eyebrow">A/B 선택</span>
@@ -344,6 +345,11 @@
             <div class="tarot-reflection">
               <span class="eyebrow">정리 질문</span>
               <ul id="tarot-reflection-list"></ul>
+            </div>
+            <div class="tarot-followup">
+              <span class="eyebrow">더 좁혀볼 질문</span>
+              <ul id="tarot-followup-list"></ul>
+              <p id="tarot-closing" class="tarot-followup__closing">카드가 보여준 흐름을 바로 답으로 쓰기보다, 다음 질문의 순서를 잡는 쪽이 더 좋습니다.</p>
             </div>
           </article>
 
@@ -438,19 +444,19 @@
 
           <article id="my-page" class="hub-card">
             <p class="eyebrow">마이</p>
-            <h3>내 정보와 연결 관리</h3>
-            <p>로그인하면 상담 체험과 인연 초대를 한곳에서 관리할 수 있어요.</p>
+            <h3>내 정보와 연결</h3>
+            <p>저장된 사주 정보, 인연 연결, 상담 상태를 한곳에서 확인할 수 있어요.</p>
             <section class="profile-admin-panel" aria-label="개인 사주 정보 관리">
               <div class="profile-admin-panel__head">
                 <div>
                   <p class="eyebrow">개인 사주 정보 관리</p>
-                  <h4 id="my-profile-title">입력, 수정, 삭제를 여기서 관리해요</h4>
+                  <h4 id="my-profile-title">저장된 사주 정보</h4>
                 </div>
                 <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="manage">정보 열기</button>
               </div>
               <dl id="my-profile-summary-list" class="profile-summary-list" hidden></dl>
               <p id="my-profile-empty" class="auth-panel__note">아직 저장된 사주 정보가 없습니다. 입력 후 오늘의 운세와 상담 연결 질문을 바로 볼 수 있어요.</p>
-              <p id="my-profile-note" class="auth-panel__note">사주 계산과 수정은 팝업에서 하고, 로그인 · 인연 · 상담 상태는 이 화면에서 이어서 관리합니다.</p>
+              <p id="my-profile-note" class="auth-panel__note">저장한 사주 정보로 오늘 운세, 인연, 상담 흐름을 바로 이어볼 수 있어요.</p>
               <div id="my-profile-actions" class="profile-admin-panel__actions">
                 <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="create">새 정보 입력</button>
                 <button type="button" class="auth-button auth-button--ghost" data-profile-modal-open="edit">기존 정보 수정</button>
@@ -846,7 +852,7 @@
                   <button type="button" class="auth-button auth-button--kakao" data-auth-provider="kakao">카카오로 시작</button>
                   <button type="button" class="auth-button auth-button--google" data-auth-provider="google">구글로 시작</button>
                 </div>
-                <p class="auth-panel__note">로그인 후에는 마이 페이지에서 필수 동의, 인연 연결, 상담 체험 상태를 함께 관리할 수 있어요.</p>
+                <p class="auth-panel__note">로그인하면 상담 체험과 인연 초대를 이어서 사용할 수 있어요.</p>
               </section>
             </aside>
           </div>

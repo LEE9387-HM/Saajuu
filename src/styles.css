@@ -643,19 +643,36 @@ button:hover {
   font-style: normal;
 }
 
+.year-half-card em,
+.year-month-chip p,
+.year-month-chip b {
+  margin: 0;
+  color: #425359;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.year-month-chip b {
+  color: #6d7b81;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .year-flow-halves {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 14px;
 }
 
 .year-flow-months {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 14px;
 }
 
 .year-month-chip {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .year-month-chip[data-score-band="strong"] {
@@ -677,23 +694,73 @@ button:hover {
   gap: 8px;
 }
 
+.tarot-spread-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tarot-spread-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgb(221 214 199 / 80%);
+  background: #fffdf8;
+}
+
+.tarot-spread-card span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.tarot-spread-card strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.tarot-spread-card em,
+.tarot-spread-card p,
+.tarot-spread-card b,
+.tarot-followup__closing {
+  margin: 0;
+  font-style: normal;
+  line-height: 1.55;
+}
+
+.tarot-spread-card em,
+.tarot-spread-card b {
+  color: #6d7b81;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.tarot-spread-card p,
+.tarot-followup__closing {
+  color: #425359;
+  font-size: 0.82rem;
+}
+
 .tarot-choice-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .tarot-choice-grid article,
 .year-half-card,
-.tarot-reflection {
+.tarot-reflection,
+.tarot-followup {
   display: grid;
   gap: 8px;
 }
 
-.tarot-reflection {
+.tarot-reflection,
+.tarot-followup {
   gap: 10px;
   margin-top: 14px;
 }
 
-.tarot-reflection ul {
+.tarot-reflection ul,
+.tarot-followup ul {
   margin: 0;
   padding-left: 18px;
 }
@@ -710,7 +777,11 @@ button:hover {
   }
 
   .year-flow-months {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tarot-spread-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -726,7 +797,7 @@ button:hover {
   }
 
   .year-flow-months {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 

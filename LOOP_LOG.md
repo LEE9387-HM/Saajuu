@@ -1,4 +1,135 @@
-# Saajuu Loop Log
+﻿# Saajuu Loop Log
+
+## 2026-07-21 - Cycle 7
+
+### Selected Work
+
+Expand the tarot free-content block so it feels as substantial as yearly flow, without adding server dependencies.
+
+### Acceptance Criteria
+
+- Keep tarot browser-only.
+- Upgrade tarot from a single-card summary to a richer multi-card reading.
+- Add topic-specific follow-up prompts.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- index.html
+- src/fortune.js
+- src/fortune.test.js
+- src/main.js
+- src/styles.css
+- CHANGELOG.md
+- VERSION
+- package.json
+- package-lock.json
+- LOOP_LOG.md
+- PROJECT_STATUS_README.md
+
+### Verification
+
+- npm test - passed, 6 files and 66 tests.
+- npm run build - passed with Vite production build.
+
+### Remaining Risk
+
+- Tarot is now denser, but the content is still generated from a compact template set. If the goal is ad-grade long-form content, the next step is a broader editorial card matrix by topic and intent.
+
+### Next Suggested Work
+
+Expand relationship/compatibility output so saved links, one-off compatibility, and consultation prompts share the same deeper question sets and follow-up structure.
+
+
+## 2026-07-21 - Cycle 6
+
+### Selected Work
+
+Expand yearly fortune copy so the same score model produces topic-specific output for business, relationship, marriage, career, family, and general yearly readings.
+
+### Acceptance Criteria
+
+- Keep the same monthly score structure.
+- Make yearly copy differ by topic.
+- Cover topic-specific yearly copy with tests.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- src/fortune.js
+- src/fortune.test.js
+- CHANGELOG.md
+- VERSION
+- package.json
+- package-lock.json
+- LOOP_LOG.md
+- PROJECT_STATUS_README.md
+
+### Verification
+
+- npm test - passed, 6 files and 65 tests.
+- npm run build - passed with Vite production build.
+
+### Remaining Risk
+
+- Topic-specific yearly copy is still template-driven. To materially improve ad-grade content depth, the next step is widening the editorial matrix by topic x month x score band, not only adding another tone layer.
+
+### Next Suggested Work
+
+Expand tarot content from the current single-card/question structure into richer spreads and topic-specific follow-up cards so the second free content pillar is as dense as yearly flow.
+
+
+## 2026-07-21 - Cycle 5
+
+### Selected Work
+
+Tighten the profile-management copy and raise the baseline density of yearly fortune content so the free experience feels substantive before more monetization layers are added.
+
+### Acceptance Criteria
+
+- Remove awkward management-heavy copy around saved profile and account areas.
+- Expand yearly fortune output with monthly narrative copy, evidence, half-year focus, and summary notes.
+- Lock the richer yearly output with tests.
+- Run `npm test` and `npm run build`.
+
+### Result
+
+`done`
+
+### Files Changed
+
+- `index.html`
+- `src/fortune.js`
+- `src/fortune.test.js`
+- `src/main.js`
+- `src/styles.css`
+- `CHANGELOG.md`
+- `VERSION`
+- `package.json`
+- `package-lock.json`
+- `LOOP_LOG.md`
+- `PROJECT_STATUS_README.md`
+
+### Verification
+
+- `npm test` - passed, 6 files and 64 tests.
+- `npm run build` - passed with Vite production build.
+
+### Remaining Risk
+
+- The yearly flow is now denser, but yearly and tarot content still depend on the current browser-side templates rather than a larger editorial data library. If the product wants Google AdSense-grade content depth, the next step is expanding template coverage by topic and month, not just styling.
+
+### Next Suggested Work
+
+Expand the non-AI free content set further with richer tarot spreads, topic-specific yearly variants, and relationship-entry flows that feed directly into consultation prompts.
 
 ## 2026-07-21 - Cycle 4
 
@@ -175,3 +306,6 @@ Research current 2026 AI relationship, astrology, and reflection products, then 
 ### Next Suggested Work
 
 Implement the first code change implied by this research: make connected-relationship cards generate daily follow-up prompts and ensure the free 3-turn consultation shows explicit turn-to-turn memory.
+
+
+

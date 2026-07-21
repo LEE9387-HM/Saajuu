@@ -711,23 +711,23 @@ function renderProfileSummaryList(target, profile) {
 function renderStoredProfilePanels(profile = loadProfile()) {
   const hasProfile = Boolean(profile);
   if (profileSummaryTitle) {
-    profileSummaryTitle.textContent = hasProfile ? "저장된 사주 정보를 관리할 수 있어요" : "아직 저장된 사주 정보가 없어요";
+    profileSummaryTitle.textContent = hasProfile ? "저장된 사주 정보" : "아직 저장된 사주 정보가 없어요";
   }
   if (profileSummaryCopy) {
     profileSummaryCopy.textContent = hasProfile
-      ? "수정은 팝업에서 바로 하고, 로그인과 동의 상태는 마이 페이지에서 이어서 관리할 수 있어요."
+      ? "저장된 정보를 불러와 오늘 운세와 상담 흐름을 바로 이어볼 수 있어요."
       : "생년월일시와 지금 궁금한 주제를 입력하면 오늘의 운세와 상담 연결 질문이 함께 열립니다.";
   }
   renderProfileSummaryList(profileSummaryList, profile);
   renderProfileSummaryList(myProfileSummaryList, profile);
   if (myProfileEmpty) myProfileEmpty.hidden = hasProfile;
   if (myProfileTitle) {
-    myProfileTitle.textContent = hasProfile ? "저장된 사주 정보를 요약해서 확인해요" : "입력, 수정, 삭제를 여기서 관리해요";
+    myProfileTitle.textContent = hasProfile ? "저장된 사주 정보" : "아직 저장된 사주 정보가 없어요";
   }
   if (myProfileNote) {
     myProfileNote.textContent = hasProfile
-      ? "수정은 팝업에서 하고, 이 화면에서는 로그인 · 인연 · 상담 상태를 이어서 관리합니다."
-      : "사주 계산과 수정은 팝업에서 하고, 로그인 · 인연 · 상담 상태는 이 화면에서 이어서 관리합니다.";
+      ? "저장한 사주 정보로 오늘 운세, 인연, 상담 흐름을 바로 이어볼 수 있어요."
+      : "사주 정보를 입력하면 오늘 운세와 상담 연결 질문을 바로 이어서 볼 수 있어요.";
   }
   if (myProfileActions) {
     myProfileActions.innerHTML = hasProfile
@@ -3205,6 +3205,7 @@ const yearCurrentFocus = document.querySelector("#year-current-focus");
 const yearCurrentAction = document.querySelector("#year-current-action");
 const yearFlowHalves = document.querySelector("#year-flow-halves");
 const yearFlowMonths = document.querySelector("#year-flow-months");
+const yearFlowNote = document.querySelector("#year-flow-note");
 const tarotSummary = document.querySelector("#tarot-summary");
 const tarotEyebrow = document.querySelector("#tarot-eyebrow");
 const tarotTitle = document.querySelector("#tarot-title");
@@ -3218,6 +3219,9 @@ const tarotChoiceACopy = document.querySelector("#tarot-choice-a-copy");
 const tarotChoiceBLabel = document.querySelector("#tarot-choice-b-label");
 const tarotChoiceBCopy = document.querySelector("#tarot-choice-b-copy");
 const tarotReflectionList = document.querySelector("#tarot-reflection-list");
+const tarotSpreadGrid = document.querySelector("#tarot-spread-grid");
+const tarotFollowupList = document.querySelector("#tarot-followup-list");
+const tarotClosing = document.querySelector("#tarot-closing");
 let lastResult = null;
 
 function renderDaily(chart, now = new Date()) {
@@ -3290,6 +3294,7 @@ function renderYearFlow(chart, input, now = new Date()) {
             <span>${escapeHtml(half.label)}</span>
             <strong>${half.score}점</strong>
             <p>${escapeHtml(half.copy)}</p>
+            <em>${escapeHtml(half.focus ?? "")}</em>
           </article>
         `,
       )
@@ -3303,20 +3308,22 @@ function renderYearFlow(chart, input, now = new Date()) {
             <span>${escapeHtml(month.label)}</span>
             <strong>${month.score}</strong>
             <em>${escapeHtml(month.focus)}</em>
+            <p>${escapeHtml(month.copy ?? "")}</p>
+            <b>${escapeHtml(month.evidence ?? "")}</b>
           </article>
         `,
       )
       .join("");
+  }
+  if (yearFlowNote) {
+    yearFlowNote.textContent = overview.note ?? "월별 점수는 방향을 잡기 위한 참고용 요약입니다.";
   }
 }
 
 function renderTarot(chart, input, now = new Date()) {
   const tarot = buildTarotOverview(chart, input.topic, input.concern, now);
   if (tarotSummary) {
-    tarotSummary.textContent =
-      input.concern?.trim()
-        ? `입력한 고민을 바탕으로 오늘의 카드와 선택 질문을 정리했어요.`
-        : "지금 마음을 비춰볼 질문과 오늘의 한 장을 같이 정리해보세요.";
+    tarotSummary.textContent = tarot.summary;
   }
   if (tarotEyebrow) tarotEyebrow.textContent = tarot.eyebrow;
   if (tarotTitle) tarotTitle.textContent = tarot.title;
@@ -3324,12 +3331,29 @@ function renderTarot(chart, input, now = new Date()) {
   if (tarotCardKeyword) tarotCardKeyword.textContent = tarot.lead.keyword;
   if (tarotCardMessage) tarotCardMessage.textContent = tarot.lead.message;
   if (tarotCardAction) tarotCardAction.textContent = tarot.lead.action;
+  if (tarotSpreadGrid) {
+    tarotSpreadGrid.innerHTML = tarot.spread
+      .map(
+        (entry) => `
+          <article class="tarot-spread-card">
+            <span>${escapeHtml(entry.label)}</span>
+            <strong>${escapeHtml(entry.card.name)}</strong>
+            <em>${escapeHtml(entry.card.keyword)}</em>
+            <p>${escapeHtml(entry.copy)}</p>
+            <b>${escapeHtml(entry.action)}</b>
+          </article>
+        `,
+      )
+      .join("");
+  }
   if (tarotChoicePrompt) tarotChoicePrompt.textContent = tarot.choice.prompt;
   if (tarotChoiceALabel) tarotChoiceALabel.textContent = tarot.choice.aLabel;
   if (tarotChoiceACopy) tarotChoiceACopy.textContent = tarot.choice.aCopy;
   if (tarotChoiceBLabel) tarotChoiceBLabel.textContent = tarot.choice.bLabel;
   if (tarotChoiceBCopy) tarotChoiceBCopy.textContent = tarot.choice.bCopy;
   if (tarotReflectionList) tarotReflectionList.innerHTML = renderList(tarot.reflection);
+  if (tarotFollowupList) tarotFollowupList.innerHTML = renderList(tarot.followUps);
+  if (tarotClosing) tarotClosing.textContent = tarot.closing;
 }
 
 function refreshDailyIfStale() {

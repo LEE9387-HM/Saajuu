@@ -245,7 +245,30 @@ describe("buildYearlyOverview", () => {
     expect(overview.currentMonth.score).toBeGreaterThanOrEqual(45);
     expect(overview.currentMonth.score).toBeLessThanOrEqual(92);
     expect(overview.halfYear).toHaveLength(2);
+    expect(overview.halfYear[0].focus).toBeTruthy();
+    expect(overview.monthScores[0].copy).toBeTruthy();
+    expect(overview.note).toContain("월");
     expect(overview.evidence.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("changes yearly copy by topic while keeping the same monthly structure", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+
+    const businessOverview = buildYearlyOverview(chart, "business", new Date("2026-07-19T09:00:00+09:00"));
+    const relationshipOverview = buildYearlyOverview(chart, "relationship", new Date("2026-07-19T09:00:00+09:00"));
+
+    expect(businessOverview.eyebrow).toContain("사업");
+    expect(relationshipOverview.eyebrow).toContain("연애");
+    expect(businessOverview.currentMonth.focus).not.toBe(relationshipOverview.currentMonth.focus);
+    expect(businessOverview.monthScores[0].copy).not.toBe(relationshipOverview.monthScores[0].copy);
+    expect(businessOverview.monthScores).toHaveLength(12);
+    expect(relationshipOverview.monthScores).toHaveLength(12);
   });
 });
 
@@ -267,9 +290,39 @@ describe("buildTarotOverview", () => {
     );
 
     expect(tarot.lead.name).toBeTruthy();
+    expect(tarot.spread).toHaveLength(3);
     expect(tarot.choice.aLabel).toBe("지금 바로 밀기");
     expect(tarot.choice.bLabel).toBe("작게 시험하기");
     expect(tarot.reflection).toHaveLength(3);
+    expect(tarot.followUps).toHaveLength(3);
+    expect(tarot.closing).toBeTruthy();
+  });
+
+  it("changes tarot follow-up prompts by topic", () => {
+    const chart = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    const businessTarot = buildTarotOverview(
+      chart,
+      "business",
+      "당장 사업 시작하고 싶어요",
+      new Date("2026-07-19T09:00:00+09:00"),
+    );
+    const relationshipTarot = buildTarotOverview(
+      chart,
+      "relationship",
+      "이 관계를 이어가도 될까요?",
+      new Date("2026-07-19T09:00:00+09:00"),
+    );
+
+    expect(businessTarot.summary).toContain("사업");
+    expect(relationshipTarot.summary).toContain("관계");
+    expect(businessTarot.followUps[0]).not.toBe(relationshipTarot.followUps[0]);
   });
 });
 
