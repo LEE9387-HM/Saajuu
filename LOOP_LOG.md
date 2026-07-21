@@ -1,5 +1,47 @@
 # Saajuu Loop Log
 
+## 2026-07-21 - Cycle 4
+
+### Selected Work
+
+Add export actions to the admin console so operators can save the current dashboard state without relying on external dashboards or manual copy-paste.
+
+### Acceptance Criteria
+
+- Add JSON export action to admin toolbar.
+- Add CSV export action to admin toolbar.
+- Export current dashboard metrics and recent operational lists.
+- Keep the implementation frontend-only and low-risk.
+- Run `npm test` and `npm run build`.
+
+### Result
+
+`done`
+
+### Files Changed
+
+- `index.html`
+- `src/main.js`
+- `CHANGELOG.md`
+- `VERSION`
+- `package.json`
+- `package-lock.json`
+- `LOOP_LOG.md`
+- `PROJECT_STATUS_README.md`
+
+### Verification
+
+- `npm test` - passed, 6 files and 64 tests.
+- `npm run build` - passed with Vite production build.
+
+### Remaining Risk
+
+- Export content is based on the currently loaded admin snapshot, not a separate reporting query. If operators need long-range or paginated exports, that should move to a dedicated Edge Function later.
+
+### Next Suggested Work
+
+Add refund-safe payment exception handling and an admin escalation view that highlights sessions with repeated safety events or unresolved paid-order issues.
+
 ## 2026-07-21 - Cycle 3
 
 ### Selected Work

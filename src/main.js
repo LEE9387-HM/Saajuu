@@ -148,6 +148,8 @@ const adminNavLink = document.querySelector("#admin-nav-link");
 const adminStatus = document.querySelector("#admin-status");
 const adminUpdatedAt = document.querySelector("#admin-updated-at");
 const adminRefresh = document.querySelector("#admin-refresh");
+const adminExportJson = document.querySelector("#admin-export-json");
+const adminExportCsv = document.querySelector("#admin-export-csv");
 const adminMetricsWindow = document.querySelector("#admin-metrics-window");
 const adminSessionSearch = document.querySelector("#admin-session-search");
 const adminPanel = document.querySelector("#admin-panel");
@@ -1810,6 +1812,125 @@ function formatAdminMetricsLabel(days) {
   return "30일";
 }
 
+function downloadAdminExport(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsv(value) {
+  const normalized = String(value ?? "");
+  if (/[",\n]/.test(normalized)) {
+    return `"${normalized.replaceAll('"', '""')}"`;
+  }
+  return normalized;
+}
+
+function buildAdminExportSnapshot(dashboard) {
+  if (!dashboard) return null;
+  return {
+    exportedAt: new Date().toISOString(),
+    metricsWindowDays: adminMetricsWindowDays,
+    stats: dashboard.stats ?? {},
+    windowStats: dashboard.windowStats ?? {},
+    recentProfiles: dashboard.recentProfiles ?? [],
+    recentSessions: dashboard.recentSessions ?? [],
+    recentEntitlements: dashboard.recentEntitlements ?? [],
+    recentOrders: dashboard.recentOrders ?? [],
+    recentSafetyEvents: dashboard.recentSafetyEvents ?? [],
+    recentActionLogs: dashboard.recentActionLogs ?? [],
+  };
+}
+
+function buildAdminExportCsv(dashboard) {
+  const snapshot = buildAdminExportSnapshot(dashboard);
+  if (!snapshot) return "";
+
+  const rows = [["section", "field1", "field2", "field3", "field4", "field5", "field6"]];
+  rows.push(["meta", "exportedAt", snapshot.exportedAt, "metricsWindowDays", String(snapshot.metricsWindowDays), "", ""]);
+
+  Object.entries(snapshot.stats).forEach(([key, value]) => {
+    rows.push(["stats", key, String(value ?? ""), "", "", "", ""]);
+  });
+  Object.entries(snapshot.windowStats).forEach(([key, value]) => {
+    rows.push(["windowStats", key, String(value ?? ""), "", "", "", ""]);
+  });
+  snapshot.recentProfiles.forEach((item) => {
+    rows.push([
+      "recentProfiles",
+      String(item.id ?? ""),
+      String(item.displayName ?? ""),
+      String(item.role ?? ""),
+      String(item.createdAt ?? ""),
+      String(item.lastActivityAt ?? ""),
+      "",
+    ]);
+  });
+  snapshot.recentSessions.forEach((item) => {
+    rows.push([
+      "recentSessions",
+      String(item.id ?? ""),
+      String(item.userLabel ?? ""),
+      String(item.topic ?? ""),
+      String(item.status ?? ""),
+      `${String(item.usedTurns ?? 0)}/${String(item.turnLimit ?? 0)}`,
+      String(item.createdAt ?? ""),
+    ]);
+  });
+  snapshot.recentEntitlements.forEach((item) => {
+    rows.push([
+      "recentEntitlements",
+      String(item.id ?? ""),
+      String(item.userLabel ?? ""),
+      String(item.productId ?? ""),
+      String(item.status ?? ""),
+      `${String(item.usedTurns ?? 0)}/${String(item.totalTurns ?? 0)}`,
+      String(item.expiresAt ?? item.createdAt ?? ""),
+    ]);
+  });
+  snapshot.recentOrders.forEach((item) => {
+    rows.push([
+      "recentOrders",
+      String(item.id ?? ""),
+      String(item.userLabel ?? ""),
+      String(item.productId ?? ""),
+      String(item.status ?? ""),
+      String(item.amountKrw ?? ""),
+      String(item.createdAt ?? ""),
+    ]);
+  });
+  snapshot.recentSafetyEvents.forEach((item) => {
+    rows.push([
+      "recentSafetyEvents",
+      String(item.id ?? ""),
+      String(item.userLabel ?? ""),
+      String(item.level ?? ""),
+      String(item.category ?? ""),
+      String(item.action ?? ""),
+      String(item.createdAt ?? ""),
+    ]);
+  });
+  snapshot.recentActionLogs.forEach((item) => {
+    rows.push([
+      "recentActionLogs",
+      String(item.id ?? ""),
+      String(item.adminLabel ?? ""),
+      String(item.actionType ?? ""),
+      String(item.targetType ?? ""),
+      String(item.targetId ?? ""),
+      String(item.createdAt ?? ""),
+    ]);
+  });
+
+  return rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+}
+
 function buildAdminProfileModal(detail) {
   if (!detail) {
     return '<p class="admin-list__empty">사용자를 선택하면 상세 내용이 여기에 표시됩니다.</p>';
@@ -2222,6 +2343,35 @@ adminRefresh?.addEventListener("click", async () => {
   adminRefresh.disabled = true;
   if (adminUpdatedAt) adminUpdatedAt.textContent = "운영 데이터를 다시 불러오고 있습니다.";
   await refreshAdminDashboard(activeSession);
+});
+
+adminExportJson?.addEventListener("click", () => {
+  const snapshot = buildAdminExportSnapshot(activeAdminDashboard);
+  if (!snapshot) {
+    authNote.textContent = "내보낼 운영 데이터가 아직 없습니다.";
+    return;
+  }
+  const content = `${JSON.stringify(snapshot, null, 2)}\n`;
+  downloadAdminExport(
+    `saajuu-admin-${new Date().toISOString().slice(0, 10)}.json`,
+    content,
+    "application/json;charset=utf-8",
+  );
+  authNote.textContent = "운영 현황을 JSON 파일로 저장했습니다.";
+});
+
+adminExportCsv?.addEventListener("click", () => {
+  const content = buildAdminExportCsv(activeAdminDashboard);
+  if (!content) {
+    authNote.textContent = "내보낼 운영 데이터가 아직 없습니다.";
+    return;
+  }
+  downloadAdminExport(
+    `saajuu-admin-${new Date().toISOString().slice(0, 10)}.csv`,
+    `${content}\n`,
+    "text/csv;charset=utf-8",
+  );
+  authNote.textContent = "운영 현황을 CSV 파일로 저장했습니다.";
 });
 
 adminSessionsMore?.addEventListener("click", async () => {
