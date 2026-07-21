@@ -2084,6 +2084,25 @@ button:hover {
   font-size: 0.86rem;
 }
 
+.compatibility-insight {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.compatibility-insight__card,
+.compatibility-followup {
+  padding: 12px 14px;
+  border: 1px solid rgb(77 128 114 / 18%);
+  background: rgb(255 255 255 / 72%);
+}
+
+.compatibility-insight__card p,
+.compatibility-followup ul {
+  margin: 8px 0 0;
+}
+
 .compatibility-result ul {
   margin-top: 9px;
 }
@@ -3763,6 +3782,7 @@ footer span:first-child {
   }
 
   .compatibility-columns,
+  .compatibility-insight,
   .mini-form__row {
     grid-template-columns: 1fr;
   }

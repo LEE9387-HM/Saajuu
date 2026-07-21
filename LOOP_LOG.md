@@ -1,3 +1,49 @@
+# Saajuu Loop Log
+
+## 2026-07-21 - Cycle 8
+
+### Selected Work
+
+Deepen relationship compatibility output so it leads into real conversation and consultation, not just a score.
+
+### Acceptance Criteria
+
+- Keep compatibility browser-only.
+- Add relationship-flow, next-step, and follow-up question blocks.
+- Make compatibility guidance differ by relationship type.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- index.html
+- src/fortune.js
+- src/fortune.test.js
+- src/main.js
+- src/styles.css
+- CHANGELOG.md
+- PROJECT_STATUS_README.md
+- VERSION
+- package.json
+- package-lock.json
+
+### Verification
+
+- npm test
+- npm run build
+
+### Remaining Risk
+
+- Earlier historical changelog entries still contain some legacy encoding damage and should be cleaned in a separate documentation pass.
+- Relationship-linked invite flow still asks the user to re-enter counterpart birth data for compatibility, which is intentional for privacy but still adds friction.
+
+### Next Suggested Work
+
+- Improve relationship-linked flow so a connected person card can open directly into compatibility guidance and a prefilled consultation start without extra orientation copy.
+
 ﻿# Saajuu Loop Log
 
 ## 2026-07-21 - Cycle 7

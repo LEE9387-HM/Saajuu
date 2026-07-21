@@ -351,6 +351,10 @@ describe("buildCompatibilityReading", () => {
     expect(reading.strengths).toHaveLength(3);
     expect(reading.frictions).toHaveLength(3);
     expect(reading.talkGuide).toHaveLength(3);
+    expect(reading.followUps).toHaveLength(3);
+    expect(reading.flowSummary).toBeTruthy();
+    expect(reading.nextStep).toBeTruthy();
+    expect(reading.evidence).toHaveLength(5);
     expect(reading.evidence.some((item) => item.includes("관계 리듬"))).toBe(true);
   });
 
@@ -395,6 +399,30 @@ describe("buildCompatibilityReading", () => {
     const backward = buildCompatibilityReadingSymmetric(second, first, "spouse");
 
     expect(backward).toEqual(forward);
+  });
+
+  it("changes relationship guidance by relation type", () => {
+    const first = calculateChart({
+      calendarType: "solar",
+      birthDate: "1992-10-24",
+      hour: 5,
+      minute: 37,
+      isLeapMonth: false,
+    });
+    const second = calculateChart({
+      calendarType: "solar",
+      birthDate: "1990-04-21",
+      hour: 12,
+      minute: 0,
+      isLeapMonth: false,
+    });
+
+    const lover = buildCompatibilityReadingSymmetric(first, second, "lover");
+    const family = buildCompatibilityReadingSymmetric(first, second, "family");
+
+    expect(lover.followUps[0]).not.toBe(family.followUps[0]);
+    expect(lover.nextStep).not.toBe(family.nextStep);
+    expect(lover.consultQuestion).not.toBe(family.consultQuestion);
   });
 });
 

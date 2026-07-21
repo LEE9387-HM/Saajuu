@@ -122,6 +122,9 @@ const partnerLeapField = document.querySelector("#partner-leap-field");
 const partnerLeapMonth = document.querySelector("#partner-leap-month");
 const compatibilityError = document.querySelector("#compatibility-error");
 const compatibilityResult = document.querySelector("#compatibility-result");
+const compatibilityFlow = document.querySelector("#compatibility-flow");
+const compatibilityNextStep = document.querySelector("#compatibility-next-step");
+const compatibilityFollowups = document.querySelector("#compatibility-followups");
 const personaCards = document.querySelector("#persona-cards");
 const modeCards = document.querySelector("#mode-cards");
 const personaSwitcher = document.querySelector("#persona-switcher");
@@ -3925,9 +3928,12 @@ function renderCompatibility(reading) {
   document.querySelector("#compatibility-score").textContent = String(reading.score);
   document.querySelector("#compatibility-verdict").textContent = reading.verdict;
   document.querySelector("#compatibility-copy").textContent = reading.copy;
+  if (compatibilityFlow) compatibilityFlow.textContent = reading.flowSummary;
+  if (compatibilityNextStep) compatibilityNextStep.textContent = reading.nextStep;
   document.querySelector("#compatibility-strengths").innerHTML = renderList(reading.strengths);
   document.querySelector("#compatibility-frictions").innerHTML = renderList(reading.frictions);
   document.querySelector("#compatibility-talk").innerHTML = renderList(reading.talkGuide);
+  if (compatibilityFollowups) compatibilityFollowups.innerHTML = renderList(reading.followUps ?? []);
   document.querySelector("#compatibility-question").textContent = reading.consultQuestion;
   document.querySelector("#compatibility-evidence").innerHTML = renderEvidence("궁합 근거", reading.evidence);
   if (compatibilityResult) {
