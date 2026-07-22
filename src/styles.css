@@ -596,6 +596,8 @@ button:hover {
 .year-flow-panel__evidence,
 .year-flow-months,
 .year-flow-halves,
+.year-flow-guides,
+.tarot-insights,
 .tarot-choice-grid {
   display: grid;
   gap: 10px;
@@ -608,9 +610,11 @@ button:hover {
 .year-flow-panel__evidence em,
 .year-month-chip,
 .year-half-card,
+.year-guide-card,
 .tarot-choice-grid article,
 .tarot-card,
-.tarot-reflection {
+.tarot-reflection,
+.tarot-insight-card {
   padding: 12px 14px;
   border: 1px solid rgb(221 214 199 / 80%);
   background: #fffdf8;
@@ -619,8 +623,10 @@ button:hover {
 .year-flow-panel__current span,
 .year-half-card span,
 .year-month-chip span,
+.year-guide-card span,
 .tarot-card span,
-.tarot-reflection span {
+.tarot-reflection span,
+.tarot-insight-card span {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
@@ -629,8 +635,10 @@ button:hover {
 .year-flow-panel__current strong,
 .year-half-card strong,
 .year-month-chip strong,
+.year-guide-card strong,
 .tarot-card strong,
-.tarot-choice-grid strong {
+.tarot-choice-grid strong,
+.tarot-insight-card strong {
   color: var(--ink);
   font-size: 1.15rem;
 }
@@ -645,7 +653,9 @@ button:hover {
 
 .year-half-card em,
 .year-month-chip p,
-.year-month-chip b {
+.year-month-chip b,
+.year-guide-card p,
+.tarot-insight-card p {
   margin: 0;
   color: #425359;
   font-size: 0.8rem;
@@ -662,6 +672,12 @@ button:hover {
 
 .year-flow-halves {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.year-flow-guides,
+.tarot-insights {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 14px;
 }
 
@@ -747,8 +763,10 @@ button:hover {
 
 .tarot-choice-grid article,
 .year-half-card,
+.year-guide-card,
 .tarot-reflection,
-.tarot-followup {
+.tarot-followup,
+.tarot-insight-card {
   display: grid;
   gap: 8px;
 }
@@ -778,6 +796,11 @@ button:hover {
 
   .year-flow-months {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .year-flow-guides,
+  .tarot-insights {
+    grid-template-columns: 1fr;
   }
 
   .tarot-spread-grid {

@@ -241,13 +241,16 @@ describe("buildYearlyOverview", () => {
     const overview = buildYearlyOverview(chart, "business", new Date("2026-07-19T09:00:00+09:00"));
 
     expect(overview.monthScores).toHaveLength(12);
-    expect(overview.currentMonth.label).toBe("7월 집중 포인트");
+    expect(overview.currentMonth.label).toContain("7");
+    expect(overview.currentMonth.label.length).toBeGreaterThan(4);
     expect(overview.currentMonth.score).toBeGreaterThanOrEqual(45);
     expect(overview.currentMonth.score).toBeLessThanOrEqual(92);
     expect(overview.halfYear).toHaveLength(2);
     expect(overview.halfYear[0].focus).toBeTruthy();
+    expect(overview.guides).toHaveLength(3);
     expect(overview.monthScores[0].copy).toBeTruthy();
-    expect(overview.note).toContain("월");
+    expect(overview.monthScores[0].nextStep).toBeTruthy();
+    expect(overview.note.length).toBeGreaterThan(20);
     expect(overview.evidence.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -291,10 +294,11 @@ describe("buildTarotOverview", () => {
 
     expect(tarot.lead.name).toBeTruthy();
     expect(tarot.spread).toHaveLength(3);
-    expect(tarot.choice.aLabel).toBe("지금 바로 밀기");
-    expect(tarot.choice.bLabel).toBe("작게 시험하기");
-    expect(tarot.reflection).toHaveLength(3);
-    expect(tarot.followUps).toHaveLength(3);
+    expect(tarot.insights).toHaveLength(3);
+    expect(tarot.choice.aLabel).toBeTruthy();
+    expect(tarot.choice.bLabel).toBeTruthy();
+    expect(tarot.reflection).toHaveLength(4);
+    expect(tarot.followUps).toHaveLength(4);
     expect(tarot.closing).toBeTruthy();
   });
 

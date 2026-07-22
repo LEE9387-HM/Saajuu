@@ -3272,6 +3272,7 @@ const yearCurrentScore = document.querySelector("#year-current-score");
 const yearCurrentFocus = document.querySelector("#year-current-focus");
 const yearCurrentAction = document.querySelector("#year-current-action");
 const yearFlowHalves = document.querySelector("#year-flow-halves");
+const yearFlowGuides = document.querySelector("#year-flow-guides");
 const yearFlowMonths = document.querySelector("#year-flow-months");
 const yearFlowNote = document.querySelector("#year-flow-note");
 const tarotSummary = document.querySelector("#tarot-summary");
@@ -3288,6 +3289,7 @@ const tarotChoiceBLabel = document.querySelector("#tarot-choice-b-label");
 const tarotChoiceBCopy = document.querySelector("#tarot-choice-b-copy");
 const tarotReflectionList = document.querySelector("#tarot-reflection-list");
 const tarotSpreadGrid = document.querySelector("#tarot-spread-grid");
+const tarotInsights = document.querySelector("#tarot-insights");
 const tarotFollowupList = document.querySelector("#tarot-followup-list");
 const tarotClosing = document.querySelector("#tarot-closing");
 let lastResult = null;
@@ -3368,6 +3370,19 @@ function renderYearFlow(chart, input, now = new Date()) {
       )
       .join("");
   }
+  if (yearFlowGuides) {
+    yearFlowGuides.innerHTML = (overview.guides ?? [])
+      .map(
+        (guide) => `
+          <article class="year-guide-card">
+            <span>${escapeHtml(guide.label)}</span>
+            <strong>${escapeHtml(guide.title)}</strong>
+            <p>${escapeHtml(guide.copy)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
   if (yearFlowMonths) {
     yearFlowMonths.innerHTML = overview.monthScores
       .map(
@@ -3377,6 +3392,7 @@ function renderYearFlow(chart, input, now = new Date()) {
             <strong>${month.score}</strong>
             <em>${escapeHtml(month.focus)}</em>
             <p>${escapeHtml(month.copy ?? "")}</p>
+            <p>${escapeHtml(month.nextStep ?? "")}</p>
             <b>${escapeHtml(month.evidence ?? "")}</b>
           </article>
         `,
@@ -3420,6 +3436,19 @@ function renderTarot(chart, input, now = new Date()) {
   if (tarotChoiceBLabel) tarotChoiceBLabel.textContent = tarot.choice.bLabel;
   if (tarotChoiceBCopy) tarotChoiceBCopy.textContent = tarot.choice.bCopy;
   if (tarotReflectionList) tarotReflectionList.innerHTML = renderList(tarot.reflection);
+  if (tarotInsights) {
+    tarotInsights.innerHTML = (tarot.insights ?? [])
+      .map(
+        (entry) => `
+          <article class="tarot-insight-card">
+            <span>${escapeHtml(entry.label)}</span>
+            <strong>${escapeHtml(entry.title)}</strong>
+            <p>${escapeHtml(entry.copy)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
   if (tarotFollowupList) tarotFollowupList.innerHTML = renderList(tarot.followUps);
   if (tarotClosing) tarotClosing.textContent = tarot.closing;
 }
