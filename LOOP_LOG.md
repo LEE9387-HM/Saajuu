@@ -1,5 +1,46 @@
 # Saajuu Loop Log
 
+## 2026-07-22 - Cycle 10
+
+### Selected Work
+
+Auto-fill the consultation opener from the latest compatibility result and clean up the durable status documents.
+
+### Acceptance Criteria
+
+- When a linked relationship already has a fresh compatibility result, reuse that summary in the consultation opener.
+- Reset stale compatibility summaries when the user switches to a different linked relationship.
+- Rewrite the durable status documents in clean Korean.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- src/main.js
+- PROJECT_STATUS_README.md
+- CHANGELOG.md
+- LOOP_LOG.md
+- VERSION
+- package.json
+- package-lock.json
+
+### Verification
+
+- npm test
+- npm run build
+
+### Remaining Risk
+
+- The consultation opener is now more specific, but deeper quality still depends on the server-side LLM orchestration and prompt shaping.
+- Historical auxiliary docs outside the main handoff set may still contain older mojibake and should be cleaned when they matter again.
+
+### Next Suggested Work
+
+- Use the most recent compatibility result to generate 2-3 sharper starter chips in the consult view so the user can begin with one tap instead of editing a long prefilled message.
+
 ## 2026-07-22 - Cycle 9
 
 ### Selected Work
