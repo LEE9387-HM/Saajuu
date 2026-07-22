@@ -189,6 +189,21 @@
             <p class="eyebrow">인연</p>
             <h3>두 사람의 관계 흐름</h3>
             <p>상대 정보를 저장하지 않고 두 사람의 강점, 충돌 지점과 대화 포인트를 살펴봅니다.</p>
+            <div id="compatibility-context" class="compatibility-context" hidden>
+              <div>
+                <span class="compatibility-context__eyebrow">선택된 관계</span>
+                <strong id="compatibility-context-title">연결된 관계에서 궁합을 이어봅니다.</strong>
+                <p id="compatibility-context-copy">선택된 관계의 맥락을 유지한 채 궁합을 보고, 결과에서 바로 상담으로 이어갈 수 있어요.</p>
+              </div>
+              <div class="compatibility-context__actions">
+                <button type="button" class="auth-button auth-button--ghost" id="compatibility-context-clear">
+                  선택 해제
+                </button>
+                <button type="button" class="auth-button" id="compatibility-context-consult">
+                  이 관계로 상담 이어가기
+                </button>
+              </div>
+            </div>
             <form id="compatibility-form" class="mini-form">
               <label>
                 <span>관계</span>
@@ -274,6 +289,11 @@
               <div class="daily-consult">
                 <span>상담으로 이어질 질문</span>
                 <strong id="compatibility-question"></strong>
+              </div>
+              <div class="compatibility-result__actions">
+                <button type="button" class="auth-button" id="compatibility-consult-start">
+                  이 궁합으로 상담 시작
+                </button>
               </div>
               <div id="compatibility-evidence" class="evidence"></div>
             </div>

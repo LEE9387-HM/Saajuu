@@ -122,6 +122,12 @@ const partnerLeapField = document.querySelector("#partner-leap-field");
 const partnerLeapMonth = document.querySelector("#partner-leap-month");
 const compatibilityError = document.querySelector("#compatibility-error");
 const compatibilityResult = document.querySelector("#compatibility-result");
+const compatibilityContext = document.querySelector("#compatibility-context");
+const compatibilityContextTitle = document.querySelector("#compatibility-context-title");
+const compatibilityContextCopy = document.querySelector("#compatibility-context-copy");
+const compatibilityContextClear = document.querySelector("#compatibility-context-clear");
+const compatibilityContextConsult = document.querySelector("#compatibility-context-consult");
+const compatibilityConsultStart = document.querySelector("#compatibility-consult-start");
 const compatibilityFlow = document.querySelector("#compatibility-flow");
 const compatibilityNextStep = document.querySelector("#compatibility-next-step");
 const compatibilityFollowups = document.querySelector("#compatibility-followups");
@@ -227,6 +233,7 @@ let activeConsultationMessages = [];
 let activeConsultationGuidance = null;
 let activeRelationshipLinks = [];
 let activeRelationshipLabelEditorId = "";
+let activeCompatibilityRelationshipId = "";
 let pendingConsultationContext = null;
 let selectedPersonaId = "miseon";
 let selectedModeId = "trial";
@@ -535,8 +542,53 @@ function buildConsultationContextForRelationship(link) {
   return {
     source: "relationship_link",
     relationship: link?.relationship ?? "relationship",
+    relationshipLinkId: link?.id ?? "",
     counterpartDisplayName: relationshipDisplayName(link),
   };
+}
+
+function getActiveCompatibilityRelationshipLink() {
+  return Array.isArray(activeRelationshipLinks)
+    ? activeRelationshipLinks.find((item) => item.id === activeCompatibilityRelationshipId) ?? null
+    : null;
+}
+
+function clearCompatibilityRelationshipContext() {
+  activeCompatibilityRelationshipId = "";
+  if (compatibilityContext) compatibilityContext.hidden = true;
+}
+
+function renderCompatibilityRelationshipContext() {
+  if (!compatibilityContext || !compatibilityContextTitle || !compatibilityContextCopy) return;
+  const link = getActiveCompatibilityRelationshipLink();
+  if (!link) {
+    compatibilityContext.hidden = true;
+    return;
+  }
+
+  compatibilityContext.hidden = false;
+  compatibilityContextTitle.textContent = `${relationshipDisplayName(link)}님과의 ${relationLabel(link.relationship)} 관계를 보고 있어요`;
+  compatibilityContextCopy.textContent =
+    "이 관계의 맥락을 유지한 채 궁합을 보고, 결과에서 바로 상담으로 이어갈 수 있어요. 상대 생년월일시는 보안을 위해 다시 입력합니다.";
+}
+
+function startConsultationFromRelationshipLink(link, options = {}) {
+  if (!link) return;
+  const mappedTopic = consultationTopicForRelationship(link.relationship);
+  const baseConcern = buildRelationshipConsultConcern(link);
+  const concern = options.concern ? `${baseConcern}\n\n${options.concern}` : baseConcern;
+  pendingConsultationContext = buildConsultationContextForRelationship(link);
+  if (trialTopic) trialTopic.value = mappedTopic;
+  if (topicSelect) topicSelect.value = mappedTopic;
+  if (trialConcern) trialConcern.value = concern;
+  const currentConcern = document.querySelector("#current-concern");
+  if (currentConcern instanceof HTMLTextAreaElement) currentConcern.value = concern;
+  setConsultTab("start");
+  openHubSection("consult");
+  if (trialSessionNote) {
+    trialSessionNote.textContent = `${relationshipDisplayName(link)}님과의 관계 고민으로 바로 이어집니다. 이 문장 그대로 시작하거나 조금 고쳐서 보내도 됩니다.`;
+  }
+  trialConcern?.focus();
 }
 
 function buildTrialPromptSuggestions(session, stageNumber) {
@@ -828,22 +880,23 @@ function renderRelationshipLinks(links) {
   relationshipLinks.innerHTML = links
     .map((link) => {
       const isEditing = activeRelationshipLabelEditorId === link.id;
+      const isSelected = activeCompatibilityRelationshipId === link.id;
       const displayName = relationshipDisplayName(link);
       const editableDisplayName = String(link.editableDisplayName ?? "").trim();
       const defaultName = String(link.counterpartDefaultName ?? "").trim() || displayName;
       return `
-        <li class="relationship-link-card">
+        <li class="relationship-link-card${isSelected ? " relationship-link-card--selected" : ""}">
           <div class="relationship-link-card__head">
             <div>
               <span class="relationship-link-card__eyebrow">${escapeHtml(relationLabel(link.relationship))}</span>
               <strong>${escapeHtml(displayName)}</strong>
             </div>
-            <span>${escapeHtml(formatShortDate(link.acceptedAt ?? link.createdAt))} 연결</span>
+            <span>${isSelected ? "궁합 선택됨" : `${escapeHtml(formatShortDate(link.acceptedAt ?? link.createdAt))} 연결`}</span>
           </div>
           <p>연결된 관계에서 바로 궁합을 이어 보거나, 이 관계를 주제로 상담을 시작할 수 있어요.</p>
           <div class="relationship-link-card__actions">
             <button type="button" class="auth-button auth-button--ghost" data-relationship-action="compatibility" data-link-id="${escapeHtml(link.id)}">
-              이 관계로 궁합 보기
+              ${isSelected ? "선택된 궁합 다시 보기" : "이 관계로 궁합 보기"}
             </button>
             <button type="button" class="auth-button" data-relationship-action="consult" data-link-id="${escapeHtml(link.id)}">
               이 관계로 상담 이어가기
@@ -1594,6 +1647,7 @@ async function refreshRelationshipPanel(session) {
   if (!session) {
     activeRelationshipLinks = [];
     activeRelationshipLabelEditorId = "";
+    activeCompatibilityRelationshipId = "";
     renderRelationshipLinks([]);
     renderRelationshipPanelState(session, [], { pendingInvite: pendingRelationshipInviteToken });
     if (relationshipInviteNote) {
@@ -1617,8 +1671,12 @@ async function refreshRelationshipPanel(session) {
   if (!links.some((link) => link.id === activeRelationshipLabelEditorId)) {
     activeRelationshipLabelEditorId = "";
   }
+  if (!links.some((link) => link.id === activeCompatibilityRelationshipId)) {
+    activeCompatibilityRelationshipId = "";
+  }
   renderRelationshipLinks(links);
   renderRelationshipPanelState(session, links, { pendingInvite: pendingRelationshipInviteToken });
+  renderCompatibilityRelationshipContext();
 
   if (relationshipInviteNote && pendingRelationshipInviteToken) {
     relationshipInviteNote.textContent = "받은 초대를 수락하면 이 계정과 상대 계정이 연결됩니다.";
@@ -2874,6 +2932,9 @@ async function initAuthPanel() {
     if (!link) return;
 
     if (action === "compatibility") {
+      activeCompatibilityRelationshipId = link.id;
+      renderRelationshipLinks(activeRelationshipLinks);
+      renderCompatibilityRelationshipContext();
       if (relationshipInviteType) relationshipInviteType.value = link.relationship;
       const relationInput = document.querySelector("#partner-relation");
       if (relationInput instanceof HTMLSelectElement) relationInput.value = link.relationship;
@@ -2886,20 +2947,7 @@ async function initAuthPanel() {
     }
 
     if (action === "consult") {
-      const mappedTopic = consultationTopicForRelationship(link.relationship);
-      const concern = buildRelationshipConsultConcern(link);
-      pendingConsultationContext = buildConsultationContextForRelationship(link);
-      if (trialTopic) trialTopic.value = mappedTopic;
-      if (topicSelect) topicSelect.value = mappedTopic;
-      if (trialConcern) trialConcern.value = concern;
-      const currentConcern = document.querySelector("#current-concern");
-      if (currentConcern instanceof HTMLTextAreaElement) currentConcern.value = concern;
-      setConsultTab("start");
-      openHubSection("consult");
-      if (trialSessionNote) {
-        trialSessionNote.textContent = `${relationshipDisplayName(link)}님과의 관계 고민으로 바로 이어집니다. 이 문장 그대로 시작하거나 조금 고쳐서 보내도 됩니다.`;
-      }
-      trialConcern?.focus();
+      startConsultationFromRelationshipLink(link);
       return;
     }
 
@@ -2952,6 +3000,7 @@ async function initAuthPanel() {
         relationshipInviteNote.textContent = `${nextName} 이름으로 이 관계를 다시 불러드릴게요.`;
       }
       renderRelationshipLinks(activeRelationshipLinks);
+      renderCompatibilityRelationshipContext();
     }
   });
 
@@ -3736,6 +3785,13 @@ compatibilityForm?.addEventListener("submit", (event) => {
       partnerChart,
       data.get("partnerRelation"),
     );
+    const selectedLink = getActiveCompatibilityRelationshipLink();
+    if (selectedLink) {
+      pendingConsultationContext = {
+        ...buildConsultationContextForRelationship(selectedLink),
+        source: "relationship_compatibility",
+      };
+    }
     renderCompatibility(reading);
     track("compatibility-view");
   } catch (error) {
@@ -3747,6 +3803,35 @@ compatibilityForm?.addEventListener("submit", (event) => {
       compatibilityError.hidden = false;
     }
   }
+});
+
+compatibilityContextClear?.addEventListener("click", () => {
+  clearCompatibilityRelationshipContext();
+  renderRelationshipLinks(activeRelationshipLinks);
+  if (relationshipInviteNote) {
+    relationshipInviteNote.textContent = "궁합 선택을 해제했습니다. 다른 연결 관계를 고르거나 직접 입력해서 볼 수 있어요.";
+  }
+});
+
+compatibilityContextConsult?.addEventListener("click", () => {
+  const selectedLink = getActiveCompatibilityRelationshipLink();
+  if (!selectedLink) return;
+  startConsultationFromRelationshipLink(selectedLink);
+});
+
+compatibilityConsultStart?.addEventListener("click", () => {
+  const selectedLink = getActiveCompatibilityRelationshipLink();
+  if (selectedLink) {
+    startConsultationFromRelationshipLink(selectedLink, {
+      concern: "방금 본 궁합 결과를 바탕으로 지금 가장 조심할 점과 먼저 꺼낼 대화를 더 구체적으로 상담하고 싶어요.",
+    });
+    return;
+  }
+
+  if (trialSessionNote) {
+    trialSessionNote.textContent = "연결된 관계를 고르면 궁합 결과를 상담 시작 문장에 바로 이어드릴 수 있어요.";
+  }
+  openHubSection("consult");
 });
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {

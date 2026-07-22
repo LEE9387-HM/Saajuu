@@ -1583,6 +1583,11 @@ button:hover {
   background: #ffffff;
 }
 
+.relationship-link-card--selected {
+  border-color: rgb(77 128 114 / 42%);
+  background: #f5fbf8;
+}
+
 .relationship-link-card__head {
   display: flex;
   justify-content: space-between;
@@ -2082,6 +2087,48 @@ button:hover {
 
 .compatibility-result p {
   font-size: 0.86rem;
+}
+
+.compatibility-context {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 12px;
+  padding: 14px;
+  border: 1px solid rgb(77 128 114 / 28%);
+  background: #f5fbf8;
+}
+
+.compatibility-context__eyebrow {
+  display: block;
+  color: var(--jade);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.compatibility-context strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 0.96rem;
+}
+
+.compatibility-context p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.compatibility-context__actions,
+.compatibility-result__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.compatibility-result__actions {
+  margin-top: 14px;
 }
 
 .compatibility-insight {
@@ -3783,6 +3830,8 @@ footer span:first-child {
 
   .compatibility-columns,
   .compatibility-insight,
+  .compatibility-context__actions,
+  .compatibility-result__actions,
   .mini-form__row {
     grid-template-columns: 1fr;
   }

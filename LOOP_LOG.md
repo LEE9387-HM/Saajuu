@@ -1,5 +1,48 @@
 # Saajuu Loop Log
 
+## 2026-07-22 - Cycle 9
+
+### Selected Work
+
+Tighten the relationship-linked flow so compatibility and consultation keep the selected relationship context.
+
+### Acceptance Criteria
+
+- Keep relationship linking browser and DB flow unchanged.
+- Preserve the selected relationship context when opening compatibility from a linked card.
+- Add a direct consultation CTA from the compatibility result.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- index.html
+- src/main.js
+- src/styles.css
+- CHANGELOG.md
+- PROJECT_STATUS_README.md
+- LOOP_LOG.md
+- VERSION
+- package.json
+- package-lock.json
+
+### Verification
+
+- npm test
+- npm run build
+
+### Remaining Risk
+
+- Compatibility still requires the user to re-enter counterpart birth data for privacy, so the remaining friction is intentional rather than technical.
+- Historical documentation files still contain older encoding damage and need a separate cleanup pass.
+
+### Next Suggested Work
+
+- Reduce relationship follow-through friction further by pre-filling consultation opener text from the latest compatibility result and tightening the relationship card copy around the most-used actions.
+
 ## 2026-07-21 - Cycle 8
 
 ### Selected Work
