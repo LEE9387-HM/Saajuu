@@ -355,13 +355,14 @@ describe("buildCompatibilityReading", () => {
     expect(reading.relationshipLabel).toBe("연인");
     expect(reading.score).toBeGreaterThanOrEqual(42);
     expect(reading.score).toBeLessThanOrEqual(94);
-    expect(reading.strengths).toHaveLength(3);
+    expect(reading.strengths).toHaveLength(4);
     expect(reading.frictions).toHaveLength(3);
-    expect(reading.talkGuide).toHaveLength(3);
-    expect(reading.followUps).toHaveLength(3);
+    expect(reading.talkGuide).toHaveLength(4);
+    expect(reading.followUps).toHaveLength(4);
     expect(reading.flowSummary).toBeTruthy();
     expect(reading.nextStep).toBeTruthy();
-    expect(reading.evidence).toHaveLength(5);
+    expect(reading.rhythmNote).toBeTruthy();
+    expect(reading.evidence).toHaveLength(6);
     expect(reading.evidence.some((item) => item.includes("관계 리듬"))).toBe(true);
   });
 

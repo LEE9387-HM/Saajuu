@@ -1779,60 +1779,76 @@ function buildCompatibilityDetail({ relationKey, relationshipLabel, relationMeta
     lover: {
       flowLead: "연인 흐름에서는 설렘보다 연락 템포와 기대치 조율이 먼저 보여요.",
       nextStep: "이번 주 안에 서로 바라는 연락 빈도와 혼자 있고 싶은 시간을 한 번씩만 분명하게 말해보세요.",
+      rhythmNote:
+        "이 관계는 마음이 큰지보다, 서로 편한 속도를 얼마나 빨리 확인하느냐에서 안정감이 갈립니다. 좋아하는 방식이 다를 수 있다는 전제를 먼저 두는 편이 좋습니다.",
       talkGuide: [
         "연락 빈도와 만남 속도를 같은 기준으로 맞춰보기",
         "감정 표현과 실제 행동 사이에 차이가 있는지 확인하기",
         "갈등이 생겼을 때 바로 풀지, 시간을 두는지 미리 정해두기",
+        "기다림이 길어질 때 서운함을 쌓기보다 먼저 확인 문장을 꺼내보기",
       ],
       followUps: [
         "지금 이 관계에서 내가 먼저 지치게 되는 순간은 언제인가요?",
         "상대가 바라는 친밀감의 속도와 내가 편한 속도는 얼마나 다른가요?",
         "확인받고 싶은 마음과 부담스러운 마음이 동시에 드는 지점은 어디인가요?",
+        "이 관계를 이어가려면 지금 바로 말해둬야 할 기준 하나는 무엇인가요?",
       ],
       consultQuestion: `${relationshipLabel} 관계에서 자꾸 반복되는 서운함의 패턴을 사주 흐름과 함께 더 좁혀볼까요?`,
     },
     spouse: {
       flowLead: "부부 흐름에서는 애정보다 생활 분담과 책임의 균형이 먼저 보입니다.",
       nextStep: "돈, 집안일, 휴식 시간 중 하나만 골라 이번 주 기준을 다시 맞춰보세요.",
+      rhythmNote:
+        "부부 관계는 마음이 없는 쪽보다 생활 피로가 먼저 쌓이는 쪽에서 흔들리는 경우가 많습니다. 감정 문제처럼 보여도 실제로는 역할 배분 문제일 수 있습니다.",
       talkGuide: [
         "돈과 생활 루틴에서 누가 더 먼저 챙기는지 비교해보기",
         "감정이 상했을 때 대화 시점을 언제로 잡을지 정해두기",
         "서운함을 성격이 아니라 역할 부담으로 읽어보기",
+        "서로 쉬는 시간과 혼자 회복하는 시간을 생활 규칙으로 정리해보기",
       ],
       followUps: [
         "생활 속에서 내가 혼자 떠안는다고 느끼는 부분은 무엇인가요?",
         "배우자와 가장 자주 충돌하는 주제가 감정인지 현실 문제인지 구분되나요?",
         "지금 관계를 바꾸려면 대화 방식보다 먼저 손봐야 할 생활 규칙은 무엇인가요?",
+        "이 관계에서 바로 줄여야 할 피로 한 가지는 무엇인가요?",
       ],
       consultQuestion: `${relationshipLabel} 관계에서 반복되는 생활 갈등을 현실 조건까지 같이 놓고 정리해볼까요?`,
     },
     reunion: {
       flowLead: "재회 흐름에서는 그리움보다 예전 패턴이 다시 반복될지부터 보는 게 중요해요.",
       nextStep: "다시 시작한다면 절대 반복하고 싶지 않은 장면 세 가지를 먼저 적어보세요.",
+      rhythmNote:
+        "재회는 마음의 크기보다 이전 관계가 왜 멈췄는지에 대한 해석이 달라졌는지가 핵심입니다. 그 원인이 그대로면 다시 만나도 같은 장면이 반복되기 쉽습니다.",
       talkGuide: [
         "보고 싶은 마음과 다시 감당할 수 있는 현실을 분리하기",
         "예전 갈등이 왜 끝났는지 한 문장으로 정리해보기",
         "재회 후 바뀌어야 할 행동 기준이 있는지 확인하기",
+        "다시 시작해도 지켜지지 않으면 멈출 기준을 미리 정해두기",
       ],
       followUps: [
         "내가 다시 만나고 싶은 이유가 외로움인지 확신인지 구분되나요?",
         "예전의 서운함 중 지금도 똑같이 반복될 가능성이 큰 것은 무엇인가요?",
         "재회를 해도 지켜지지 않으면 바로 멈춰야 할 기준은 무엇인가요?",
+        "다시 시작하기 전에 꼭 확인받아야 할 행동 변화는 무엇인가요?",
       ],
       consultQuestion: `${relationshipLabel} 고민에서 그리움과 현실 가능성을 분리해서 같이 정리해볼까요?`,
     },
     family: {
       flowLead: "가족 흐름에서는 애정보다 역할 기대와 말투의 습관이 더 크게 작동해요.",
       nextStep: "가장 자주 부딪히는 상황 하나만 골라, 감정 표현 대신 요청 문장으로 다시 써보세요.",
+      rhythmNote:
+        "가족 관계는 오래된 익숙함 때문에 말하지 않아도 안다고 넘기기 쉽습니다. 하지만 반복 갈등은 대부분 역할 기대가 달라졌는데 문장으로 갱신되지 않아서 커집니다.",
       talkGuide: [
         "가족 안에서 각자 당연하다고 여기는 역할을 말로 꺼내보기",
         "감정 표현보다 생활 요청 문장으로 다시 바꿔보기",
         "거리두기가 필요한지, 더 자주 확인이 필요한지 먼저 정하기",
+        "도와주는 방식과 간섭처럼 느껴지는 방식을 서로 구분해보기",
       ],
       followUps: [
         "가족 안에서 내가 유독 예민해지는 말이나 상황은 무엇인가요?",
         "도와주고 싶은 마음과 간섭받는 느낌이 엇갈리는 지점은 어디인가요?",
         "지금 관계를 덜 힘들게 만들려면 대화를 줄여야 하나요, 방식만 바꿔야 하나요?",
+        "지금 이 관계에서 내가 새로 세워야 할 경계는 무엇인가요?",
       ],
       consultQuestion: `${relationshipLabel} 관계에서 반복되는 거리감과 책임 문제를 더 구체적으로 정리해볼까요?`,
     },
@@ -1843,6 +1859,7 @@ function buildCompatibilityDetail({ relationKey, relationshipLabel, relationMeta
     verdict: scoreBand.verdict,
     flowSummary: `${frame.flowLead} ${elements.join("과 ")} 기운, ${pillars.join(" · ")} 일주, ${tenGods.join(" · ")} 흐름을 같이 보면 ${scoreBand.flowTail}`,
     nextStep: frame.nextStep,
+    rhythmNote: `${frame.rhythmNote} ${relationMeta.advice}`,
     talkGuide: frame.talkGuide,
     followUps: frame.followUps,
     consultQuestion: frame.consultQuestion,
@@ -1883,10 +1900,12 @@ export function buildCompatibilityReading(primaryChart, partnerChart, relationKe
       `${primary.balance.strongest.label} 기운의 추진 방식과 ${partner.balance.strongest.label} 기운의 반응 방식이 서로를 자극합니다.`,
       `${primary.dominantTenGod} 흐름과 ${partner.dominantTenGod} 흐름이 만나 관계 안의 역할을 비교적 분명하게 보여줍니다.`,
       "서로의 다름을 성격 문제로 단정하지 않고 생활 리듬으로 보면 조율 여지가 생깁니다.",
+      `${relationshipLabel} 관계에서는 궁합 점수보다 반복 패턴을 빨리 읽을수록 실제 만족감이 더 올라갈 수 있습니다.`,
     ],
     frictions: [primary.dayMeta.watch, partner.dayMeta.watch, relationMeta.advice],
     flowSummary: detail.flowSummary,
     nextStep: detail.nextStep,
+    rhythmNote: detail.rhythmNote,
     followUps: detail.followUps,
     talkGuide: detail.talkGuide,
     consultQuestion: detail.consultQuestion,
@@ -1896,6 +1915,7 @@ export function buildCompatibilityReading(primaryChart, partnerChart, relationKe
       `내 강한 오행 ${primaryElement}`,
       `상대 강한 오행 ${partnerElement}`,
       `관계 리듬 ${relationMeta.label}`,
+      `관계 운영 힌트 ${relationMeta.advice}`,
     ],
   };
 }
@@ -1949,10 +1969,12 @@ export function buildCompatibilityReadingSymmetric(primaryChart, partnerChart, r
       `${pairElements} 기운은 서로를 다르게 보게 하면서도 시야를 넓혀줍니다.`,
       `${pairTenGods} 흐름이 만나 관계 안의 역할과 기대를 비교적 분명하게 보여줍니다.`,
       "서로의 다름을 성격 문제로 단정하지 않고 생활 리듬으로 보면 조율 여지가 생깁니다.",
+      `${relationshipLabel} 관계에서는 궁합 점수보다 반복 패턴을 빨리 읽을수록 실제 만족감이 더 올라갈 수 있습니다.`,
     ],
     frictions: [...uniqueWatchPoints, relationMeta.advice].slice(0, 3),
     flowSummary: detail.flowSummary,
     nextStep: detail.nextStep,
+    rhythmNote: detail.rhythmNote,
     followUps: detail.followUps,
     talkGuide: detail.talkGuide,
     consultQuestion: detail.consultQuestion,
@@ -1960,6 +1982,7 @@ export function buildCompatibilityReadingSymmetric(primaryChart, partnerChart, r
       `두 일주 ${pairPillars}`,
       `강한 오행 ${pair.map((item) => item.element).join(" · ")}`,
       `관계 리듬 ${relationMeta.label}`,
+      `관계 운영 힌트 ${relationMeta.advice}`,
     ],
   };
 }

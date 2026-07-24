@@ -130,6 +130,7 @@ const compatibilityContextConsult = document.querySelector("#compatibility-conte
 const compatibilityConsultStart = document.querySelector("#compatibility-consult-start");
 const compatibilityFlow = document.querySelector("#compatibility-flow");
 const compatibilityNextStep = document.querySelector("#compatibility-next-step");
+const compatibilityRhythmNote = document.querySelector("#compatibility-rhythm-note");
 const compatibilityFollowups = document.querySelector("#compatibility-followups");
 const personaCards = document.querySelector("#persona-cards");
 const modeCards = document.querySelector("#mode-cards");
@@ -4138,6 +4139,7 @@ function renderCompatibility(reading) {
   document.querySelector("#compatibility-copy").textContent = reading.copy;
   if (compatibilityFlow) compatibilityFlow.textContent = reading.flowSummary;
   if (compatibilityNextStep) compatibilityNextStep.textContent = reading.nextStep;
+  if (compatibilityRhythmNote) compatibilityRhythmNote.textContent = reading.rhythmNote ?? "";
   document.querySelector("#compatibility-strengths").innerHTML = renderList(reading.strengths);
   document.querySelector("#compatibility-frictions").innerHTML = renderList(reading.frictions);
   document.querySelector("#compatibility-talk").innerHTML = renderList(reading.talkGuide);
