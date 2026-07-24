@@ -597,7 +597,10 @@ button:hover {
 .year-flow-months,
 .year-flow-halves,
 .year-flow-guides,
+.year-flow-editorial,
+.year-flow-seasons,
 .tarot-insights,
+.tarot-catalog,
 .tarot-choice-grid {
   display: grid;
   gap: 10px;
@@ -611,10 +614,13 @@ button:hover {
 .year-month-chip,
 .year-half-card,
 .year-guide-card,
+.year-editorial-card,
+.year-season-card,
 .tarot-choice-grid article,
 .tarot-card,
 .tarot-reflection,
-.tarot-insight-card {
+.tarot-insight-card,
+.tarot-catalog-card {
   padding: 12px 14px;
   border: 1px solid rgb(221 214 199 / 80%);
   background: #fffdf8;
@@ -624,9 +630,12 @@ button:hover {
 .year-half-card span,
 .year-month-chip span,
 .year-guide-card span,
+.year-editorial-card span,
+.year-season-card span,
 .tarot-card span,
 .tarot-reflection span,
-.tarot-insight-card span {
+.tarot-insight-card span,
+.tarot-catalog-card span {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
@@ -636,9 +645,12 @@ button:hover {
 .year-half-card strong,
 .year-month-chip strong,
 .year-guide-card strong,
+.year-editorial-card strong,
+.year-season-card strong,
 .tarot-card strong,
 .tarot-choice-grid strong,
-.tarot-insight-card strong {
+.tarot-insight-card strong,
+.tarot-catalog-card strong {
   color: var(--ink);
   font-size: 1.15rem;
 }
@@ -655,7 +667,10 @@ button:hover {
 .year-month-chip p,
 .year-month-chip b,
 .year-guide-card p,
-.tarot-insight-card p {
+.year-editorial-card p,
+.year-season-card p,
+.tarot-insight-card p,
+.tarot-catalog-card p {
   margin: 0;
   color: #425359;
   font-size: 0.8rem;
@@ -678,6 +693,17 @@ button:hover {
 .year-flow-guides,
 .tarot-insights {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.year-flow-editorial {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.year-flow-seasons,
+.tarot-catalog {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 14px;
 }
 
@@ -764,11 +790,21 @@ button:hover {
 .tarot-choice-grid article,
 .year-half-card,
 .year-guide-card,
+.year-editorial-card,
+.year-season-card,
 .tarot-reflection,
 .tarot-followup,
-.tarot-insight-card {
+.tarot-insight-card,
+.tarot-catalog-card {
   display: grid;
   gap: 8px;
+}
+
+.year-season-card em {
+  color: #6b756b;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  font-style: normal;
 }
 
 .tarot-reflection,
@@ -799,7 +835,10 @@ button:hover {
   }
 
   .year-flow-guides,
-  .tarot-insights {
+  .year-flow-editorial,
+  .year-flow-seasons,
+  .tarot-insights,
+  .tarot-catalog {
     grid-template-columns: 1fr;
   }
 
@@ -2238,6 +2277,16 @@ button:hover {
 .choice-switcher button[aria-selected="true"] {
   background: var(--ink);
   color: #fffdf8;
+}
+
+.content-tab-switcher {
+  margin-top: 16px;
+}
+
+.content-tab-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .persona-cards,

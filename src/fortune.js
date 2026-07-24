@@ -629,21 +629,182 @@ function buildMonthNarrative(score, monthTenGod, strongestLabel, weakestLabel, t
   return `${weakestLabel} 쪽 균형이 흔들리기 쉬운 달입니다. 일정과 감정을 너무 넓게 벌리기보다 한두 가지 기준을 먼저 붙잡는 편이 안전합니다. ${frame.monthCareful}`;
 }
 
+
+
 function buildHalfYearFocus(label, strongestMonths, carefulMonths) {
   const strongestText = strongestMonths.map((item) => item.label).join(", ");
   const carefulText = carefulMonths.map((item) => item.label).join(", ");
-  return `${label}?? ??? ?? ?(${strongestText})? ??? ??? ?? ?(${carefulText})? ??? ?????.`;
+  return `${label}에는 밀어도 되는 달(${strongestText})과 속도를 낮춰야 하는 달(${carefulText})의 차이가 뚜렷합니다.`;
 }
 
 function buildMonthNextStep(score, topic, label) {
   const question = buildMonthQuestion(topic);
   if (score >= 76) {
-    return `${label}?? ??? ????? ?? ??? ? ? ??? ? ?? ??? ???. ${question}`;
+    return `${label}에는 기회를 넓히기보다 이미 반응이 온 한 방향을 더 깊게 검증해 보세요. ${question}`;
   }
   if (score >= 66) {
-    return `${label}?? ???? ????? ??, ?? ??? ?? ??? ?? ?? ??? ?? ???? ?? ????.`;
+    return `${label}에는 무리하게 결론내리지 말고, 지금 유지할 리듬 하나와 줄일 욕심 하나를 같이 정해두는 편이 좋습니다.`;
   }
-  return `${label}?? ? ?? ????? ??? ?? ??? ??? ?? ??? ?? ??? ?? ?????.`;
+  return `${label}에는 새 일을 더하기보다 일정과 감정 소모를 정리해 바닥 리듬을 다시 세우는 쪽이 먼저입니다.`;
+}
+
+function buildSeasonMemo(monthEntries, label, topicFrame) {
+  const average = Math.round(sumScores(monthEntries) / monthEntries.length);
+  const strongest = [...monthEntries].sort((a, b) => b.score - a.score)[0];
+  const careful = [...monthEntries].sort((a, b) => a.score - b.score)[0];
+  const tone =
+    average >= 72
+      ? topicFrame.monthStrong
+      : average >= 60
+        ? topicFrame.monthSteady
+        : topicFrame.monthCareful;
+  return {
+    label,
+    score: average,
+    title: `${label}에는 ${strongest.label}을 축으로 리듬을 잡는 편이 좋습니다`,
+    copy: `${tone} 특히 ${strongest.label}에는 실제 반응과 결과를 확인하기 좋고, ${careful.label}에는 무리한 확장보다 기준과 순서를 다듬는 편이 전체 흐름을 지켜줍니다.`,
+    action: `${careful.label}에 무리한 결정을 몰아넣지 말고, ${strongest.label} 전에 검증할 준비를 끝내 두세요.`,
+  };
+}
+
+function buildYearlyEditorial(topic, strongestLabel, weakestLabel, strongestMonths, carefulMonths) {
+  const strongestText = strongestMonths.map((item) => item.label).join(", ");
+  const carefulText = carefulMonths.map((item) => item.label).join(", ");
+  const entries = {
+    relationship: [
+      {
+        label: "관계 흐름의 핵심",
+        title: "마음을 맞히려 하기보다 리듬을 맞추는 한 해입니다",
+        copy: `연애운은 상대의 속마음을 예측하는 흐름이 아니라, 내가 ${strongestLabel} 쪽 태도로 가까워지고 ${weakestLabel} 균형에서 어디서 서운함을 키우는지를 보는 흐름입니다. ${strongestText}에는 대화 물꼬를 트기 쉽고, ${carefulText}에는 단정보다 확인이 먼저입니다.`,
+      },
+      {
+        label: "실제 운영 포인트",
+        title: "좋은 달에는 마음을 열고, 흔들리는 달에는 기대치를 줄이세요",
+        copy: "이 해의 관계운은 표현과 속도를 조절하는 힘이 중요합니다. 좋은 달에는 연락, 만남, 확인 대화를 미루지 말고, 조심할 달에는 내가 혼자 해석한 부분을 먼저 나눠보는 편이 낫습니다.",
+      },
+      {
+        label: "연결 질문",
+        title: "이 흐름에서 지금 꼭 확인해야 할 것",
+        copy: "상대가 바뀌길 바라는 부분과 내가 바꿀 수 있는 부분을 나눌 있는지, 그리고 관계의 결론보다 대화의 기준을 먼저 세울 준비가 되었는지를 묻는 해로 쓰는 편이 좋습니다.",
+      },
+      {
+        label: "지금의 한 걸음",
+        title: "확인되지 않은 마음보다 확인 가능한 장면을 먼저 붙잡으세요",
+        copy: "이번 해에는 긴 해석보다 작은 확인이 더 크게 작동합니다. 답장을 기다리는 시간, 만나는 빈도, 대화가 막히는 순간 같은 실제 장면을 적어두면 상담이나 다음 판단도 훨씬 선명해집니다.",
+      },
+    ],
+    marriage: [
+      {
+        label: "결혼운 핵심",
+        title: "설렘보다 살아가는 방식을 보는 해입니다",
+        copy: `결혼과 장기 관계는 감정의 확신보다 생활 기준이 맞는지에 더 크게 좌우됩니다. ${strongestLabel} 쪽 장점은 분명해지겠지만, ${weakestLabel} 균형이 흔들리는 달에는 돈, 가족, 책임 분담이 부담으로 읽힐 수 있습니다.`,
+      },
+      {
+        label: "시기 활용",
+        title: `${strongestText}에는 그림을 구체화하고, ${carefulText}에는 기준을 맞추세요`,
+        copy: "좋은 달에는 함께 살고 싶은 그림을 구체화하기 좋고, 조심할 달에는 동거, 생활비, 양가, 장래 계획 같은 현실 기준을 문장으로 맞추는 편이 안정적입니다.",
+      },
+      {
+        label: "연결 질문",
+        title: "이 해에 더 확인해야 할 현실 조건",
+        copy: "내가 양보하기 어려운 기준과 상대가 함께 맞춰줄 수 있는 부분을 구분하고 있는지, 그리고 설렘을 넘어 실제 살아갈 그림을 대화로 맞춘 적이 있는지를 보세요.",
+      },
+      {
+        label: "지금의 한 걸음",
+        title: "결혼운은 마음 확인보다 생활 문장 정리에서 빨라집니다",
+        copy: "함께 살 때 자주 부딪힐 돈, 집, 가족, 시간표를 두루뭉술하게 두지 말고 짧은 문장으로 적어보세요. 막연한 불안이 무엇 때문인지 드러나야 상담도 현실적으로 이어집니다.",
+      },
+    ],
+    business: [
+      {
+        label: "사업운 핵심",
+        title: "지금은 크게 벌리기보다 작게 검증해 버티는 힘을 만드는 해입니다",
+        copy: `사업은 타이밍 한 번으로 결정되기보다, 반복 가능한 검증 리듬이 있는지가 더 중요합니다. ${strongestLabel} 쪽 흐름이 살아나는 달에는 고객 반응을 활용하기 좋고, ${weakestLabel} 균형이 흔들리는 달에는 비용과 역할이 먼저 흐트러질 수 있습니다.`,
+      },
+      {
+        label: "실행 전략",
+        title: `${strongestText}에는 반응을 모으고, ${carefulText}에는 현금흐름을 지키세요`,
+        copy: "좋은 달에는 예약, 견적, 상담, 표본 판매처럼 돈으로 연결될 수 있는 반응을 남기고, 조심할 달에는 동업 역할, 고정비, 마케팅 비용, 생산 속도를 줄여서 바닥을 지키는 편이 맞습니다.",
+      },
+      {
+        label: "연결 질문",
+        title: "이 해에 꼭 확인할 것",
+        copy: "30일 안에 돈으로 확인할 수 있는 최소 상품이 있는지, 혼자 할 일과 맡길 일이 구분되어 있는지, 그리고 현금흐름 흔들림을 먼저 감당할 준비가 되어 있는지를 보세요.",
+      },
+      {
+        label: "지금의 한 걸음",
+        title: "시작 날짜보다 검증 장면을 먼저 설계하세요",
+        copy: "무엇을 팔지보다 누구에게 어떤 반응을 확인할지를 먼저 정하면 사업운 해석이 훨씬 쓸모 있어집니다. 첫 달 목표는 성공 여부보다 고객 반응, 재구매 가능성, 원가 구조를 보는 쪽으로 잡는 편이 좋습니다.",
+      },
+    ],
+    career: [
+      {
+        label: "직업운 핵심",
+        title: "직함보다 역할과 근거가 더 중요한 해입니다",
+        copy: `직업운은 이름만 좋은 자리를 쯤기보다, 내 장점이 ${strongestLabel} 방식으로 쓰이는 환경인지를 보는 게 핵심입니다. ${weakestLabel} 균형이 부족한 달에는 평가, 피로, 관계 문제가 크게 체감될 수 있으니 근거 축적이 필수입니다.`,
+      },
+      {
+        label: "이동 전략",
+        title: `${strongestText}에는 성과를 남기고, ${carefulText}에는 판단 근거를 정리세요`,
+        copy: "좋은 달에는 싫무 성과를 수치, 포트폴리오, 결과물로 남기고, 조심할 달에는 이직 충동을 바로 행동으로 옮기기보다 현재 역할의 문제를 효율과 피로로 나눠 정리하는 편이 낫습니다.",
+      },
+      {
+        label: "연결 질문",
+        title: "이 해에 물어야 할 것",
+        copy: "다음 자리에서 꼭 지키고 싶은 환경과 평가 기준이 무엇인지, 그리고 지금 피로가 사람 문제인지 역할 문제인지를 구분할 수 있는지를 먼저 보세요.",
+      },
+      {
+        label: "지금의 한 걸음",
+        title: "직업운은 감정보다 근거를 쌓을 때 더 빨리 움직입니다",
+        copy: "이직을 고민하더라도 당장 떠날지보다 남길 수 있는 성과를 먼저 정리해 보세요. 결과물, 숫자, 포트폴리오처럼 나를 설명할 근거가 생기면 다음 판단의 정확도가 훨씬 올라갑니다.",
+      },
+    ],
+    family: [
+      {
+        label: "가족운 핵심",
+        title: "큰 사건보다 반복되는 역할과 말투를 보는 해입니다",
+        copy: `가족운은 누가 맞는지를 맞히는 해석이 아니라, ${strongestLabel} 쪽 책임감이 어떻게 쓰이고 ${weakestLabel} 균형이 모자라는 순간에 어디서 피로가 쌓이는지를 보는 흐름입니다.`,
+      },
+      {
+        label: "운영 포인트",
+        title: `${strongestText}에는 대화를 열고, ${carefulText}에는 기대치를 조정하세요`,
+        copy: "좋은 달에는 가족 안에서 먼저 꺼내야 할 현실 주제를 부드럽게 열고, 조심할 달에는 돌봄과 책임을 혼자 떠안지 않도록 경계선을 문장으로 나눠 두는 편이 좋습니다.",
+      },
+      {
+        label: "연결 질문",
+        title: "이 흐름에서 꼭 봐야 할 것",
+        copy: "내가 가족 안에서 자주 맡게 되는 역할이 무엇인지, 그 역할을 계속 감당하면 어떤 피로가 쌓일지를 먼저 봐야 합니다.",
+      },
+      {
+        label: "지금의 한 걸음",
+        title: "가족운은 참는 힘보다 조정하는 문장이 더 중요합니다",
+        copy: "이번 해에는 누가 더 많이 참는지가 아니라 어떤 역할을 어디까지 맡을지 조정하는 힘이 중요합니다. 짧은 대화 한 번으로도 흐름이 달라질 수 있으니, 먼저 꺼낼 주제를 작게 정해두세요.",
+      },
+    ],
+    yearly: [
+      {
+        label: "올해 핵심",
+        title: "이번 해는 한 번의 결심보다 버틸 수 있는 리듬을 만드는 쪽이 맞습니다",
+        copy: `올해는 ${strongestLabel} 쪽 흐름이 살아나는 달에는 확장을, ${weakestLabel} 균형이 흔들리는 달에는 정비를 하는 패턴이 비교적 분명합니다. 큰 목표 하나보다 30일 단위 확인 리듬을 반복하는 편이 전체 운을 더 안정적으로 씁니다.`,
+      },
+      {
+        label: "실행 방식",
+        title: `${strongestText}에는 밀고, ${carefulText}에는 정리하는 운영이 좋습니다`,
+        copy: "좋은 달에는 결심한 것을 실행으로 엮고, 조심할 달에는 벌려둔 일을 정리하면 전체 흐름이 덜 흔들립니다. 올해는 속도 조절이 실력이 되는 해로 보는 편이 맞습니다.",
+      },
+      {
+        label: "연결 질문",
+        title: "이 해의 운을 쓸 때 지금 물어야 할 것",
+        copy: "올해 가장 정리하고 싶은 관계나 일이 무엇인지, 그리고 다음 한 달 안에 작게라도 확인할 수 있는 행동이 무엇인지를 먼저 묻는 흐름이 좋습니다.",
+      },
+      {
+        label: "지금의 한 걸음",
+        title: "연간 운세는 계획표보다 운영 리듬으로 읽는 편이 좋습니다",
+        copy: "좋은 달에만 힘을 쓰는 것이 아니라, 흔들리는 달에 무엇을 줄일지까지 미리 정해두면 흐름을 더 오래 가져갈 수 있습니다. 올해는 확장할 일 하나와 정리할 일 하나를 같이 적어두는 편이 맞습니다.",
+      },
+    ],
+  };
+  return entries[topic] ?? entries.yearly;
 }
 
 export function buildYearlyOverview(chart, topic = "yearly", now = new Date()) {
@@ -670,19 +831,19 @@ export function buildYearlyOverview(chart, topic = "yearly", now = new Date()) {
     if (branchElement === balance.strongest.element) score += 6;
     if (stemElement === balance.weakest.element) score -= 8;
     if (branchElement === balance.weakest.element) score -= 5;
-    if (["??", "??", "??", "??"].includes(monthTenGod)) score += 4;
-    if (["??", "??", "??"].includes(monthTenGod)) score += 1;
-    if (["??", "??"].includes(monthTenGod)) score -= 3;
+    if (["비견", "겁재", "식신", "정인"].includes(monthTenGod)) score += 4;
+    if (["편인", "정재", "편재"].includes(monthTenGod)) score += 1;
+    if (["정관", "편관"].includes(monthTenGod)) score -= 3;
 
     const finalScore = clampScore(score);
     return {
       month,
-      label: `${month}?`,
+      label: `${month}월`,
       score: finalScore,
       focus: describeMomentum(finalScore),
-      evidence: `${monthPillar.heavenlyStem}${monthPillar.earthlyBranch} ? ${monthTenGod}`,
+      evidence: `${monthPillar.heavenlyStem}${monthPillar.earthlyBranch} · ${monthTenGod}`,
       copy: buildMonthNarrative(finalScore, monthTenGod, balance.strongest.label, balance.weakest.label, topic),
-      nextStep: buildMonthNextStep(finalScore, topic, `${month}?`),
+      nextStep: buildMonthNextStep(finalScore, topic, `${month}월`),
     };
   });
 
@@ -698,17 +859,24 @@ export function buildYearlyOverview(chart, topic = "yearly", now = new Date()) {
   const secondHalfCarefulMonths = [...monthScores.slice(6)].sort((a, b) => a.score - b.score).slice(0, 1);
   const halfComparison =
     firstHalfAverage >= secondHalfAverage
-      ? "???? ?? ??? ??, ????? ? ??? ?? ?? ?? ????."
-      : "???? ??? ???, ???? ??? ?? ??? ??? ?? ?????.";
+      ? "상반기에 먼저 방향을 잡고, 하반기에는 그 흐름을 넓혀 가는 편이 맞습니다."
+      : "상반기는 준비에 가깝고, 하반기로 갈수록 실제 성과를 붙잡기 쉬운 흐름입니다.";
+  const seasons = [
+    buildSeasonMemo(monthScores.slice(0, 3), "1분기", topicFrame),
+    buildSeasonMemo(monthScores.slice(3, 6), "2분기", topicFrame),
+    buildSeasonMemo(monthScores.slice(6, 9), "3분기", topicFrame),
+    buildSeasonMemo(monthScores.slice(9, 12), "4분기", topicFrame),
+  ];
+  const editorial = buildYearlyEditorial(topic, balance.strongest.label, balance.weakest.label, strongestMonths, carefulMonths);
 
   return {
-    eyebrow: `${currentYear}? ${topicFrame.eyebrow}`,
-    title: `${topicMeta.eyebrow}??? ${balance.strongest.label} ??? ??? ${balance.weakest.label} ??? ???? ?`,
+    eyebrow: `${currentYear}년 ${topicFrame.eyebrow}`,
+    title: `${topicMeta.eyebrow}에서는 ${balance.strongest.label} 기운을 살리고 ${balance.weakest.label} 균형을 보완하는 해`,
     summary:
-      `${topicMeta.verdict} ?? ${balance.strongest.label} ? ??? ???? ??? ??? ??? ??, ${balance.weakest.label} ? ??? ???? ??? ??? ?? ?? ?? ?? ?????. ` +
+      `${topicMeta.verdict} 특히 ${balance.strongest.label} 쪽 감각이 살아나는 달에는 기회를 만들기 좋고, ${balance.weakest.label} 쪽 균형이 흔들리는 달에는 일정을 길게 끌지 않는 편이 안전합니다. ` +
       halfComparison,
     currentMonth: {
-      label: `${currentMonthEntry.label} ?? ???`,
+      label: `${currentMonthEntry.label} 집중 포인트`,
       score: currentMonthEntry.score,
       focus:
         currentMonthEntry.score >= 72
@@ -721,53 +889,186 @@ export function buildYearlyOverview(chart, topic = "yearly", now = new Date()) {
     },
     halfYear: [
       {
-        label: "???",
+        label: "상반기",
         score: firstHalfAverage,
-        copy:
-          firstHalfAverage >= 70
-            ? topicFrame.halfStrong
-            : topicFrame.halfSteady,
-        focus: buildHalfYearFocus("???", firstHalfStrongMonths, firstHalfCarefulMonths),
+        copy: firstHalfAverage >= 70 ? topicFrame.halfStrong : topicFrame.halfSteady,
+        focus: buildHalfYearFocus("상반기", firstHalfStrongMonths, firstHalfCarefulMonths),
       },
       {
-        label: "???",
+        label: "하반기",
         score: secondHalfAverage,
         copy:
           secondHalfAverage >= 70
-            ? `${topicFrame.halfStrong} ????? ??? ???? ??? ? ??????.`
-            : `${topicFrame.halfSteady} ???? ????? ??? ??? ?? ????.`,
-        focus: buildHalfYearFocus("???", secondHalfStrongMonths, secondHalfCarefulMonths),
+            ? `${topicFrame.halfStrong} 상반기보다 결과를 회수하는 감각이 더 중요해집니다.`
+            : `${topicFrame.halfSteady} 무리하게 벌리기보다 흐름을 지키는 편이 낫습니다.`,
+        focus: buildHalfYearFocus("하반기", secondHalfStrongMonths, secondHalfCarefulMonths),
       },
     ],
     guides: [
       {
-        label: "?? ?? ??",
-        title: `${strongestMonths.map((item) => item.label).join(", ")}? ??? ?????`,
-        copy: `${topicMeta.eyebrow}? ? ??? ??? ??? ????. ?? ? ?? ?? ? ????? ??? ? ? ??? ? ???? ?? ?? ??? ???? ?? ??? ????.`,
+        label: "가장 강한 구간",
+        title: `${strongestMonths.map((item) => item.label).join(", ")}에 흐름이 올라옵니다`,
+        copy: `${topicMeta.eyebrow}은 이 시기에 결과를 키우기 좋습니다. 다만 새 일을 여러 개 벌리기보다 반응이 온 한 방향을 더 또렷하게 잡는 편이 수익과 만족도를 함께 지키기 쉽습니다.`,
       },
       {
-        label: "?? ?? ??",
-        title: `${carefulMonths.map((item) => item.label).join(", ")}?? ?? ??? ?????`,
-        copy: `${balance.weakest.label} ??? ???? ?? ???, ???? ??? ???? ?????. ??, ??, ?? ??? ?? ??? ?? ??? ?? ?? ? ????.`,
+        label: "속도 조절 구간",
+        title: `${carefulMonths.map((item) => item.label).join(", ")}에는 리듬 관리가 먼저입니다`,
+        copy: `${balance.weakest.label} 균형이 흔들리기 쉬운 달이라, 확장보다 정리와 재점검이 중요합니다. 약속, 비용, 감정 소모를 함께 줄이면 다시 올라갈 힘을 남길 수 있습니다.`,
       },
       {
-        label: "?? ?? ??",
-        title: `${balance.strongest.label} ??? ??? ${balance.weakest.label} ??? ?????`,
-        copy: `??? ??? ???? ?? ??? ??? ? ?????. ? ?? ??? ??? ???, ???? ??? ??? ??? ?? ??? ?? ??? ? ????.`,
+        label: "올해 운영 원칙",
+        title: `${balance.strongest.label} 기운은 살리고 ${balance.weakest.label} 균형은 보완하세요`,
+        copy: `올해는 단번의 정답보다 반복 가능한 리듬이 더 중요합니다. 잘 되는 달에는 검증을 넓히고, 흔들리는 달에는 기준과 순서를 다시 세우면 전체 흐름이 덜 꺾입니다.`,
       },
     ],
+    editorial,
+    seasons,
     monthScores,
     strongestMonths,
     carefulMonths,
-    note: `${topicFrame.noteLead} ?? ${strongestMonths.map((item) => item.label).join(", ")}?? ??? ?? ? ??? ${carefulMonths.map((item) => item.label).join(", ")}?? ??? ??? ??? ?? ??? ?? ????.`,
+    note: `${topicFrame.noteLead} 특히 ${strongestMonths.map((item) => item.label).join(", ")}에는 기회를 넓게 볼 만하고 ${carefulMonths.map((item) => item.label).join(", ")}에는 속도를 늦추고 기준을 다시 세우는 편이 좋습니다.`,
     evidence: [
-      `?? ?? ${balance.strongest.element} ${balance.strongest.count}?`,
-      `?? ?? ${balance.weakest.element} ${balance.weakest.count}?`,
-      `?? ? ?? ${currentMonthEntry.evidence}`,
+      `강한 오행 ${balance.strongest.element} ${balance.strongest.count}개`,
+      `약한 오행 ${balance.weakest.element} ${balance.weakest.count}개`,
+      `이번 달 근거 ${currentMonthEntry.evidence}`,
     ],
   };
 }
 
+function buildTarotQuestionCatalog(topic, concernText, leadCard, supportCard, guardCard) {
+  const baseConcern = concernText || "지금 고민";
+  const packs = {
+    relationship: [
+      `상대의 마음보다 내가 반복해서 해석하는 장면은 무엇인가요?`,
+      `지금 확인할 수 있는 행동 신호 하나와 아직 묻지 못한 질문 하나는 무엇인가요?`,
+      `이번 주에 관계를 더 선명하게 만들 대화 한 문장은 무엇인가요?`,
+      `${guardCard.name} 카드가 경고한 오해를 줄이려면 어떤 단정을 멈춰야 하나요?`,
+    ],
+    marriage: [
+      `결혼을 생각할 때 가장 먼저 맞춰봐야 할 생활 기준은 무엇인가요?`,
+      `돈, 가족, 거리감 중 지금 가장 현실적인 걸림돌은 무엇인가요?`,
+      `오래 함께 살 때 내가 절대 놓치고 싶지 않은 리듬은 무엇인가요?`,
+      `${supportCard.name} 카드가 말하는 안정감을 실제 생활 대화로 옮기면 어떤 질문이 되나요?`,
+    ],
+    business: [
+      `“${baseConcern}”을 30일 안에 검증하려면 가장 작은 상품이나 제안은 무엇인가요?`,
+      `오늘 바로 확인할 고객 반응 한 가지는 무엇인가요?`,
+      `돈이 들어오는 구조를 한 문장으로 설명하면 어떻게 말할 수 있나요?`,
+      `${guardCard.name} 카드가 경고한 리스크를 줄이려면 비용, 일정, 역할 중 무엇부터 정리해야 하나요?`,
+      `지금 당장 시작하지 않아도 이번 주 안에 시험할 수 있는 가장 작은 판매 방식은 무엇인가요?`,
+      `성공 여부를 운에 맡기지 않으려면 첫 달에 꼭 봐야 할 숫자 하나는 무엇인가요?`,
+    ],
+    career: [
+      `이직이나 이동보다 먼저 증명해야 할 실무 성과는 무엇인가요?`,
+      `지금 피로한 이유가 사람, 역할, 보상, 방향 중 어디에 더 가깝나요?`,
+      `다음 자리에서 꼭 지키고 싶은 기준 세 가지는 무엇인가요?`,
+      `${supportCard.name} 카드가 말한 흐름을 포트폴리오나 숫자로 남기면 무엇이 될까요?`,
+    ],
+    family: [
+      `가족 안에서 반복되는 역할 중 지금 가장 먼저 조정할 것은 무엇인가요?`,
+      `이번 주에 한 번만 꺼내도 되는 현실 대화 주제는 무엇인가요?`,
+      `내가 혼자 떠안고 있는 책임을 어떻게 문장으로 나눌 수 있나요?`,
+      `${guardCard.name} 카드가 말한 긴장을 줄이려면 어떤 말투를 먼저 바꿔야 하나요?`,
+    ],
+    yearly: [
+      `“${baseConcern}”과 올해 흐름을 같이 보면 지금 가장 먼저 줄여야 할 일은 무엇인가요?`,
+      `이번 달 안에 현실적으로 확인할 수 있는 변화는 무엇인가요?`,
+      `흐름이 좋아질 때 바로 붙잡을 준비가 된 일은 무엇인가요?`,
+      `${supportCard.name} 카드가 말한 보조 흐름을 이번 주 일정으로 옮기면 어떤 행동이 되나요?`,
+      `좋은 달이 오기 전에 미리 정리해둘 기준 하나는 무엇인가요?`,
+      `올해 전체를 흔드는 부담을 줄이려면 당장 멈출 일 하나는 무엇인가요?`,
+    ],
+  };
+  return (packs[topic] ?? packs.yearly).map((prompt, index) => ({
+    label: `질문 ${index + 1}`,
+    title: prompt,
+    copy: index % 2 === 0 ? `${leadCard.keyword} 관점에서 먼저 좁혀볼 질문입니다.` : `${supportCard.keyword}와 ${guardCard.keyword}를 함께 확인하기 위한 질문입니다.`,
+  }));
+}
+
+function buildTarotInsights(topicFrame, leadCard, supportCard, guardCard, concernText) {
+  const subject = concernText || "지금 고민";
+  return [
+    {
+      label: "짧은 판단",
+      title: `${subject}은 지금 결론보다 질문 순서를 다시 잡는 편이 맞습니다`,
+      copy: `${leadCard.name} 카드는 마음의 방향을, ${guardCard.name} 카드는 서두를 때 놓치는 지점을 보여줍니다. 답을 바로 확정하기보다 무엇을 먼저 확인해야 하는지 좁혀가는 흐름이 더 유효합니다.`,
+    },
+    {
+      label: "왜 이렇게 읽는가",
+      title: `${supportCard.keyword}와 ${guardCard.keyword}가 함께 잡힙니다`,
+      copy: `${topicFrame.supportCopy} 동시에 ${topicFrame.guardCopy}를 같이 보지 않으면 감정과 현실의 속도가 엇갈릴 수 있습니다.`,
+    },
+    {
+      label: "지금 할 한 가지",
+      title: `${supportCard.action}`,
+      copy: `타로는 정답 선언보다 다음 행동의 순서를 잡는 도구로 쓰는 편이 좋습니다. 오늘은 큰 결심 대신 작게 확인할 일 하나를 실제로 적고 움직여 보세요.`,
+    },
+  ];
+}
+
+export function buildTarotOverview(chart, topic = "yearly", concern = "", now = new Date()) {
+  const concernText = String(concern ?? "").trim();
+  const topicFrame = buildTarotTopicFrame(topic);
+  const seedBase =
+    chart.pillars.map(({ stem, branch }) => `${stem}${branch}`).join("") +
+    `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${topic}-${concernText}`;
+  const seed = [...seedBase].reduce((total, character) => total + character.charCodeAt(0), 0);
+  const leadCard = TAROT_ARCHETYPES[seed % TAROT_ARCHETYPES.length];
+  const supportCard = TAROT_ARCHETYPES[(seed + 3) % TAROT_ARCHETYPES.length];
+  const guardCard = TAROT_ARCHETYPES[(seed + 6) % TAROT_ARCHETYPES.length];
+  const questionLabel = concernText || TOPIC_META[topic]?.eyebrow || "지금 고민";
+
+  return {
+    eyebrow: "타로 질문 카드",
+    title: `${questionLabel}을 비추는 오늘의 세 장`,
+    summary: topicFrame.summary,
+    lead: leadCard,
+    support: supportCard,
+    spread: [
+      {
+        label: topicFrame.leadLabel,
+        card: leadCard,
+        copy: leadCard.message,
+        action: leadCard.action,
+      },
+      {
+        label: topicFrame.supportLabel,
+        card: supportCard,
+        copy: topicFrame.supportCopy,
+        action: supportCard.action,
+      },
+      {
+        label: topicFrame.guardLabel,
+        card: guardCard,
+        copy: topicFrame.guardCopy,
+        action: guardCard.action,
+      },
+    ],
+    choice: {
+      prompt: concernText
+        ? `"${concernText}"을 바로 결론내리기보다 어떤 조건을 갖춰야 움직일 수 있는지 먼저 가려보세요.`
+        : "지금의 선택은 정답 찾기보다 조건 정리에서 시작하는 편이 더 정확합니다.",
+      aLabel: "지금 바로 밀기",
+      aCopy: `${guardCard.keyword} 관점에서는 속도보다 리스크 점검이 먼저입니다.`,
+      bLabel: "작게 시험하기",
+      bCopy: `${supportCard.keyword} 관점에서는 작은 검증을 거친 뒤 넓히는 편이 안정적입니다.`,
+    },
+    insights: buildTarotInsights(topicFrame, leadCard, supportCard, guardCard, concernText),
+    reflection: [
+      `${leadCard.name} 카드가 말하는 지금 내 마음의 핵심은 무엇인지 적어보세요.`,
+      `내가 두려워하는 실패가 실제 사실인지, 막연한 불안인지 나눠보세요.`,
+      `오늘 바로 확인할 수 있는 현실 조건 두 가지를 정해보세요.`,
+      `${supportCard.name} 카드가 말하는 보조 흐름을 실제 일정이나 대화 순서로 바꾸면 무엇이 달라질지 떠올려 보세요.`,
+    ],
+    catalog: buildTarotQuestionCatalog(topic, concernText, leadCard, supportCard, guardCard),
+    followUps: [
+      ...topicFrame.followUps,
+      `${guardCard.name} 카드가 경고하는 지점을 피하려면 오늘 무엇을 미루고 무엇을 먼저 확인해야 할까요?`,
+    ],
+    closing: topicFrame.closing,
+  };
+}
 
 const TAROT_ARCHETYPES = [
   {
@@ -863,7 +1164,7 @@ function buildTarotTopicFrame(topic) {
       closing: "결혼운은 타이밍보다 같이 버틸 생활 기준이 맞는지에서 더 크게 갈립니다.",
     },
     business: {
-      summary: "사업 질문은 운보다 검증이 먼저입니다. 카드도 결국 고객, 돈, 실행 순서를 다시 보라고 말합니다.",
+      summary: "사업 질문은 시작 날짜를 점치기보다, 고객 반응과 돈의 흐름을 어떤 순서로 검증할지 잡는 데 쓰는 편이 맞습니다. 카드는 결국 고객, 현금흐름, 실행 구조를 다시 보라고 말합니다.",
       leadLabel: "지금 마음",
       supportLabel: "작게 검증할 흐름",
       guardLabel: "먼저 점검할 지점",
@@ -874,7 +1175,7 @@ function buildTarotTopicFrame(topic) {
         "돈이 들어오는 구조를 오늘 한 문장으로 설명할 수 있나요?",
         "혼자 할 일과 맡길 일을 지금 구분할 수 있나요?",
       ],
-      closing: "사업운은 좋은 타이밍을 맞히는 것보다, 검증이 통하는 리듬을 반복하는 쪽이 훨씬 강합니다.",
+      closing: "사업 질문은 좋은 날을 기다리기보다, 작은 검증이 통하는 리듬을 반복할 때 훨씬 강해집니다.",
     },
     career: {
       summary: "직업 질문은 감정적 결단보다, 지금 내 역할과 실무 근거를 다시 읽어보는 쪽이 더 유리합니다.",
@@ -922,88 +1223,6 @@ function buildTarotTopicFrame(topic) {
   return frames[topic] ?? frames.yearly;
 }
 
-function buildTarotInsights(topicFrame, leadCard, supportCard, guardCard, concernText) {
-  const subject = concernText || "?? ??";
-  return [
-    {
-      label: "?? ??",
-      title: `${subject}? ?? ???? ?? ??? ?? ?? ?? ????`,
-      copy: `${leadCard.name} ??? ??? ???, ${guardCard.name} ??? ??? ? ??? ??? ?????. ?? ?? ?????? ??? ?? ???? ??? ???? ??? ? ?????.`,
-    },
-    {
-      label: "? ??? ???",
-      title: `${supportCard.keyword}? ${guardCard.keyword}? ?? ????`,
-      copy: `${topicFrame.supportCopy} ??? ${topicFrame.guardCopy}? ?? ?? ??? ??? ??? ??? ??? ? ????.`,
-    },
-    {
-      label: "?? ? ? ??",
-      title: `${supportCard.action}`,
-      copy: `??? ?? ???? ?? ??? ??? ?? ??? ?? ?? ????. ??? ? ?? ?? ?? ??? ? ??? ??? ?? ??? ???.`,
-    },
-  ];
-}
-
-export function buildTarotOverview(chart, topic = "yearly", concern = "", now = new Date()) {
-  const concernText = String(concern ?? "").trim();
-  const topicFrame = buildTarotTopicFrame(topic);
-  const seedBase =
-    chart.pillars.map(({ stem, branch }) => `${stem}${branch}`).join("") +
-    `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${topic}-${concernText}`;
-  const seed = [...seedBase].reduce((total, character) => total + character.charCodeAt(0), 0);
-  const leadCard = TAROT_ARCHETYPES[seed % TAROT_ARCHETYPES.length];
-  const supportCard = TAROT_ARCHETYPES[(seed + 3) % TAROT_ARCHETYPES.length];
-  const guardCard = TAROT_ARCHETYPES[(seed + 6) % TAROT_ARCHETYPES.length];
-  const questionLabel = concernText || TOPIC_META[topic]?.eyebrow || "?? ??";
-
-  return {
-    eyebrow: "?? ?? ??",
-    title: `${questionLabel}? ??? ??? ? ?`,
-    summary: topicFrame.summary,
-    lead: leadCard,
-    support: supportCard,
-    spread: [
-      {
-        label: topicFrame.leadLabel,
-        card: leadCard,
-        copy: leadCard.message,
-        action: leadCard.action,
-      },
-      {
-        label: topicFrame.supportLabel,
-        card: supportCard,
-        copy: topicFrame.supportCopy,
-        action: supportCard.action,
-      },
-      {
-        label: topicFrame.guardLabel,
-        card: guardCard,
-        copy: topicFrame.guardCopy,
-        action: guardCard.action,
-      },
-    ],
-    choice: {
-      prompt: concernText
-        ? `"${concernText}"? ?? ??????? ?? ??? ??? ??? ? ??? ?? ?????.`
-        : "??? ??? ?? ???? ?? ???? ???? ?? ? ?????.",
-      aLabel: "?? ?? ??",
-      aCopy: `${guardCard.keyword} ????? ???? ??? ??? ?????.`,
-      bLabel: "?? ????",
-      bCopy: `${supportCard.keyword} ????? ?? ??? ?? ? ??? ?? ??????.`,
-    },
-    insights: buildTarotInsights(topicFrame, leadCard, supportCard, guardCard, concernText),
-    reflection: [
-      `${leadCard.name} ??? ??? ?? ? ??? ??? ???? ?????.`,
-      `?? ????? ??? ?? ????, ??? ???? ?????.`,
-      `?? ?? ??? ? ?? ?? ?? ? ??? ?????.`,
-      `${supportCard.name} ??? ??? ?? ??? ?? ???? ?? ??? ??? ??? ???? ??? ???.`,
-    ],
-    followUps: [
-      ...topicFrame.followUps,
-      `${guardCard.name} ??? ???? ??? ???? ?? ??? ??? ??? ?? ???? ????`,
-    ],
-    closing: topicFrame.closing,
-  };
-}
 
 
 const HANGUL_START = 0xac00;

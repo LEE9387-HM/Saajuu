@@ -163,7 +163,7 @@
             </figure>
             <p class="eyebrow">올해의 흐름</p>
             <h3>연간·월간 운세</h3>
-            <p id="year-flow-summary">올해의 큰 흐름과 지금 집중할 시기를 월별로 살펴보세요.</p>
+            <p id="year-flow-summary">올해의 큰 흐름을 요약, 장문 해석, 월별 리듬으로 나눠 보고 지금 바로 쓸 수 있는 판단 기준까지 정리해보세요.</p>
             <section class="year-flow-panel" aria-label="연간 흐름 요약">
               <div class="year-flow-panel__hero">
                 <p class="eyebrow" id="year-flow-eyebrow">올해 흐름</p>
@@ -173,14 +173,27 @@
               <div class="year-flow-panel__current">
                 <span id="year-current-label">이번 달 집중 포인트</span>
                 <strong id="year-current-score">--</strong>
-                <p id="year-current-focus">사주 정보를 입력하면 이번 달에 집중할 행동이 정리됩니다.</p>
-                <em id="year-current-action">작게 검증할 일 하나를 먼저 정해보세요.</em>
+                <p id="year-current-focus">사주 정보를 입력하면 이번 달에 밀어도 되는 일과 속도를 늦춰야 하는 일이 함께 정리됩니다.</p>
+                <em id="year-current-action">이번 달 안에 실제로 확인할 행동 한 가지를 먼저 정해보세요.</em>
               </div>
             </section>
-            <div class="year-flow-halves" id="year-flow-halves"></div>
-            <div class="year-flow-guides" id="year-flow-guides" aria-label="연간 해석 가이드"></div>
-            <div class="year-flow-months" id="year-flow-months"></div>
-            <p class="hub-card__note" id="year-flow-note">월별 점수는 방향을 잡기 위한 참고용 요약입니다.</p>
+            <div class="choice-switcher content-tab-switcher" role="tablist" aria-label="연간 운세 보기 방식">
+              <button type="button" role="tab" data-year-tab="summary" aria-selected="true">요약</button>
+              <button type="button" role="tab" data-year-tab="editorial" aria-selected="false">해석</button>
+              <button type="button" role="tab" data-year-tab="months" aria-selected="false">월별</button>
+            </div>
+            <div class="content-tab-panel" data-year-panel="summary">
+              <div class="year-flow-halves" id="year-flow-halves"></div>
+              <div class="year-flow-guides" id="year-flow-guides" aria-label="연간 해석 가이드"></div>
+              <div class="year-flow-seasons" id="year-flow-seasons" aria-label="분기별 운세 메모"></div>
+            </div>
+            <div class="content-tab-panel" data-year-panel="editorial" hidden>
+              <div class="year-flow-editorial" id="year-flow-editorial" aria-label="연간 장문 해석"></div>
+            </div>
+            <div class="content-tab-panel" data-year-panel="months" hidden>
+              <div class="year-flow-months" id="year-flow-months"></div>
+            </div>
+            <p class="hub-card__note" id="year-flow-note">월별 점수는 좋고 나쁨을 단정하려는 숫자가 아니라, 언제 밀고 언제 정리할지 판단하는 참고 리듬입니다.</p>
           </article>
 
           <article id="relationship" class="hub-card">
@@ -348,43 +361,55 @@
             </figure>
             <p class="eyebrow">타로·테스트</p>
             <h3>오늘 마음에 필요한 한 장</h3>
-            <p id="tarot-summary">결정을 서두르기보다 지금 마음을 비춰볼 질문을 가볍게 골라보세요.</p>
-            <section class="tarot-panel" aria-label="오늘의 한 장">
-              <div class="tarot-panel__lead">
-                <span class="eyebrow" id="tarot-eyebrow">오늘의 한 장</span>
-                <h4 id="tarot-title">사주 정보를 입력하면 오늘의 카드가 열립니다.</h4>
-                <div class="tarot-card">
-                  <strong id="tarot-card-name">카드 준비 중</strong>
-                  <span id="tarot-card-keyword">질문 정리</span>
-                  <p id="tarot-card-message">입력한 고민과 사주 흐름을 바탕으로 오늘 필요한 질문을 보여줍니다.</p>
-                  <em id="tarot-card-action">먼저 지금 가장 급한 고민 한 줄을 적어보세요.</em>
-                </div>
-                <div id="tarot-spread-grid" class="tarot-spread-grid" aria-label="타로 3카드 해석"></div>
-              </div>
-              <div class="tarot-panel__choice">
-                <span class="eyebrow">A/B 선택</span>
-                <p id="tarot-choice-prompt">지금의 선택을 바로 결론내리기보다 두 방향을 비교해보세요.</p>
-                <div class="tarot-choice-grid">
-                  <article>
-                    <strong id="tarot-choice-a-label">지금 바로 밀기</strong>
-                    <p id="tarot-choice-a-copy">속도보다 리스크 점검이 먼저입니다.</p>
-                  </article>
-                  <article>
-                    <strong id="tarot-choice-b-label">작게 시험하기</strong>
-                    <p id="tarot-choice-b-copy">작은 검증 뒤에 넓히는 편이 안정적입니다.</p>
-                  </article>
-                </div>
-              </div>
-            </section>
-            <div class="tarot-reflection">
-              <span class="eyebrow">정리 질문</span>
-              <ul id="tarot-reflection-list"></ul>
+            <p id="tarot-summary">결정을 바로 내리기보다 지금 마음, 현실 조건, 다음 행동을 질문 순서로 정리해보세요.</p>
+            <div class="choice-switcher content-tab-switcher" role="tablist" aria-label="타로 보기 방식">
+              <button type="button" role="tab" data-tarot-tab="spread" aria-selected="true">카드</button>
+              <button type="button" role="tab" data-tarot-tab="insights" aria-selected="false">해석</button>
+              <button type="button" role="tab" data-tarot-tab="questions" aria-selected="false">질문</button>
             </div>
-            <div class="tarot-insights" id="tarot-insights" aria-label="타로 해석 포인트"></div>
-            <div class="tarot-followup">
-              <span class="eyebrow">더 좁혀볼 질문</span>
-              <ul id="tarot-followup-list"></ul>
-              <p id="tarot-closing" class="tarot-followup__closing">카드가 보여준 흐름을 바로 답으로 쓰기보다, 다음 질문의 순서를 잡는 쪽이 더 좋습니다.</p>
+            <div class="content-tab-panel" data-tarot-panel="spread">
+              <section class="tarot-panel" aria-label="오늘의 한 장">
+                <div class="tarot-panel__lead">
+                  <span class="eyebrow" id="tarot-eyebrow">오늘의 한 장</span>
+                  <h4 id="tarot-title">사주 정보를 입력하면 오늘 고민에 맞는 카드와 질문 흐름이 열립니다.</h4>
+                  <div class="tarot-card">
+                    <strong id="tarot-card-name">카드 준비 중</strong>
+                    <span id="tarot-card-keyword">질문 정리</span>
+                    <p id="tarot-card-message">입력한 고민과 사주 흐름을 바탕으로 지금 바로 확인해야 할 질문, 보조 해석, 다음 행동을 함께 보여줍니다.</p>
+                    <em id="tarot-card-action">먼저 지금 가장 급한 고민 한 줄과 확인하고 싶은 현실 질문 하나를 적어보세요.</em>
+                  </div>
+                  <div id="tarot-spread-grid" class="tarot-spread-grid" aria-label="타로 3카드 해석"></div>
+                </div>
+                <div class="tarot-panel__choice">
+                  <span class="eyebrow">A/B 선택</span>
+                  <p id="tarot-choice-prompt">지금의 선택을 바로 결론내리기보다 두 방향의 리스크와 현실성을 먼저 비교해보세요.</p>
+                  <div class="tarot-choice-grid">
+                    <article>
+                      <strong id="tarot-choice-a-label">지금 바로 밀기</strong>
+                      <p id="tarot-choice-a-copy">속도보다 리스크 점검이 먼저입니다.</p>
+                    </article>
+                    <article>
+                      <strong id="tarot-choice-b-label">작게 시험하기</strong>
+                      <p id="tarot-choice-b-copy">작은 검증 뒤에 넓히는 편이 안정적입니다.</p>
+                    </article>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <div class="content-tab-panel" data-tarot-panel="insights" hidden>
+              <div class="tarot-insights" id="tarot-insights" aria-label="타로 해석 포인트"></div>
+              <div class="tarot-reflection">
+                <span class="eyebrow">정리 질문</span>
+                <ul id="tarot-reflection-list"></ul>
+              </div>
+            </div>
+            <div class="content-tab-panel" data-tarot-panel="questions" hidden>
+              <div class="tarot-catalog" id="tarot-catalog" aria-label="타로 질문 카탈로그"></div>
+              <div class="tarot-followup">
+                <span class="eyebrow">더 좁혀볼 질문</span>
+                <ul id="tarot-followup-list"></ul>
+                <p id="tarot-closing" class="tarot-followup__closing">카드가 보여준 흐름을 정답처럼 쓰기보다, 지금 무엇을 확인하고 어떤 순서로 움직일지 정리하는 쪽이 더 좋습니다.</p>
+              </div>
             </div>
           </article>
 

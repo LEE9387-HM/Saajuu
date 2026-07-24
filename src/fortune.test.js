@@ -248,6 +248,8 @@ describe("buildYearlyOverview", () => {
     expect(overview.halfYear).toHaveLength(2);
     expect(overview.halfYear[0].focus).toBeTruthy();
     expect(overview.guides).toHaveLength(3);
+    expect(overview.editorial).toHaveLength(4);
+    expect(overview.seasons).toHaveLength(4);
     expect(overview.monthScores[0].copy).toBeTruthy();
     expect(overview.monthScores[0].nextStep).toBeTruthy();
     expect(overview.note.length).toBeGreaterThan(20);
@@ -295,6 +297,7 @@ describe("buildTarotOverview", () => {
     expect(tarot.lead.name).toBeTruthy();
     expect(tarot.spread).toHaveLength(3);
     expect(tarot.insights).toHaveLength(3);
+    expect(tarot.catalog).toHaveLength(6);
     expect(tarot.choice.aLabel).toBeTruthy();
     expect(tarot.choice.bLabel).toBeTruthy();
     expect(tarot.reflection).toHaveLength(4);

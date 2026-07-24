@@ -1,5 +1,137 @@
 # Saajuu Loop Log
 
+## 2026-07-22 - Cycle 14
+
+### Selected Work
+
+Increase the default depth of yearly and tarot content without bringing back long chaotic scrolling.
+
+### Acceptance Criteria
+
+- Expand yearly editorial cards from 3 to 4 per topic.
+- Expand tarot catalog prompts from 4 to 6 where needed.
+- Make yearly and tarot empty states feel less placeholder-like.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- index.html
+- src/fortune.js
+- src/fortune.test.js
+- CHANGELOG.md
+- PROJECT_STATUS_README.md
+- LOOP_LOG.md
+- VERSION
+- package.json
+- package-lock.json
+
+### Verification
+
+- npm test
+- npm run build
+
+### Remaining Risk
+
+- Yearly and tarot are denser now, but other free-content surfaces like weekly, seasonal landing copy, and non-visible admin-side text still need a separate editorial pass.
+- The page is structurally shorter thanks to tabs, but more topic-specific content still needs stronger reuse patterns before SEO-scale expansion.
+
+### Next Suggested Work
+
+- Expand the same density pattern into weekly and compatibility editorial blocks, then review admin tooling for content QA.
+
+## 2026-07-22 - Cycle 13
+
+### Selected Work
+
+Reduce scroll in yearly/tarot sections with tabs and tighten the visible service copy.
+
+### Acceptance Criteria
+
+- Split yearly fortune into summary, editorial, and monthly tabs.
+- Split tarot into spread, insights, and questions tabs.
+- Make the first visible copy shorter and more verdict-first.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- index.html
+- src/fortune.js
+- src/main.js
+- src/styles.css
+- CHANGELOG.md
+- PROJECT_STATUS_README.md
+- LOOP_LOG.md
+- VERSION
+- package.json
+- package-lock.json
+
+### Verification
+
+- npm test
+- npm run build
+
+### Remaining Risk
+
+- The yearly and tarot sections are easier to scan now, but deeper long-form default content is still needed for empty-state trust on yearly, tarot, and future seasonal pages.
+- Some older copy outside the currently visible yearly/tarot path still deserves a dedicated editorial cleanup pass.
+
+### Next Suggested Work
+
+- Expand yearly topic dictionaries again and add denser default text for empty states and SEO-facing free content.
+
+## 2026-07-22 - Cycle 12
+
+### Selected Work
+
+Expand the annual-fortune editorial layer and add a topic-specific tarot question catalog.
+
+### Acceptance Criteria
+
+- Add seasonal quarterly notes to the annual fortune block.
+- Add a visible tarot question catalog with topic-aware prompts.
+- Normalize broken strings inside the annual/tarot generators.
+- Run npm test and npm run build.
+
+### Result
+
+done
+
+### Files Changed
+
+- index.html
+- src/fortune.js
+- src/fortune.test.js
+- src/main.js
+- src/styles.css
+- CHANGELOG.md
+- PROJECT_STATUS_README.md
+- LOOP_LOG.md
+- VERSION
+- package.json
+- package-lock.json
+
+### Verification
+
+- npm test
+- npm run build
+
+### Remaining Risk
+
+- The annual and tarot blocks are denser now, but the remaining long-form editorial dictionaries for yearly, weekly, and campaign landing content are still relatively shallow.
+- Some older unrelated copy outside the currently rendered annual/tarot paths may still contain historical encoding damage and should be cleaned in a dedicated pass.
+
+### Next Suggested Work
+
+- Expand the yearly topic dictionaries again with deeper per-topic narrative sections, then connect those sections to admin-side content review tooling.
+
 ## 2026-07-22 - Cycle 11
 
 ### Selected Work

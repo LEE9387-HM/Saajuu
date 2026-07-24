@@ -324,6 +324,40 @@ consultTabs.forEach((button) => {
   button.addEventListener("click", () => setConsultTab(button.dataset.consultTab ?? "start"));
 });
 
+const yearTabs = [...document.querySelectorAll("[data-year-tab]")];
+const yearPanels = [...document.querySelectorAll("[data-year-panel]")];
+const tarotTabs = [...document.querySelectorAll("[data-tarot-tab]")];
+const tarotPanels = [...document.querySelectorAll("[data-tarot-panel]")];
+
+function setContentTab(buttons, panels, key, panelKey, nextTabId) {
+  buttons.forEach((button) => {
+    const isActive = button.dataset[key] === nextTabId;
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  panels.forEach((panel) => {
+    panel.hidden = panel.dataset[panelKey] !== nextTabId;
+  });
+}
+
+function setYearTab(tabId) {
+  setContentTab(yearTabs, yearPanels, "yearTab", "yearPanel", tabId);
+}
+
+function setTarotTab(tabId) {
+  setContentTab(tarotTabs, tarotPanels, "tarotTab", "tarotPanel", tabId);
+}
+
+yearTabs.forEach((button) => {
+  button.addEventListener("click", () => setYearTab(button.dataset.yearTab ?? "summary"));
+});
+
+tarotTabs.forEach((button) => {
+  button.addEventListener("click", () => setTarotTab(button.dataset.tarotTab ?? "spread"));
+});
+
+setYearTab("summary");
+setTarotTab("spread");
+
 premiumInterestButton?.addEventListener("click", () => {
   track("premium-interest");
   window.location.hash = "consult";
@@ -3273,6 +3307,8 @@ const yearCurrentFocus = document.querySelector("#year-current-focus");
 const yearCurrentAction = document.querySelector("#year-current-action");
 const yearFlowHalves = document.querySelector("#year-flow-halves");
 const yearFlowGuides = document.querySelector("#year-flow-guides");
+const yearFlowEditorial = document.querySelector("#year-flow-editorial");
+const yearFlowSeasons = document.querySelector("#year-flow-seasons");
 const yearFlowMonths = document.querySelector("#year-flow-months");
 const yearFlowNote = document.querySelector("#year-flow-note");
 const tarotSummary = document.querySelector("#tarot-summary");
@@ -3290,6 +3326,7 @@ const tarotChoiceBCopy = document.querySelector("#tarot-choice-b-copy");
 const tarotReflectionList = document.querySelector("#tarot-reflection-list");
 const tarotSpreadGrid = document.querySelector("#tarot-spread-grid");
 const tarotInsights = document.querySelector("#tarot-insights");
+const tarotCatalog = document.querySelector("#tarot-catalog");
 const tarotFollowupList = document.querySelector("#tarot-followup-list");
 const tarotClosing = document.querySelector("#tarot-closing");
 let lastResult = null;
@@ -3355,7 +3392,9 @@ function renderYearFlow(chart, input, now = new Date()) {
   if (yearCurrentLabel) yearCurrentLabel.textContent = overview.currentMonth.label;
   if (yearCurrentScore) yearCurrentScore.textContent = `${overview.currentMonth.score}점`;
   if (yearCurrentFocus) yearCurrentFocus.textContent = overview.currentMonth.focus;
-  if (yearCurrentAction) yearCurrentAction.textContent = overview.currentMonth.action;
+  if (yearCurrentAction) {
+    yearCurrentAction.textContent = overview.currentMonth.action;
+  }
   if (yearFlowHalves) {
     yearFlowHalves.innerHTML = overview.halfYear
       .map(
@@ -3378,6 +3417,33 @@ function renderYearFlow(chart, input, now = new Date()) {
             <span>${escapeHtml(guide.label)}</span>
             <strong>${escapeHtml(guide.title)}</strong>
             <p>${escapeHtml(guide.copy)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
+  if (yearFlowEditorial) {
+    yearFlowEditorial.innerHTML = (overview.editorial ?? [])
+      .map(
+        (entry) => `
+          <article class="year-editorial-card">
+            <span>${escapeHtml(entry.label)}</span>
+            <strong>${escapeHtml(entry.title)}</strong>
+            <p>${escapeHtml(entry.copy)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
+  if (yearFlowSeasons) {
+    yearFlowSeasons.innerHTML = (overview.seasons ?? [])
+      .map(
+        (season) => `
+          <article class="year-season-card">
+            <span>${escapeHtml(season.label)}</span>
+            <strong>${escapeHtml(season.title)}</strong>
+            <p>${escapeHtml(season.copy)}</p>
+            <em>${escapeHtml(season.action)}</em>
           </article>
         `,
       )
@@ -3441,6 +3507,19 @@ function renderTarot(chart, input, now = new Date()) {
       .map(
         (entry) => `
           <article class="tarot-insight-card">
+            <span>${escapeHtml(entry.label)}</span>
+            <strong>${escapeHtml(entry.title)}</strong>
+            <p>${escapeHtml(entry.copy)}</p>
+          </article>
+        `,
+      )
+      .join("");
+  }
+  if (tarotCatalog) {
+    tarotCatalog.innerHTML = (tarot.catalog ?? [])
+      .map(
+        (entry) => `
+          <article class="tarot-catalog-card">
             <span>${escapeHtml(entry.label)}</span>
             <strong>${escapeHtml(entry.title)}</strong>
             <p>${escapeHtml(entry.copy)}</p>
